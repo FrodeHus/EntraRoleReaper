@@ -1,8 +1,17 @@
 {
-  "Add member to group": ["GroupMember.ReadWrite.All"],
-  "Remove member from group": ["GroupMember.ReadWrite.All"],
+  "Add member to group": [
+    "microsoft.directory/groups/members/update",
+    "microsoft.directory/groupsAssignableToRoles/allProperties/update"
+  ],
+  "Remove member from group": [
+    "microsoft.directory/groups/members/update",
+    "microsoft.directory/groupsAssignableToRoles/allProperties/update"
+  ],
   "Reset user password": ["Directory.AccessAsUser.All", "User.ReadWrite.All"],
-  "Update user": ["User.ReadWrite.All"],
+  "Update user": [
+    "microsoft.directory/users/basic/update",
+    "microsoft.directory/users/allProperties/update"
+  ],
   "Assign directory role": ["RoleManagement.ReadWrite.Directory"],
   "Remove directory role assignment": ["RoleManagement.ReadWrite.Directory"]
 }
