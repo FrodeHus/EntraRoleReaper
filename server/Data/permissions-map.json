@@ -7,11 +7,35 @@
     "microsoft.directory/groups/members/update",
     "microsoft.directory/groupsAssignableToRoles/allProperties/update"
   ],
-  "Reset user password": ["Directory.AccessAsUser.All", "User.ReadWrite.All"],
   "Update user": [
     "microsoft.directory/users/basic/update",
     "microsoft.directory/users/allProperties/update"
   ],
-  "Assign directory role": ["RoleManagement.ReadWrite.Directory"],
-  "Remove directory role assignment": ["RoleManagement.ReadWrite.Directory"]
+  "Add application": [
+    "microsoft.directory/applications/create",
+    "microsoft.directory/applications/allProperties/allTasks",
+    "microsoft.directory/applications/createAsOwner",
+    "microsoft.directory/oAuth2PermissionGrants/createAsOwner",
+    "microsoft.directory/servicePrincipals/createAsOwner"
+  ],
+  "Update application": [
+    "microsoft.directory/applications/basic/update",
+    "microsoft.directory/applications/allProperties/update",
+    "microsoft.directory/applications/allProperties/allTasks"
+  ],
+  "Update application - Certificates and secrets management": [
+    "microsoft.directory/servicePrincipals/credentials/update"
+  ],
+  "Add service principal": [
+    "microsoft.directory/servicePrincipals/create",
+    "microsoft.directory/roleAssignments/allProperties/allTasks"
+  ],
+  "Update service principal": [
+    "microsoft.directory/servicePrincipals/basic/update",
+    "microsoft.directory/servicePrincipals/allProperties/update",
+    "microsoft.directory/roleAssignments/allProperties/allTasks"
+  ],
+  "Assign directory role": [
+    "microsoft.directory/roleAssignments/allProperties/allTasks"
+  ]
 }

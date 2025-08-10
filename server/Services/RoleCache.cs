@@ -86,8 +86,7 @@ public class RoleCache(IGraphServiceFactory factory, IMemoryCache cache) : IRole
     {
         var actionPrivilege = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
-        var resourceNamespaces =
-            await graph.RoleManagement.EntitlementManagement.ResourceNamespaces.GetAsync();
+        var resourceNamespaces = await graph.RoleManagement.Directory.ResourceNamespaces.GetAsync();
         foreach (var ns in resourceNamespaces?.Value ?? [])
         {
             if (string.IsNullOrWhiteSpace(ns?.Name))

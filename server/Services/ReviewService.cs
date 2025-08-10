@@ -9,7 +9,7 @@ public record ReviewRequest(List<string> UsersOrGroups, DateTimeOffset From, Dat
 
 public record ReviewTarget(string? Id, string? DisplayName, string? Type, string? Label);
 
-public record PermissionDetail(string Name, bool Privileged);
+public record PermissionDetail(string Name, bool Privileged, IReadOnlyList<string> GrantedByRoles);
 
 public record ReviewOperation(
     string Operation,
@@ -18,14 +18,18 @@ public record ReviewOperation(
     IReadOnlyList<PermissionDetail> PermissionDetails
 );
 
+public record RoleMeta(string Name, bool Pim);
+
 public record UserReview(
     string UserId,
     string UserDisplayName,
     string[] CurrentRoleIds,
+    string[] EligibleRoleIds,
     string[] UsedOperations,
     string[] SuggestedRoleIds,
     int OperationCount,
-    IReadOnlyList<ReviewOperation> Operations
+    IReadOnlyList<ReviewOperation> Operations,
+    IReadOnlyList<RoleMeta> RoleMeta
 );
 
 public record ReviewResponse(List<UserReview> Results);
@@ -110,6 +114,58 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                 }
             }
 
+            // Include eligible PIM roles (do not use these to grant permissions, just report)
+            var eligibleRoleIds = new List<string>();
+            var pimActiveRoleIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var elig =
+                    await graphClient.RoleManagement.Directory.RoleEligibilityScheduleInstances.GetAsync(
+                        q =>
+                        {
+                            q.QueryParameters.Filter = $"principalId eq '{uid}'";
+                            q.QueryParameters.Top = 50;
+                        }
+                    );
+                if (elig?.Value != null)
+                {
+                    foreach (var e in elig.Value)
+                    {
+                        var roleDefId = e.RoleDefinitionId;
+                        if (!string.IsNullOrWhiteSpace(roleDefId))
+                        {
+                            eligibleRoleIds.Add(roleDefId);
+                        }
+                    }
+                }
+
+                // Active PIM assignments (current activations)
+                var act =
+                    await graphClient.RoleManagement.Directory.RoleAssignmentScheduleInstances.GetAsync(
+                        q =>
+                        {
+                            q.QueryParameters.Filter =
+                                $"principalId eq '{uid}' and assignmentType eq 'Activated'";
+                            q.QueryParameters.Top = 50;
+                        }
+                    );
+                if (act?.Value != null)
+                {
+                    foreach (var a in act.Value)
+                    {
+                        var roleDefId = a.RoleDefinitionId;
+                        if (!string.IsNullOrWhiteSpace(roleDefId))
+                        {
+                            pimActiveRoleIds.Add(roleDefId);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Swallow errors if app lacks PIM read permissions; eligibility is optional metadata
+            }
+
             // Audit logs: directory audits filtered by user and time
             var usedOperations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             // Collect per-operation target details (unique by type+id)
@@ -168,13 +224,50 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                     var targets = opTargets.TryGetValue(op, out var t)
                         ? [.. t.Values]
                         : new List<ReviewTarget>();
+
+                    // For each permission, determine which of the user's current roles grants it
+                    var currentRoleDefs = currentRoleIds
+                        .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
+                        .Where(rd => rd != null)
+                        .ToList()!;
+
                     var details = perms
-                        .Select(name => new PermissionDetail(
-                            name,
-                            actionPrivilege.TryGetValue(name, out var isPriv) && isPriv
-                        ))
+                        .Select(name =>
+                        {
+                            var privileged =
+                                actionPrivilege.TryGetValue(name, out var isPriv) && isPriv;
+                            var grantedBy = new List<string>();
+                            foreach (var rd in currentRoleDefs)
+                            {
+                                var allows =
+                                    rd!.RolePermissions?.Any(rp =>
+                                        (rp.AllowedResourceActions ?? new List<string>()).Any(a =>
+                                            string.Equals(
+                                                a,
+                                                name,
+                                                StringComparison.OrdinalIgnoreCase
+                                            )
+                                        )
+                                    ) ?? false;
+                                if (allows && !string.IsNullOrWhiteSpace(rd.DisplayName))
+                                {
+                                    grantedBy.Add(rd.DisplayName!);
+                                }
+                            }
+                            return new PermissionDetail(name, privileged, grantedBy);
+                        })
                         .ToList();
-                    return new ReviewOperation(op, perms, targets, details);
+
+                    // Only report permissions actually granted by the user's current roles
+                    var filteredDetails = details
+                        .Where(d => d.GrantedByRoles != null && d.GrantedByRoles.Count > 0)
+                        .ToList();
+                    var filteredPerms = filteredDetails
+                        .Select(d => d.Name)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+
+                    return new ReviewOperation(op, filteredPerms, targets, filteredDetails);
                 })
                 .ToList();
 
@@ -184,51 +277,73 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                 .ToArray();
 
             // Suggest roles that cover all required permissions, preferring fewer privileged actions
-            int usedPrivRequired = requiredPermissions.Count(p =>
-                actionPrivilege.TryGetValue(p, out var b) && b
-            );
+            string[] suggested;
+            if (requiredPermissions.Length == 0)
+            {
+                suggested = Array.Empty<string>();
+            }
+            else
+            {
+                int usedPrivRequired = requiredPermissions.Count(p =>
+                    actionPrivilege.TryGetValue(p, out var b) && b
+                );
 
-            var suggested = roles
-                .Values.Where(r =>
-                    r.RolePermissions != null
-                    && r.RolePermissions.Any()
-                    && requiredPermissions.All(p =>
-                        r.RolePermissions!.Any(rp =>
-                            (rp.AllowedResourceActions ?? new List<string>()).Any(a =>
-                                string.Equals(a, p, StringComparison.OrdinalIgnoreCase)
+                suggested = roles
+                    .Values.Where(r =>
+                        r.RolePermissions != null
+                        && r.RolePermissions.Any()
+                        && requiredPermissions.All(p =>
+                            r.RolePermissions!.Any(rp =>
+                                (rp.AllowedResourceActions ?? new List<string>()).Any(a =>
+                                    string.Equals(a, p, StringComparison.OrdinalIgnoreCase)
+                                )
                             )
                         )
                     )
-                )
-                .Select(r => new
-                {
-                    Role = r,
-                    Stats = (r.Id != null && roleStats.TryGetValue(r.Id, out var rs))
-                        ? rs
-                        : new RolePrivilegeStats(
-                            PrivilegedAllowed: 0,
-                            TotalAllowed: (
-                                r.RolePermissions ?? new List<UnifiedRolePermission>()
-                            ).Sum(rp => (rp.AllowedResourceActions ?? new List<string>()).Count)
-                        ),
-                })
-                .OrderBy(x => Math.Max(0, x.Stats.PrivilegedAllowed - usedPrivRequired)) // extra privileged beyond required
-                .ThenBy(x => x.Stats.PrivilegedAllowed) // overall privileged in role
-                .ThenBy(x => x.Stats.TotalAllowed) // smaller roles preferred
-                .ThenBy(x => x.Role.DisplayName)
-                .Select(x => x.Role.DisplayName!)
-                .Take(5)
-                .ToArray();
+                    .Select(r => new
+                    {
+                        Role = r,
+                        Stats = (r.Id != null && roleStats.TryGetValue(r.Id, out var rs))
+                            ? rs
+                            : new RolePrivilegeStats(
+                                PrivilegedAllowed: 0,
+                                TotalAllowed: (
+                                    r.RolePermissions ?? new List<UnifiedRolePermission>()
+                                ).Sum(rp => (rp.AllowedResourceActions ?? new List<string>()).Count)
+                            ),
+                    })
+                    .OrderBy(x => Math.Max(0, x.Stats.PrivilegedAllowed - usedPrivRequired)) // extra privileged beyond required
+                    .ThenBy(x => x.Stats.PrivilegedAllowed) // overall privileged in role
+                    .ThenBy(x => x.Stats.TotalAllowed) // smaller roles preferred
+                    .ThenBy(x => x.Role.DisplayName)
+                    .Select(x => x.Role.DisplayName!)
+                    .Take(5)
+                    .ToArray();
+            }
+
+            // Build role metadata for UI labels (PIM badge on active PIM roles)
+            var roleMeta = currentRoleIds
+                .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
+                .Where(rd => rd != null && !string.IsNullOrWhiteSpace(rd!.DisplayName))
+                .Select(rd => new RoleMeta(
+                    rd!.DisplayName!,
+                    pimActiveRoleIds.Contains(rd.Id ?? string.Empty)
+                ))
+                .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(g => new RoleMeta(g.Key, g.Any(x => x.Pim)))
+                .ToList();
 
             results.Add(
                 new UserReview(
                     uid,
                     display,
                     [.. currentRoleIds.Distinct()],
+                    [.. eligibleRoleIds.Distinct()],
                     [.. usedOperations],
                     suggested,
                     operationsList.Count,
-                    operationsList
+                    operationsList,
+                    roleMeta
                 )
             );
         }

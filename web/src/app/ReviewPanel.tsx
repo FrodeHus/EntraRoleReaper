@@ -17,9 +17,11 @@ type UserReview = {
   userId: string;
   userDisplayName: string;
   currentRoleIds: string[];
+  eligibleRoleIds?: string[];
   usedOperations: string[];
   suggestedRoleIds: string[];
   operationCount: number;
+  roleMeta?: { name: string; pim: boolean }[];
   operations: {
     operation: string;
     requiredPermissions: string[];
@@ -29,7 +31,11 @@ type UserReview = {
       type?: string;
       label?: string;
     }[];
-    permissionDetails?: { name: string; privileged: boolean }[];
+    permissionDetails?: {
+      name: string;
+      privileged: boolean;
+      grantedByRoles?: string[];
+    }[];
   }[];
 };
 
@@ -310,32 +316,127 @@ export function ReviewPanel({
                             </button>
                           )}
                         </div>
-                        <div className="text-gray-700 text-xs flex flex-wrap gap-2">
-                          {(op.permissionDetails &&
-                          op.permissionDetails.length > 0
-                            ? op.permissionDetails
-                            : op.requiredPermissions.map((n) => ({
-                                name: n,
-                                privileged: false,
-                              }))
-                          ).map((pd, i) => (
-                            <span
-                              key={i}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded border"
-                            >
-                              <span>{pd.name}</span>
-                              {pd.privileged && (
-                                <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px]">
-                                  Privileged
+                        <div className="space-y-2 text-xs">
+                          {(() => {
+                            const list =
+                              op.permissionDetails &&
+                              op.permissionDetails.length > 0
+                                ? op.permissionDetails
+                                : op.requiredPermissions.map((n) => ({
+                                    name: n,
+                                    privileged: false,
+                                    grantedByRoles: [] as string[],
+                                  }));
+                            if (list.length === 0) {
+                              return (
+                                <span className="text-gray-500">
+                                  No mapping
                                 </span>
-                              )}
-                            </span>
-                          ))}
-                          {(!op.permissionDetails ||
-                            op.permissionDetails.length === 0) &&
-                            op.requiredPermissions.length === 0 && (
-                              <span className="text-gray-500">No mapping</span>
-                            )}
+                              );
+                            }
+                            // Build groups by role name
+                            const groups = new Map<
+                              string,
+                              { name: string; privileged: boolean }[]
+                            >();
+                            const uncovered: {
+                              name: string;
+                              privileged: boolean;
+                            }[] = [];
+                            for (const pd of list) {
+                              const roles =
+                                pd.grantedByRoles &&
+                                pd.grantedByRoles.length > 0
+                                  ? pd.grantedByRoles
+                                  : [];
+                              if (roles.length === 0) {
+                                uncovered.push({
+                                  name: pd.name,
+                                  privileged: pd.privileged,
+                                });
+                              } else {
+                                for (const rn of roles) {
+                                  const arr = groups.get(rn) ?? [];
+                                  arr.push({
+                                    name: pd.name,
+                                    privileged: pd.privileged,
+                                  });
+                                  groups.set(rn, arr);
+                                }
+                              }
+                            }
+                            const roleSections = Array.from(
+                              groups.entries()
+                            ).sort(([a], [b]) =>
+                              a.localeCompare(b, undefined, {
+                                sensitivity: "base",
+                              })
+                            );
+                            return (
+                              <div className="space-y-2">
+                                {roleSections.map(([roleName, items]) => (
+                                  <div key={roleName}>
+                                    <div className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
+                                      <span>{roleName}</span>
+                                      {(() => {
+                                        const meta =
+                                          openSheetFor.roleMeta?.find(
+                                            (m) =>
+                                              m.name.toLowerCase() ===
+                                              roleName.toLowerCase()
+                                          );
+                                        if (meta?.pim) {
+                                          return (
+                                            <span className="text-purple-700 bg-purple-50 border border-purple-200 rounded px-1 text-[10px]">
+                                              PIM
+                                            </span>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {items.map((it, i) => (
+                                        <span
+                                          key={`${roleName}-${i}`}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded border"
+                                        >
+                                          <span>{it.name}</span>
+                                          {it.privileged && (
+                                            <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px]">
+                                              Privileged
+                                            </span>
+                                          )}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                                {uncovered.length > 0 && (
+                                  <div>
+                                    <div className="font-semibold text-gray-800 mb-1">
+                                      Uncovered
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {uncovered.map((it, i) => (
+                                        <span
+                                          key={`uncovered-${i}`}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded border"
+                                        >
+                                          <span>{it.name}</span>
+                                          {it.privileged && (
+                                            <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px]">
+                                              Privileged
+                                            </span>
+                                          )}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         {expanded.has(idx) &&
                           op.targets &&

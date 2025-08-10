@@ -45,6 +45,10 @@ Grant admin consent to API permissions required by the API to call Microsoft Gra
   - Directory.Read.All
   - AuditLog.Read.All
   - RoleManagement.Read.Directory
+  - RoleEligibilitySchedule.Read.Directory (required to read PIM eligible roles)
+  - RoleAssignmentSchedule.Read.Directory (required to read PIM active assignments)
+
+Note on PIM: To include Microsoft Entra PIM information in reviews (eligible and active PIM assignments), the API needs the schedule read scopes above. Without them, the app still works but won’t display PIM labels or eligibility.
 
 Note: Some endpoints require elevated delegated permissions. Adjust as needed.
 
