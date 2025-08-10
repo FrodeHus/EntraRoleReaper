@@ -4,3 +4,4 @@ web/.env
 **/.env
 .vscode/
 *.user
+web/dist/

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Sun, Moon, Users, Plus, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
@@ -22,6 +23,8 @@ export default function App() {
   const { instance, inProgress, accounts } = useMsal();
   const authed = useIsAuthenticated();
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTokenExp = useRef<number | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
     const stored = localStorage.getItem("theme");
@@ -53,21 +56,108 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    const getToken = async () => {
+    const schedule = (expiresOn?: Date | null) => {
+      if (refreshTimer.current) {
+        clearTimeout(refreshTimer.current);
+        refreshTimer.current = null;
+      }
+      if (!expiresOn) return;
+      const now = Date.now();
+      const exp = expiresOn.getTime();
+      lastTokenExp.current = exp;
+      // Refresh 2 minutes before expiry, clamp to [30s, 50m]
+      const twoMin = 2 * 60 * 1000;
+      const minDelay = 30 * 1000;
+      const maxDelay = 50 * 60 * 1000;
+      let delay = Math.max(minDelay, exp - now - twoMin);
+      delay = Math.min(delay, maxDelay);
+      if (delay <= 0) delay = minDelay;
+      refreshTimer.current = setTimeout(() => void fetchToken(), delay);
+    };
+
+    const fetchToken = async () => {
       if (!authed || accounts.length === 0) return;
+      if (!navigator.onLine) {
+        // If offline, retry after 30s
+        if (refreshTimer.current) clearTimeout(refreshTimer.current);
+        refreshTimer.current = setTimeout(() => void fetchToken(), 30 * 1000);
+        return;
+      }
       try {
         const result = await instance.acquireTokenSilent({
           scopes: [apiScope],
           account: accounts[0],
         });
         setAccessToken(result.accessToken);
+        schedule(result.expiresOn ?? null);
       } catch (err) {
+        // Retry after short backoff; fall back to interactive if required
         if (err instanceof InteractionRequiredAuthError) {
           await instance.acquireTokenRedirect({ scopes: [apiScope] });
+          return;
+        }
+        // Non-interaction error: retry in 60s
+        if (refreshTimer.current) clearTimeout(refreshTimer.current);
+        refreshTimer.current = setTimeout(() => void fetchToken(), 60 * 1000);
+      }
+    };
+
+    // Kick off token fetch/refresh chain when authenticated
+    if (authed && accounts.length > 0) {
+      void fetchToken();
+    } else {
+      setAccessToken(null);
+      if (refreshTimer.current) {
+        clearTimeout(refreshTimer.current);
+        refreshTimer.current = null;
+      }
+      lastTokenExp.current = null;
+    }
+
+    const onVisibility = () => {
+      if (
+        document.visibilityState === "visible" &&
+        authed &&
+        accounts.length > 0
+      ) {
+        // If within 3 minutes of expiry, refresh now
+        const now = Date.now();
+        const threeMin = 3 * 60 * 1000;
+        if (lastTokenExp.current && lastTokenExp.current - now < threeMin) {
+          void fetchToken();
         }
       }
     };
-    getToken();
+    document.addEventListener("visibilitychange", onVisibility);
+    const onOnline = () => {
+      if (authed && accounts.length > 0) void fetchToken();
+    };
+    const onUserCancelled = () => {
+      toast.info(
+        "Sign-in was cancelled. Some features may stop working until you sign in again.",
+        {
+          duration: 6000,
+        }
+      );
+    };
+    window.addEventListener("online", onOnline);
+    window.addEventListener(
+      "msal:userCancelled" as any,
+      onUserCancelled as any
+    );
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener(
+        "msal:userCancelled" as any,
+        onUserCancelled as any
+      );
+      if (refreshTimer.current) {
+        clearTimeout(refreshTimer.current);
+        refreshTimer.current = null;
+      }
+    };
   }, [authed, accounts, instance]);
 
   const login = () => instance.loginRedirect({ scopes: [apiScope] });
