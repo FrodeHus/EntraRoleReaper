@@ -82,4 +82,55 @@ app.MapPost(
     )
     .RequireAuthorization();
 
+// Role details: fetch by id or by display name
+app.MapGet(
+        "/api/role",
+        async (string? id, string? name, IRoleCache cache) =>
+        {
+            await cache.InitializeAsync();
+            var roles = cache.GetAll();
+            var actionPriv = cache.GetActionPrivilegeMap();
+
+            Microsoft.Graph.Models.UnifiedRoleDefinition? match = null;
+            if (!string.IsNullOrWhiteSpace(id))
+            {
+                roles.TryGetValue(id!, out match);
+            }
+            else if (!string.IsNullOrWhiteSpace(name))
+            {
+                match = roles.Values.FirstOrDefault(r =>
+                    !string.IsNullOrWhiteSpace(r.DisplayName)
+                    && string.Equals(r.DisplayName, name, StringComparison.OrdinalIgnoreCase)
+                );
+            }
+
+            if (match == null)
+            {
+                return Results.NotFound(new { message = "Role not found" });
+            }
+
+            var allowed = (match.RolePermissions ?? [])
+                .SelectMany(rp => rp.AllowedResourceActions ?? [])
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(a => a, StringComparer.OrdinalIgnoreCase)
+                .Select(a => new
+                {
+                    action = a,
+                    privileged = actionPriv.TryGetValue(a, out var p) && p,
+                })
+                .ToList();
+
+            return Results.Ok(
+                new
+                {
+                    id = match.Id,
+                    name = match.DisplayName,
+                    description = match.Description,
+                    permissions = allowed,
+                }
+            );
+        }
+    )
+    .RequireAuthorization();
+
 app.Run();

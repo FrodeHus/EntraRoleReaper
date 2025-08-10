@@ -322,6 +322,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                     int covered = Allowed.Count(a => requiredPermissionsAll.Contains(a));
                     suggestedDetails.Add(
                         new SuggestedRole(
+                            Role.Id ?? string.Empty,
                             Role.DisplayName!,
                             covered,
                             Stats.PrivilegedAllowed,

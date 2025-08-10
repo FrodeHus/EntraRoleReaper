@@ -23,6 +23,7 @@ type UserReview = {
   usedOperations: string[];
   suggestedRoleIds: string[];
   suggestedRoles?: {
+    id?: string;
     name: string;
     coveredRequired: number;
     privilegedAllowed: number;
@@ -100,6 +101,19 @@ export function ReviewPanel({
   const [openSheetFor, setOpenSheetFor] = useState<UserReview | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState<boolean>(false);
+  // Role details sheet state
+  type RoleDetails = {
+    id?: string;
+    name?: string;
+    description?: string;
+    permissions: { action: string; privileged: boolean }[];
+  } | null;
+  const [openRole, setOpenRole] = useState<{
+    id?: string;
+    name: string;
+  } | null>(null);
+  const [roleDetails, setRoleDetails] = useState<RoleDetails>(null);
+  const [loadingRole, setLoadingRole] = useState<boolean>(false);
 
   useEffect(() => {
     // Reset expanded state when switching user/sheet
@@ -113,6 +127,34 @@ export function ReviewPanel({
       else next.add(idx);
       return next;
     });
+  };
+
+  const isGuid = (s: string) =>
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
+      s
+    );
+
+  const openRoleDetails = async (opts: { id?: string; name: string }) => {
+    if (!accessToken) return;
+    setOpenRole({ id: opts.id, name: opts.name });
+    setRoleDetails(null);
+    setLoadingRole(true);
+    try {
+      const url = new URL("/api/role", import.meta.env.VITE_API_URL);
+      if (opts.id && opts.id.length > 0) {
+        url.searchParams.set("id", opts.id);
+      } else {
+        url.searchParams.set("name", opts.name);
+      }
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      setRoleDetails(json as RoleDetails);
+    } finally {
+      setLoadingRole(false);
+    }
   };
 
   const run = async () => {
@@ -401,9 +443,18 @@ export function ReviewPanel({
                             <div className="space-y-1">
                               {roles.map((sr, i) => (
                                 <div key={`${sr.name}-${i}`}>
-                                  <div className="font-medium text-xs">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      openRoleDetails({
+                                        id: (sr as any).id,
+                                        name: sr.name,
+                                      })
+                                    }
+                                    className="font-medium text-xs underline text-primary hover:opacity-80"
+                                  >
                                     {sr.name}
-                                  </div>
+                                  </button>
                                   <div className="text-[11px] text-muted-foreground">
                                     Why: covers {sr.coveredRequired} required •
                                     priv {sr.privilegedAllowed} • total{" "}
@@ -415,7 +466,25 @@ export function ReviewPanel({
                           );
                         }
                         // Fallback to legacy string list
-                        return r.suggestedRoleIds.join(", ");
+                        return (
+                          <div className="space-y-1">
+                            {r.suggestedRoleIds.map((name, i) => (
+                              <button
+                                key={`${name}-${i}`}
+                                type="button"
+                                onClick={() =>
+                                  openRoleDetails({
+                                    id: isGuid(name) ? name : undefined,
+                                    name,
+                                  })
+                                }
+                                className="font-medium text-xs underline text-primary hover:opacity-80 block text-left"
+                              >
+                                {name}
+                              </button>
+                            ))}
+                          </div>
+                        );
                       })()}
                     </td>
                   </tr>
@@ -423,6 +492,82 @@ export function ReviewPanel({
               </tbody>
             </table>
           </div>
+          {/* Role details sheet */}
+          <Sheet
+            open={openRole !== null}
+            onOpenChange={(o) => {
+              if (!o) {
+                setOpenRole(null);
+                setRoleDetails(null);
+              }
+            }}
+          >
+            {openRole && (
+              <SheetContent side="right">
+                <SheetHeader>
+                  <div className="flex items-center justify-between">
+                    <SheetTitle>
+                      Role: {roleDetails?.name || openRole.name}
+                    </SheetTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => {
+                        setOpenRole(null);
+                        setRoleDetails(null);
+                      }}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </SheetHeader>
+                <div className="mt-3 space-y-3 text-sm">
+                  {loadingRole && (
+                    <div className="text-muted-foreground">Loading…</div>
+                  )}
+                  {!loadingRole && roleDetails && (
+                    <>
+                      <div>
+                        <div className="font-semibold">Name</div>
+                        <div>{roleDetails.name || openRole.name}</div>
+                      </div>
+                      {roleDetails.description && (
+                        <div>
+                          <div className="font-semibold">Description</div>
+                          <div className="text-muted-foreground">
+                            {roleDetails.description}
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-semibold mb-1">Permissions</div>
+                        {roleDetails.permissions?.length ? (
+                          <div className="flex flex-wrap gap-2">
+                            {roleDetails.permissions.map((p, i) => (
+                              <span
+                                key={`${p.action}-${i}`}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded border"
+                              >
+                                <span>{p.action}</span>
+                                {p.privileged && (
+                                  <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
+                                    Privileged
+                                  </span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-muted-foreground">None</div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </SheetContent>
+            )}
+          </Sheet>
           <Sheet
             open={openSheetFor !== null}
             onOpenChange={(o) => {
