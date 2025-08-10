@@ -1,6 +1,6 @@
 using Microsoft.Graph.Models;
 
-namespace EntraRoleAssignmentAuditor.Services;
+namespace RoleReaper.Services;
 
 public interface IRoleCache
 {

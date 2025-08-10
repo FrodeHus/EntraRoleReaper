@@ -1,4 +1,4 @@
-# EntraRoleAssignmentAuditor
+# RoleReaper
 
 Full-stack app to perform access reviews of Entra ID users.
 

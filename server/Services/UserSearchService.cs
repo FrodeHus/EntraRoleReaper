@@ -1,4 +1,4 @@
-namespace EntraRoleAssignmentAuditor.Services;
+namespace RoleReaper.Services;
 
 public class UserSearchService(IGraphServiceFactory factory) : IUserSearchService
 {

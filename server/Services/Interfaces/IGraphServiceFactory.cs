@@ -1,6 +1,6 @@
 using Microsoft.Graph;
 
-namespace EntraRoleAssignmentAuditor.Services;
+namespace RoleReaper.Services;
 
 public interface IGraphServiceFactory
 {

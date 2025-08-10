@@ -1,7 +1,7 @@
 using Azure.Identity;
 using Microsoft.Graph;
 
-namespace EntraRoleAssignmentAuditor.Services;
+namespace RoleReaper.Services;
 
 public class GraphServiceFactory(IConfiguration config, IHttpContextAccessor accessor)
     : IGraphServiceFactory

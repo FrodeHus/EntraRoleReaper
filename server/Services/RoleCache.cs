@@ -3,7 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 
-namespace EntraRoleAssignmentAuditor.Services;
+namespace RoleReaper.Services;
 
 public class RoleCache(IGraphServiceFactory factory, IMemoryCache cache) : IRoleCache
 {

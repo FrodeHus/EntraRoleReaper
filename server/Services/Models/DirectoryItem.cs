@@ -1,3 +1,3 @@
-namespace EntraRoleAssignmentAuditor.Services;
+namespace RoleReaper.Services;
 
 public record DirectoryItem(string Id, string DisplayName, string Type);

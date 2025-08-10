@@ -171,7 +171,7 @@ export default function App() {
         <div className="mx-auto max-w-7xl px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Entra Role Assignment Auditor
+              Entra RoleReaper
             </span>
           </div>
           <div className="flex items-center gap-2">

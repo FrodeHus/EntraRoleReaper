@@ -1,4 +1,4 @@
-using EntraRoleAssignmentAuditor.Services;
+using RoleReaper.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Identity.Web;
@@ -43,7 +43,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc(
         "v1",
-        new OpenApiInfo { Title = "EntraRoleAssignmentAuditor API", Version = "v1" }
+        new OpenApiInfo { Title = "RoleReaper API", Version = "v1" }
     );
 });
 
