@@ -106,6 +106,30 @@ app.MapGet(
                 return Results.NotFound(new { message = "Role not found" });
             }
 
+            static string DescribeScope(string s)
+            {
+                if (string.IsNullOrWhiteSpace(s))
+                    return "Unknown";
+                if (s == "/")
+                    return "Tenant-wide";
+                string norm = s.Trim();
+                if (norm.StartsWith("/administrativeUnits/", StringComparison.OrdinalIgnoreCase))
+                    return "Administrative Unit scope";
+                if (norm.StartsWith("/groups/", StringComparison.OrdinalIgnoreCase))
+                    return "Group scope";
+                if (norm.StartsWith("/users/", StringComparison.OrdinalIgnoreCase))
+                    return "User scope";
+                if (norm.StartsWith("/devices/", StringComparison.OrdinalIgnoreCase))
+                    return "Device scope";
+                if (norm.StartsWith("/applications/", StringComparison.OrdinalIgnoreCase))
+                    return "Application scope";
+                if (norm.StartsWith("/servicePrincipals/", StringComparison.OrdinalIgnoreCase))
+                    return "Service principal scope";
+                if (norm.StartsWith("/directoryObjects/", StringComparison.OrdinalIgnoreCase))
+                    return "Directory object scope";
+                return $"Resource scope ({s})";
+            }
+
             var allowed = (match.RolePermissions ?? [])
                 .SelectMany(rp => rp.AllowedResourceActions ?? [])
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -117,12 +141,19 @@ app.MapGet(
                 })
                 .ToList();
 
+            var scopes = match.ResourceScopes ?? new List<string>();
+            var scopeDetails = scopes
+                .Select(s => new { value = s, description = DescribeScope(s) })
+                .ToList();
+
             return Results.Ok(
                 new
                 {
                     id = match.Id,
                     name = match.DisplayName,
                     description = match.Description,
+                    resourceScopes = scopes,
+                    resourceScopesDetailed = scopeDetails,
                     permissions = allowed,
                 }
             );

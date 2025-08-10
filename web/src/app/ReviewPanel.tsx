@@ -110,6 +110,8 @@ export function ReviewPanel({
     id?: string;
     name?: string;
     description?: string;
+    resourceScopes?: string[];
+    resourceScopesDetailed?: { value: string; description: string }[];
     permissions: { action: string; privileged: boolean }[];
   } | null;
   const [openRole, setOpenRole] = useState<{
@@ -685,6 +687,43 @@ export function ReviewPanel({
                           </div>
                         </div>
                       )}
+                      {roleDetails.resourceScopes &&
+                        roleDetails.resourceScopes.length > 0 && (
+                          <div>
+                            <div className="font-semibold">Resource scopes</div>
+                            {roleDetails.resourceScopesDetailed &&
+                            roleDetails.resourceScopesDetailed.length > 0 ? (
+                              <div className="space-y-1 mt-1 text-xs">
+                                {roleDetails.resourceScopesDetailed.map(
+                                  (s, i) => (
+                                    <div
+                                      key={`${s.value}-${i}`}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border">
+                                        {s.value}
+                                      </span>
+                                      <span className="text-muted-foreground">
+                                        {s.description}
+                                      </span>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {roleDetails.resourceScopes.map((s, i) => (
+                                  <span
+                                    key={`${s}-${i}`}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs"
+                                  >
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       <div>
                         <div className="font-semibold mb-1">Permissions</div>
                         {roleDetails.permissions?.length ? (
