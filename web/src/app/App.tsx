@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useMsal, useIsAuthenticated } from '@azure/msal-react'
-import { InteractionStatus, InteractionRequiredAuthError } from '@azure/msal-browser'
-import { SearchUsers } from './SearchUsers'
-import { ReviewPanel } from './ReviewPanel'
+import { Sun, Moon } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { useMsal, useIsAuthenticated } from "@azure/msal-react";
+import {
+  InteractionStatus,
+  InteractionRequiredAuthError,
+} from "@azure/msal-browser";
+import { SearchUsers } from "./SearchUsers";
+import { ReviewPanel } from "./ReviewPanel";
 import {
   Sheet,
   SheetContent,
@@ -17,10 +22,29 @@ export default function App() {
   const { instance, inProgress, accounts } = useMsal();
   const authed = useIsAuthenticated();
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") return "light";
+    const stored = localStorage.getItem("theme");
+    if (stored === "light" || stored === "dark") return stored;
+    return window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
   const [selected, setSelected] = useState<
     { id: string; displayName: string; type: "user" | "group" }[]
   >([]);
   const [openSearch, setOpenSearch] = useState(false);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     const getToken = async () => {
@@ -42,18 +66,14 @@ export default function App() {
 
   const login = () => instance.loginRedirect({ scopes: [apiScope] });
   const logout = () => instance.logoutRedirect();
+  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
   if (!authed) {
     return (
       <div className="p-8">
         <h1 className="text-2xl font-semibold mb-2">Entra Role Auditor</h1>
         <p className="mb-6">Sign in to start reviewing access.</p>
-        <button
-          onClick={login}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Sign in
-        </button>
+        <Button onClick={login}>Sign in</Button>
       </div>
     );
   }
@@ -62,38 +82,51 @@ export default function App() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Entra Role Auditor</h1>
-        <button onClick={logout} className="px-3 py-1.5 bg-gray-200 rounded">
-          Sign out
-        </button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
+          <Button variant="outline" onClick={logout}>
+            Sign out
+          </Button>
+        </div>
       </div>
       <div className="space-y-3">
-        <button
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-          onClick={() => setOpenSearch(true)}
-        >
+        <Button onClick={() => setOpenSearch(true)}>
           Select user(s) or group(s)
-        </button>
+        </Button>
         {selected.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold">Selected</h3>
-              <button
-                className="text-sm text-blue-600 hover:underline"
+              <Button
+                variant="link"
+                className="text-sm"
                 onClick={() => setSelected([])}
                 aria-label="Clear selected users and groups"
               >
                 Clear
-              </button>
+              </Button>
             </div>
             <div className="flex flex-wrap gap-2">
               {selected.map((s) => (
                 <span
                   key={`${s.type}:${s.id}`}
-                  className="px-2 py-1 bg-gray-100 rounded text-sm"
+                  className="px-2 py-1 rounded text-sm bg-secondary text-secondary-foreground"
                 >
                   {s.displayName}
                   <button
-                    className="ml-2 text-gray-600 hover:text-gray-900"
+                    className="ml-2 text-muted-foreground hover:text-foreground"
                     onClick={() =>
                       setSelected((prev) =>
                         prev.filter(

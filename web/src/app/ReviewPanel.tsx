@@ -6,6 +6,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../components/ui/sheet";
+import { Button } from "../components/ui/button";
 
 export type ReviewRequest = {
   usersOrGroups: string[];
@@ -91,6 +92,7 @@ export function ReviewPanel({
   const [pageSize, setPageSize] = useState<number>(10);
   const [openSheetFor, setOpenSheetFor] = useState<UserReview | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     // Reset expanded state when switching user/sheet
@@ -109,20 +111,25 @@ export function ReviewPanel({
   const run = async () => {
     if (!accessToken || selectedIds.length === 0) return;
     const payload: ReviewRequest = { usersOrGroups: selectedIds, from, to };
-    const res = await fetch(
-      new URL("/api/review", import.meta.env.VITE_API_URL),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-    if (!res.ok) return;
-    const json: ReviewResponse = await res.json();
-    setReport(json.results);
+    try {
+      setLoading(true);
+      const res = await fetch(
+        new URL("/api/review", import.meta.env.VITE_API_URL),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!res.ok) return;
+      const json: ReviewResponse = await res.json();
+      setReport(json.results);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggle = (id: string) =>
@@ -162,12 +169,15 @@ export function ReviewPanel({
     <div className="space-y-4">
       <div className="flex items-end gap-2">
         <div>
-          <label className="block text-sm text-gray-600">Time range</label>
+          <label className="block text-sm text-muted-foreground">
+            Time range
+          </label>
           <select
             aria-label="time range"
-            className="border px-3 py-2 rounded"
+            className="border px-3 py-2 rounded bg-background"
             value={selectedRange}
             onChange={(e) => setSelectedRange(e.target.value)}
+            disabled={loading}
           >
             {timeRanges.map((r) => (
               <option key={r.value} value={r.value}>
@@ -176,12 +186,18 @@ export function ReviewPanel({
             ))}
           </select>
         </div>
-        <button
-          onClick={run}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Run review
-        </button>
+        <Button onClick={run} disabled={loading || selectedIds.length === 0}>
+          {loading ? "Running…" : "Run review"}
+        </Button>
+        {loading && (
+          <span
+            className="text-sm text-muted-foreground"
+            role="status"
+            aria-live="polite"
+          >
+            Preparing report…
+          </span>
+        )}
       </div>
 
       {report && (
@@ -190,13 +206,13 @@ export function ReviewPanel({
             <h3 className="font-semibold">Report</h3>
             <div className="flex items-center gap-3 text-sm">
               <div className="flex items-center gap-2">
-                <label htmlFor="sort-by" className="text-gray-700">
+                <label htmlFor="sort-by" className="text-foreground/80">
                   Sort by
                 </label>
                 <select
                   id="sort-by"
                   aria-label="sort by"
-                  className="border rounded px-2 py-1"
+                  className="border rounded px-2 py-1 bg-background"
                   value={sortBy}
                   onChange={(e) => {
                     setSortBy(e.target.value as "ops" | "name");
@@ -207,36 +223,42 @@ export function ReviewPanel({
                   <option value="name">User name</option>
                 </select>
               </div>
-              <button
-                className="px-2 py-1 border rounded"
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-2"
                 onClick={() => {
                   setSortAsc((s) => !s);
                   setPage(1);
                 }}
               >
                 {sortAsc ? "Asc" : "Desc"}
-              </button>
+              </Button>
               <div className="flex items-center gap-1">
                 <span>Page</span>
-                <button
-                  className="px-2 border rounded"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2"
                   disabled={page === 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                 >
                   {"<"}
-                </button>
+                </Button>
                 <span>{page}</span>
-                <button
-                  className="px-2 border rounded"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2"
                   disabled={page * pageSize >= (report?.length ?? 0)}
                   onClick={() => setPage((p) => p + 1)}
                 >
                   {">"}
-                </button>
+                </Button>
               </div>
               <select
                 aria-label="page size"
-                className="border rounded px-2 py-1"
+                className="border rounded px-2 py-1 bg-background"
                 value={pageSize}
                 onChange={(e) => {
                   setPageSize(Number(e.target.value));
@@ -249,9 +271,9 @@ export function ReviewPanel({
               </select>
             </div>
           </div>
-          <div className="border rounded overflow-hidden">
+          <div className="border rounded overflow-hidden bg-card text-card-foreground">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-muted/50">
                 <tr>
                   <th className="text-left p-2">Select</th>
                   <th className="text-left p-2">User</th>
@@ -274,12 +296,13 @@ export function ReviewPanel({
                     <td className="p-2">
                       <div className="flex items-center gap-2">
                         <span>{r.operationCount}</span>
-                        <button
-                          className="text-blue-600"
+                        <Button
+                          variant="link"
+                          className="p-0 h-auto"
                           onClick={() => setOpenSheetFor(r)}
                         >
                           More details
-                        </button>
+                        </Button>
                       </div>
                     </td>
                     <td className="p-2">{r.suggestedRoleIds.join(", ")}</td>
@@ -308,12 +331,13 @@ export function ReviewPanel({
                         <div className="flex items-center justify-between">
                           <div className="font-medium">{op.operation}</div>
                           {op.targets && op.targets.length > 0 && (
-                            <button
-                              className="text-blue-600 text-xs"
+                            <Button
+                              variant="link"
+                              className="text-xs p-0 h-auto"
                               onClick={() => toggleExpanded(idx)}
                             >
                               {expanded.has(idx) ? "Hide details" : "Details"}
-                            </button>
+                            </Button>
                           )}
                         </div>
                         <div className="space-y-2 text-xs">
@@ -329,7 +353,7 @@ export function ReviewPanel({
                                   }));
                             if (list.length === 0) {
                               return (
-                                <span className="text-gray-500">
+                                <span className="text-muted-foreground">
                                   No mapping
                                 </span>
                               );
@@ -376,7 +400,7 @@ export function ReviewPanel({
                               <div className="space-y-2">
                                 {roleSections.map(([roleName, items]) => (
                                   <div key={roleName}>
-                                    <div className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
+                                    <div className="font-semibold text-foreground mb-1 flex items-center gap-2">
                                       <span>{roleName}</span>
                                       {(() => {
                                         const meta =
@@ -387,7 +411,7 @@ export function ReviewPanel({
                                           );
                                         if (meta?.pim) {
                                           return (
-                                            <span className="text-purple-700 bg-purple-50 border border-purple-200 rounded px-1 text-[10px]">
+                                            <span className="text-purple-700 bg-purple-50 border border-purple-200 rounded px-1 text-[10px] dark:text-purple-300 dark:bg-purple-900/20 dark:border-purple-700">
                                               PIM
                                             </span>
                                           );
@@ -403,7 +427,7 @@ export function ReviewPanel({
                                         >
                                           <span>{it.name}</span>
                                           {it.privileged && (
-                                            <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px]">
+                                            <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
                                               Privileged
                                             </span>
                                           )}
@@ -414,7 +438,7 @@ export function ReviewPanel({
                                 ))}
                                 {uncovered.length > 0 && (
                                   <div>
-                                    <div className="font-semibold text-gray-800 mb-1">
+                                    <div className="font-semibold text-foreground mb-1">
                                       Uncovered
                                     </div>
                                     <div className="flex flex-wrap gap-2">
@@ -425,7 +449,7 @@ export function ReviewPanel({
                                         >
                                           <span>{it.name}</span>
                                           {it.privileged && (
-                                            <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px]">
+                                            <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
                                               Privileged
                                             </span>
                                           )}
@@ -441,7 +465,7 @@ export function ReviewPanel({
                         {expanded.has(idx) &&
                           op.targets &&
                           op.targets.length > 0 && (
-                            <div className="mt-2 border rounded bg-gray-50 p-2">
+                            <div className="mt-2 border rounded bg-muted p-2">
                               <div className="font-semibold text-xs mb-1">
                                 Targets
                               </div>
@@ -460,7 +484,7 @@ export function ReviewPanel({
                                         {name}
                                       </div>
                                       {meta && (
-                                        <div className="text-gray-600">
+                                        <div className="text-muted-foreground">
                                           {meta}
                                         </div>
                                       )}
@@ -479,9 +503,9 @@ export function ReviewPanel({
           </Sheet>
           {selection.length > 0 && (
             <div className="mt-2">
-              <button className="px-4 py-2 bg-emerald-600 text-white rounded">
+              <Button className="bg-emerald-600 hover:bg-emerald-600/90">
                 Remediate
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -490,11 +514,11 @@ export function ReviewPanel({
       {selection.length > 0 && remediation.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-semibold">Remediation summary</h3>
-          <div className="border rounded p-3">
+          <div className="border rounded p-3 bg-card text-card-foreground">
             {remediation.map((r) => (
               <div key={r.userId} className="py-2 border-b last:border-0">
                 <div className="font-medium">{r.userDisplayName}</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   Suggested: {r.suggestedRoleIds.join(", ") || "No change"}
                 </div>
               </div>

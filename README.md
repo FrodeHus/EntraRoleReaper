@@ -99,3 +99,4 @@ Open <http://localhost:5173>
 
 - The permission-to-role mapping is a sample in `server/Data/permissions-map.json`. Extend it to your operations and policies.
 - Review flow favors clarity over completeness; audit log coverage varies by service.
+- UI theming: Light/Dark mode is available via the header toggle and respects system preference on first load. A subtle theme-aware gradient background is applied globally.
