@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Microsoft.Graph;
 using Microsoft.Graph.Models;
 
 namespace EntraRoleAssignmentAuditor.Services;
