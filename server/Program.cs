@@ -161,4 +161,26 @@ app.MapGet(
     )
     .RequireAuthorization();
 
+// Batch resolve role ids to display names
+app.MapPost(
+        "/api/roles/names",
+        async (string[] ids, IRoleCache cache) =>
+        {
+            await cache.InitializeAsync();
+            var roles = cache.GetAll();
+            var unique = ids.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            var result = unique
+                .Select(id => new
+                {
+                    id,
+                    name = roles.TryGetValue(id, out var def)
+                        ? def.DisplayName ?? string.Empty
+                        : string.Empty,
+                })
+                .ToList();
+            return Results.Ok(result);
+        }
+    )
+    .RequireAuthorization();
+
 app.Run();

@@ -8,47 +8,15 @@ import {
 } from "../components/ui/sheet";
 import { Button } from "../components/ui/button";
 import { Download } from "lucide-react";
-
-export type ReviewRequest = {
-  usersOrGroups: string[];
-  from: string;
-  to: string;
-};
-
-type UserReview = {
-  userId: string;
-  userDisplayName: string;
-  currentRoleIds: string[];
-  eligibleRoleIds?: string[];
-  usedOperations: string[];
-  suggestedRoleIds: string[];
-  suggestedRoles?: {
-    id?: string;
-    name: string;
-    coveredRequired: number;
-    privilegedAllowed: number;
-    totalAllowed: number;
-  }[];
-  operationCount: number;
-  roleMeta?: { name: string; pim: boolean }[];
-  operations: {
-    operation: string;
-    requiredPermissions: string[];
-    targets: {
-      id?: string;
-      displayName?: string;
-      type?: string;
-      label?: string;
-    }[];
-    permissionDetails?: {
-      name: string;
-      privileged: boolean;
-      grantedByRoles?: string[];
-    }[];
-  }[];
-};
-
-type ReviewResponse = { results: UserReview[] };
+import { RoleDetailsSheet } from "./review/RoleDetailsSheet";
+import type {
+  ReviewRequest,
+  UserReview,
+  ReviewResponse,
+  RoleDetails,
+} from "./review/types";
+import { OperationsSheet } from "./review/OperationsSheet";
+import { SuggestedRolesCell } from "./review/SuggestedRolesCell";
 
 export function ReviewPanel({
   accessToken,
@@ -106,14 +74,6 @@ export function ReviewPanel({
     {}
   );
   // Role details sheet state
-  type RoleDetails = {
-    id?: string;
-    name?: string;
-    description?: string;
-    resourceScopes?: string[];
-    resourceScopesDetailed?: { value: string; description: string }[];
-    permissions: { action: string; privileged: boolean }[];
-  } | null;
   const [openRole, setOpenRole] = useState<{
     id?: string;
     name: string;
@@ -121,17 +81,13 @@ export function ReviewPanel({
   } | null>(null);
   const [roleDetails, setRoleDetails] = useState<RoleDetails>(null);
   const [loadingRole, setLoadingRole] = useState<boolean>(false);
-  const [onlyRequiredPerms, setOnlyRequiredPerms] = useState<boolean>(false);
 
   useEffect(() => {
     // Reset expanded state when switching user/sheet
     setExpanded(new Set());
   }, [openSheetFor]);
 
-  // Reset role details filter when opening/closing or switching roles
-  useEffect(() => {
-    setOnlyRequiredPerms(false);
-  }, [openRole]);
+  // no-op
 
   const toggleExpanded = (idx: number) => {
     setExpanded((prev) => {
@@ -152,28 +108,38 @@ export function ReviewPanel({
     if (!accessToken) return;
     const missing = ids.filter((id) => isGuid(id) && !roleNameCache[id]);
     if (missing.length === 0) return;
-    // Fetch sequentially to keep it simple and avoid overfetching
-    for (const id of missing) {
-      try {
-        const url = new URL("/api/role", import.meta.env.VITE_API_URL);
-        url.searchParams.set("id", id);
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        if (!res.ok) continue;
-        const rd = (await res.json()) as { id?: string; name?: string };
-        if (rd?.name) {
-          setRoleNameCache((prev) => ({ ...prev, [id]: rd.name! }));
-        }
-      } catch {
-        // ignore
-      }
+    try {
+      const url = new URL("/api/roles/names", import.meta.env.VITE_API_URL);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(missing),
+      });
+      if (!res.ok) return;
+      const arr = (await res.json()) as { id: string; name: string }[];
+      const map: Record<string, string> = {};
+      for (const { id, name } of arr) if (name) map[id] = name;
+      if (Object.keys(map).length > 0)
+        setRoleNameCache((prev) => ({ ...prev, ...map }));
+    } catch {
+      // ignore
     }
   };
 
-  const openRoleDetails = async (opts: { id?: string; name: string; requiredPerms: string[] }) => {
+  const openRoleDetails = async (opts: {
+    id?: string;
+    name: string;
+    requiredPerms: string[];
+  }) => {
     if (!accessToken) return;
-    setOpenRole({ id: opts.id, name: opts.name, requiredPerms: opts.requiredPerms });
+    setOpenRole({
+      id: opts.id,
+      name: opts.name,
+      requiredPerms: opts.requiredPerms,
+    });
     setRoleDetails(null);
     setLoadingRole(true);
     try {
@@ -510,161 +476,20 @@ export function ReviewPanel({
                       </div>
                     </td>
                     <td className="p-2">
-                      {(() => {
-                        const roles = r.suggestedRoles;
-                        if (roles && roles.length > 0) {
-                          const suggestedIdSet = new Set(
-                            roles
-                              .map((sr) => (sr as any).id as string | undefined)
-                              .filter((x): x is string => !!x)
-                          );
-                          const removals = r.currentRoleIds.filter((id) =>
-                            suggestedIdSet.size > 0
-                              ? !suggestedIdSet.has(id)
-                              : false
-                          );
-                          return (
-                            <div className="space-y-1">
-                              {roles.map((sr, i) => (
-                                <div key={`${sr.name}-${i}`}>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      openRoleDetails({
-                                        id: (sr as any).id,
-                                        name: sr.name,
-                                        requiredPerms: getRequiredPerms(r),
-                                      })
-                                    }
-                                    className="font-medium text-xs underline text-primary hover:opacity-80"
-                                  >
-                                    {sr.name}
-                                  </button>
-                                  {(sr as any).id &&
-                                    !r.currentRoleIds.includes(
-                                      (sr as any).id
-                                    ) && (
-                                      <span className="ml-2 align-middle text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 text-[10px] dark:text-emerald-300 dark:bg-emerald-900/20 dark:border-emerald-700">
-                                        Add
-                                      </span>
-                                    )}
-                                  <div className="text-[11px] text-muted-foreground">
-                                    Why: covers {sr.coveredRequired} required •
-                                    priv {sr.privilegedAllowed} • total{" "}
-                                    {sr.totalAllowed}
-                                  </div>
-                                </div>
-                              ))}
-                              {removals.length > 0 && (
-                                <div className="mt-1 flex flex-wrap gap-2">
-                                  {removals.map((id, j) => (
-                                    <span
-                                      key={`rm-${id}-${j}`}
-                                      className="inline-flex items-center gap-2 px-2 py-0.5 rounded border"
-                                    >
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          openRoleDetails({
-                                            id,
-                                            name: roleNameCache[id] ?? id,
-                                            requiredPerms: getRequiredPerms(r),
-                                          })
-                                        }
-                                        className="text-xs underline text-primary hover:opacity-80"
-                                      >
-                                        {roleNameCache[id] ?? id}
-                                      </button>
-                                      <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
-                                        Remove
-                                      </span>
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }
-                        // Fallback to legacy string list
-                        return (
-                          <div className="space-y-1">
-                            {(() => {
-                              const suggestedIdSet = new Set(
-                                r.suggestedRoleIds
-                                  .filter((s) => isGuid(s))
-                                  .map((s) => s)
-                              );
-                              const removals = r.currentRoleIds.filter((id) =>
-                                suggestedIdSet.size > 0
-                                  ? !suggestedIdSet.has(id)
-                                  : false
-                              );
-                              return (
-                                <>
-                                  {r.suggestedRoleIds.map((name, i) => (
-                                    <div key={`${name}-${i}`}>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          openRoleDetails({
-                                            id: isGuid(name) ? name : undefined,
-                                            name,
-                                            requiredPerms: getRequiredPerms(r),
-                                          })
-                                        }
-                                        className="font-medium text-xs underline text-primary hover:opacity-80"
-                                      >
-                                        {name}
-                                      </button>
-                                      {isGuid(name) &&
-                                        !r.currentRoleIds.includes(name) && (
-                                          <span className="ml-2 align-middle text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 text-[10px] dark:text-emerald-300 dark:bg-emerald-900/20 dark:border-emerald-700">
-                                            Add
-                                          </span>
-                                        )}
-                                    </div>
-                                  ))}
-                                  {removals.length > 0 && (
-                                    <div className="mt-1 flex flex-wrap gap-2">
-                                      {removals.map((id, j) => (
-                                        <span
-                                          key={`rm-${id}-${j}`}
-                                          className="inline-flex items-center gap-2 px-2 py-0.5 rounded border"
-                                        >
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              openRoleDetails({
-                                                id,
-                                                name: roleNameCache[id] ?? id,
-                                                requiredPerms: getRequiredPerms(r),
-                                              })
-                                            }
-                                            className="text-xs underline text-primary hover:opacity-80"
-                                          >
-                                            {roleNameCache[id] ?? id}
-                                          </button>
-                                          <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
-                                            Remove
-                                          </span>
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                </>
-                              );
-                            })()}
-                          </div>
-                        );
-                      })()}
+                      <SuggestedRolesCell
+                        review={r}
+                        getRequiredPerms={getRequiredPerms}
+                        openRoleDetails={openRoleDetails}
+                        roleNameCache={roleNameCache}
+                      />
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {/* Role details sheet */}
-          <Sheet
+          {/* Role details sheet (refactored) */}
+          <RoleDetailsSheet
             open={openRole !== null}
             onOpenChange={(o) => {
               if (!o) {
@@ -672,380 +497,21 @@ export function ReviewPanel({
                 setRoleDetails(null);
               }
             }}
-          >
-            {openRole && (
-              <SheetContent side="right">
-                <SheetHeader>
-                  <div className="flex items-center justify-between">
-                    <SheetTitle>
-                      Role: {roleDetails?.name || openRole.name}
-                    </SheetTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8"
-                      onClick={() => {
-                        setOpenRole(null);
-                        setRoleDetails(null);
-                      }}
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </SheetHeader>
-                <div className="mt-3 space-y-3 text-sm">
-                  {loadingRole && (
-                    <div className="text-muted-foreground">Loading…</div>
-                  )}
-                  {!loadingRole && roleDetails && (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-semibold">Name</div>
-                          <div>{roleDetails.name || openRole.name}</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant={onlyRequiredPerms ? "default" : "outline"}
-                            size="sm"
-                            className="h-8"
-                            onClick={() => setOnlyRequiredPerms((v) => !v)}
-                            title={onlyRequiredPerms ? "Show all permissions" : "Show only required and covering"}
-                          >
-                            {onlyRequiredPerms ? "Show all" : "Required only"}
-                          </Button>
-                        </div>
-                      </div>
-                      {roleDetails.description && (
-                        <div>
-                          <div className="font-semibold">Description</div>
-                          <div className="text-muted-foreground">
-                            {roleDetails.description}
-                          </div>
-                        </div>
-                      )}
-                      {roleDetails.resourceScopes &&
-                        roleDetails.resourceScopes.length > 0 && (
-                          <div>
-                            <div className="font-semibold">Resource scopes</div>
-                            {roleDetails.resourceScopesDetailed &&
-                            roleDetails.resourceScopesDetailed.length > 0 ? (
-                              <div className="space-y-1 mt-1 text-xs">
-                                {roleDetails.resourceScopesDetailed.map(
-                                  (s, i) => (
-                                    <div
-                                      key={`${s.value}-${i}`}
-                                      className="flex items-center gap-2"
-                                    >
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border">
-                                        {s.value}
-                                      </span>
-                                      <span className="text-muted-foreground">
-                                        {s.description}
-                                      </span>
-                                    </div>
-                                  )
-                                )}
-                              </div>
-                            ) : (
-                              <div className="flex flex-wrap gap-2 mt-1">
-                                {roleDetails.resourceScopes.map((s, i) => (
-                                  <span
-                                    key={`${s}-${i}`}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs"
-                                  >
-                                    {s}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      <div>
-                        <div className="font-semibold mb-1">Permissions</div>
-                        {roleDetails.permissions?.length ? (
-                          <div className="flex flex-wrap gap-2">
-                            {(() => {
-                              const req = new Set(
-                                (openRole?.requiredPerms ?? []).map((r) => r.toLowerCase())
-                              );
-                              const covers = (action: string, required: string) => {
-                                // Normalize
-                                const a = action.toLowerCase();
-                                const r = required.toLowerCase();
-                                if (a === r) return true; // exact covers
-                                // Wildcard covering: "xxx/*" covers any r starting with prefix
-                                if (a.endsWith("/*")) {
-                                  const prefix = a.slice(0, -2);
-                                  return r.startsWith(prefix + "/") || r === prefix;
-                                }
-                                // Parent path covers child if exact path prefix (conservative)
-                                if (r.startsWith(a + "/")) return true;
-                                return false;
-                              };
-                              const requiredOnly = roleDetails.permissions.filter((p) => {
-                                const a = p.action.toLowerCase();
-                                if (req.has(a)) return true;
-                                for (const r of req) if (covers(a, r)) return true;
-                                return false;
-                              });
-                              const list = onlyRequiredPerms ? requiredOnly : roleDetails.permissions;
-                              return list.map((p, i) => {
-                                const a = p.action.toLowerCase();
-                                const isExact = req.has(a);
-                                const matchedReq: string[] = [];
-                                if (!isExact) {
-                                  for (const r of req) if (covers(a, r)) matchedReq.push(r);
-                                }
-                                const isCover = !isExact && matchedReq.length > 0;
-                                const title = isExact
-                                  ? "Required for user's operations"
-                                  : isCover
-                                  ? `Covers: ${matchedReq.join(", ")}`
-                                  : undefined;
-                                return (
-                                  <span
-                                    key={`${p.action}-${i}`}
-                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${
-                                      isExact || isCover
-                                        ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
-                                        : ""
-                                    }`}
-                                    title={title}
-                                  >
-                                    <span>{p.action}</span>
-                                    {isExact && (
-                                      <span className="text-blue-700 bg-blue-50 border border-blue-200 rounded px-1 text-[10px] dark:text-blue-300 dark:bg-blue-900/20 dark:border-blue-700">
-                                        Required
-                                      </span>
-                                    )}
-                                    {isCover && (
-                                      <span className="text-blue-700 bg-blue-50 border border-blue-200 rounded px-1 text-[10px] dark:text-blue-300 dark:bg-blue-900/20 dark:border-blue-700">
-                                        Covers
-                                      </span>
-                                    )}
-                                    {p.privileged && (
-                                      <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
-                                        Privileged
-                                      </span>
-                                    )}
-                                  </span>
-                                );
-                              });
-                            })()}
-                          </div>
-                        ) : (
-                          <div className="text-muted-foreground">None</div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </SheetContent>
-            )}
-          </Sheet>
-          <Sheet
+            role={
+              openRole
+                ? { name: openRole.name, requiredPerms: openRole.requiredPerms }
+                : null
+            }
+            details={roleDetails}
+            loading={loadingRole}
+          />
+          <OperationsSheet
             open={openSheetFor !== null}
             onOpenChange={(o) => {
               if (!o) setOpenSheetFor(null);
             }}
-          >
-            {openSheetFor && (
-              <SheetContent side="right">
-                <SheetHeader>
-                  <div className="flex items-center justify-between">
-                    <SheetTitle>
-                      Operations for {openSheetFor.userDisplayName}
-                    </SheetTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8"
-                      onClick={() => setOpenSheetFor(null)}
-                      aria-label="Close"
-                      title="Close"
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </SheetHeader>
-                <div className="space-y-3 mt-3">
-                  {openSheetFor.operations.map((op, idx) => (
-                    <div
-                      key={idx}
-                      className="border rounded p-3 bg-card text-card-foreground"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-semibold">
-                          {op.operation}
-                        </div>
-                        {op.targets && op.targets.length > 0 && (
-                          <Button
-                            variant="link"
-                            className="text-xs p-0 h-auto"
-                            onClick={() => toggleExpanded(idx)}
-                          >
-                            {expanded.has(idx) ? "Hide details" : "Details"}
-                          </Button>
-                        )}
-                      </div>
-                      <div className="mt-2 space-y-2 text-xs">
-                        {(() => {
-                          const list =
-                            op.permissionDetails &&
-                            op.permissionDetails.length > 0
-                              ? op.permissionDetails
-                              : op.requiredPermissions.map((n) => ({
-                                  name: n,
-                                  privileged: false,
-                                  grantedByRoles: [] as string[],
-                                }));
-                          if (list.length === 0) {
-                            return (
-                              <span className="text-muted-foreground">
-                                No mapping
-                              </span>
-                            );
-                          }
-                          // Build groups by role name
-                          const groups = new Map<
-                            string,
-                            { name: string; privileged: boolean }[]
-                          >();
-                          const uncovered: {
-                            name: string;
-                            privileged: boolean;
-                          }[] = [];
-                          for (const pd of list) {
-                            const roles =
-                              pd.grantedByRoles && pd.grantedByRoles.length > 0
-                                ? pd.grantedByRoles
-                                : [];
-                            if (roles.length === 0) {
-                              uncovered.push({
-                                name: pd.name,
-                                privileged: pd.privileged,
-                              });
-                            } else {
-                              for (const rn of roles) {
-                                const arr = groups.get(rn) ?? [];
-                                arr.push({
-                                  name: pd.name,
-                                  privileged: pd.privileged,
-                                });
-                                groups.set(rn, arr);
-                              }
-                            }
-                          }
-                          const roleSections = Array.from(
-                            groups.entries()
-                          ).sort(([a], [b]) =>
-                            a.localeCompare(b, undefined, {
-                              sensitivity: "base",
-                            })
-                          );
-                          return (
-                            <div className="space-y-2">
-                              {roleSections.map(([roleName, items]) => (
-                                <div key={roleName}>
-                                  <div className="font-semibold bg-card text-card-foreground mb-1 flex items-center gap-2">
-                                    <span>{roleName}</span>
-                                    {(() => {
-                                      const meta = openSheetFor.roleMeta?.find(
-                                        (m) =>
-                                          m.name.toLowerCase() ===
-                                          roleName.toLowerCase()
-                                      );
-                                      if (meta?.pim) {
-                                        return (
-                                          <span className="text-purple-700 bg-purple-50 border border-purple-200 rounded px-1 text-[10px] dark:text-purple-300 dark:bg-purple-900/20 dark:border-purple-700">
-                                            PIM
-                                          </span>
-                                        );
-                                      }
-                                      return null;
-                                    })()}
-                                  </div>
-                                  <div className="flex flex-wrap gap-2">
-                                    {items.map((it, i) => (
-                                      <span
-                                        key={`${roleName}-${i}`}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded border"
-                                      >
-                                        <span>{it.name}</span>
-                                        {it.privileged && (
-                                          <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
-                                            Privileged
-                                          </span>
-                                        )}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                              {uncovered.length > 0 && (
-                                <div>
-                                  <div className="font-semibold text-foreground mb-1">
-                                    Uncovered
-                                  </div>
-                                  <div className="flex flex-wrap gap-2">
-                                    {uncovered.map((it, i) => (
-                                      <span
-                                        key={`uncovered-${i}`}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded border"
-                                      >
-                                        <span>{it.name}</span>
-                                        {it.privileged && (
-                                          <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
-                                            Privileged
-                                          </span>
-                                        )}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      {expanded.has(idx) &&
-                        op.targets &&
-                        op.targets.length > 0 && (
-                          <div className="mt-2 border rounded bg-muted p-2">
-                            <div className="font-semibold text-xs mb-1">
-                              Targets
-                            </div>
-                            <div className="space-y-1 text-xs">
-                              {op.targets.map((t, i2) => {
-                                const name = t.displayName || t.id || "Unknown";
-                                const metaParts: string[] = [];
-                                if (t.label) metaParts.push(t.label);
-                                else if (t.type) metaParts.push(t.type);
-                                if (t.id) metaParts.push(t.id);
-                                const meta = metaParts.join(" • ");
-                                return (
-                                  <div key={i2}>
-                                    <div className="font-medium text-[0.8rem]">
-                                      {name}
-                                    </div>
-                                    {meta && (
-                                      <div className="text-muted-foreground">
-                                        {meta}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  ))}
-                </div>
-              </SheetContent>
-            )}
-          </Sheet>
+            review={openSheetFor}
+          />
           {selection.length > 0 && (
             <div className="mt-2">
               <Button className="bg-emerald-600 hover:bg-emerald-600/90">
