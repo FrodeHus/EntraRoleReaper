@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Users, Plus, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import {
@@ -124,23 +124,34 @@ export default function App() {
       {/* Main content */}
       <main className="flex-1 mx-auto w-full max-w-7xl px-6 py-6 space-y-6">
         {!authed ? (
-          <div className="py-12">
-            <h1 className="text-2xl font-semibold mb-2">Welcome</h1>
-            <p className="mb-6 text-muted-foreground">
-              Sign in to start reviewing access.
-            </p>
-            <Button onClick={login}>Sign in</Button>
+          <div className="py-16 flex items-center justify-center">
+            <div className="w-full max-w-xl border bg-card text-card-foreground rounded-lg shadow-sm p-8 text-center">
+              <h1 className="text-2xl font-semibold mb-2">Welcome</h1>
+              <p className="mb-6 text-muted-foreground">
+                Sign in to start reviewing access for users and groups in your
+                tenant.
+              </p>
+              <Button onClick={login}>Sign in</Button>
+            </div>
           </div>
         ) : (
           <>
-            <div className="space-y-3">
-              <Button onClick={() => setOpenSearch(true)}>
-                Select user(s) or group(s)
-              </Button>
-              {selected.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold">Selected</h3>
+            {/* Subjects card */}
+            <section className="border bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <h2 className="text-sm font-medium tracking-wide">
+                    Subjects
+                  </h2>
+                  {selected.length > 0 && (
+                    <span className="ml-2 inline-flex items-center rounded-full bg-secondary text-secondary-foreground text-xs px-2 py-0.5">
+                      {selected.length}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {selected.length > 0 && (
                     <Button
                       variant="link"
                       className="text-sm"
@@ -149,16 +160,29 @@ export default function App() {
                     >
                       Clear
                     </Button>
-                  </div>
+                  )}
+                  <Button onClick={() => setOpenSearch(true)}>
+                    <Plus className="h-4 w-4 mr-2" /> Add users or groups
+                  </Button>
+                </div>
+              </div>
+              <div className="p-4 sm:p-5">
+                {selected.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No subjects selected. Use “Add users or groups” to begin.
+                  </p>
+                ) : (
                   <div className="flex flex-wrap gap-2">
                     {selected.map((s) => (
                       <span
                         key={`${s.type}:${s.id}`}
-                        className="px-2 py-1 rounded text-sm bg-secondary text-secondary-foreground"
+                        className="inline-flex items-center gap-1 pl-2 pr-1 py-1 rounded-full text-xs bg-secondary text-secondary-foreground border"
                       >
-                        {s.displayName}
-                        <button
-                          className="ml-2 text-muted-foreground hover:text-foreground"
+                        <span className="font-medium">{s.displayName}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 ml-1 text-muted-foreground hover:text-foreground"
                           onClick={() =>
                             setSelected((prev) =>
                               prev.filter(
@@ -169,21 +193,33 @@ export default function App() {
                           aria-label={`Remove ${s.displayName}`}
                           title="Remove"
                         >
-                          ×
-                        </button>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </section>
 
             <Sheet open={openSearch} onOpenChange={setOpenSearch}>
               <SheetContent side="right">
                 <SheetHeader>
-                  <SheetTitle>Select user(s) or group(s)</SheetTitle>
+                  <div className="flex items-center justify-between">
+                    <SheetTitle>Select user(s) or group(s)</SheetTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => setOpenSearch(false)}
+                      aria-label="Close"
+                      title="Close"
+                    >
+                      Close
+                    </Button>
+                  </div>
                 </SheetHeader>
-                <div className="mt-2">
+                <div className="mt-3">
                   <SearchUsers
                     accessToken={accessToken}
                     selected={selected}
@@ -192,10 +228,15 @@ export default function App() {
                 </div>
               </SheetContent>
             </Sheet>
-            <ReviewPanel
-              accessToken={accessToken}
-              selectedIds={selected.map((s) => `${s.type}:${s.id}`)}
-            />
+            {/* Review card */}
+            <section className="border bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden">
+              <div className="p-4 sm:p-5">
+                <ReviewPanel
+                  accessToken={accessToken}
+                  selectedIds={selected.map((s) => `${s.type}:${s.id}`)}
+                />
+              </div>
+            </section>
           </>
         )}
       </main>

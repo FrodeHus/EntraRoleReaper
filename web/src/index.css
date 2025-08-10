@@ -29,12 +29,6 @@ html, body, #root { height: 100%; }
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  /* Subtle, soothing, theme-aware background gradient */
-  background-image:
-    radial-gradient(700px 700px at 0% 0%, hsl(var(--bg-gradient-from) / 0.6), transparent 55%),
-    radial-gradient(800px 800px at 100% 0%, hsl(var(--bg-gradient-via) / 0.5), transparent 55%),
-    radial-gradient(900px 900px at 50% 100%, hsl(var(--bg-gradient-to) / 0.45), transparent 60%);
-  background-attachment: fixed;
 }
 
 @layer base {

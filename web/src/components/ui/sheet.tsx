@@ -27,9 +27,9 @@ export function SheetContent({
   const sideClass = side === "right" ? "right-0 border-l" : "left-0 border-r";
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 bg-black/30 dark:bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/30 dark:bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0" />
       <DialogPrimitive.Content
-        className={`fixed top-0 bottom-0 ${sideClass} w-[480px] bg-card text-card-foreground border p-4 overflow-auto shadow-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:${slideIn} data-[state=closed]:${slideOut} duration-300 ease-out`}
+        className={`fixed top-0 bottom-0 z-50 ${sideClass} w-[480px] bg-card text-card-foreground border p-4 overflow-auto shadow-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:${slideIn} data-[state=closed]:${slideOut} duration-300 ease-out`}
       >
         {children}
       </DialogPrimitive.Content>
@@ -38,7 +38,11 @@ export function SheetContent({
 }
 
 export function SheetHeader({ children }: { children: React.ReactNode }) {
-  return <div className="mb-3">{children}</div>;
+  return (
+    <div className="sticky top-0 z-10 -mx-4 px-4 py-3 border-b bg-card/80 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/50">
+      {children}
+    </div>
+  );
 }
 
 export function SheetTitle({ children }: { children: React.ReactNode }) {
