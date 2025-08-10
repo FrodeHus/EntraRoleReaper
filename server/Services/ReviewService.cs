@@ -1,51 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
-using Microsoft.Graph;
 using Microsoft.Graph.Models;
 
 namespace EntraRoleAssignmentAuditor.Services;
-
-public record ReviewRequest(List<string> UsersOrGroups, DateTimeOffset From, DateTimeOffset To);
-
-public record ReviewTarget(string? Id, string? DisplayName, string? Type, string? Label);
-
-public record PermissionDetail(string Name, bool Privileged, IReadOnlyList<string> GrantedByRoles);
-
-public record ReviewOperation(
-    string Operation,
-    string[] RequiredPermissions,
-    IReadOnlyList<ReviewTarget> Targets,
-    IReadOnlyList<PermissionDetail> PermissionDetails
-);
-
-public record RoleMeta(string Name, bool Pim);
-
-public record SuggestedRole(
-    string Name,
-    int CoveredRequired,
-    int PrivilegedAllowed,
-    int TotalAllowed
-);
-
-public record UserReview(
-    string UserId,
-    string UserDisplayName,
-    string[] CurrentRoleIds,
-    string[] EligibleRoleIds,
-    string[] UsedOperations,
-    string[] SuggestedRoleIds,
-    IReadOnlyList<SuggestedRole> SuggestedRoles,
-    int OperationCount,
-    IReadOnlyList<ReviewOperation> Operations,
-    IReadOnlyList<RoleMeta> RoleMeta
-);
-
-public record ReviewResponse(List<UserReview> Results);
-
-public interface IReviewService
-{
-    Task<ReviewResponse> ReviewAsync(ReviewRequest request);
-}
 
 public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) : IReviewService
 {

@@ -3,11 +3,6 @@ using Microsoft.Graph;
 
 namespace EntraRoleAssignmentAuditor.Services;
 
-public interface IGraphServiceFactory
-{
-    Task<GraphServiceClient> CreateForUserAsync();
-}
-
 public class GraphServiceFactory(IConfiguration config, IHttpContextAccessor accessor)
     : IGraphServiceFactory
 {
