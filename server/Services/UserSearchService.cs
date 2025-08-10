@@ -1,12 +1,5 @@
 namespace EntraRoleAssignmentAuditor.Services;
 
-public record DirectoryItem(string Id, string DisplayName, string Type);
-
-public interface IUserSearchService
-{
-    Task<IEnumerable<DirectoryItem>> SearchAsync(string query, bool includeGroups);
-}
-
 public class UserSearchService(IGraphServiceFactory factory) : IUserSearchService
 {
     public async Task<IEnumerable<DirectoryItem>> SearchAsync(string query, bool includeGroups)
