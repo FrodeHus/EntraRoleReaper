@@ -170,8 +170,15 @@ export default function App() {
       <header className="sticky top-0 z-40 border-b bg-background/70 backdrop-blur">
         <div className="mx-auto max-w-7xl px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
+            <img
+              src={`${import.meta.env.BASE_URL}rolereaper_logo.png`}
+              alt="RoleReaper logo"
+              className="h-6 w-6 rounded-sm border"
+              loading="eager"
+              decoding="async"
+            />
             <span className="text-xl font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Entra RoleReaper
+              Entra Role Reaper
             </span>
           </div>
           <div className="flex items-center gap-2">
