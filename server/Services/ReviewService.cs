@@ -123,56 +123,13 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
             }
 
             // Include eligible PIM roles (do not use these to grant permissions, just report)
-            var eligibleRoleIds = new List<string>();
-            var pimActiveRoleIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            try
-            {
-                var elig =
-                    await graphClient.RoleManagement.Directory.RoleEligibilityScheduleInstances.GetAsync(
-                        q =>
-                        {
-                            q.QueryParameters.Filter = $"principalId eq '{uid}'";
-                            q.QueryParameters.Top = 50;
-                        }
-                    );
-                if (elig?.Value != null)
-                {
-                    foreach (var e in elig.Value)
-                    {
-                        var roleDefId = e.RoleDefinitionId;
-                        if (!string.IsNullOrWhiteSpace(roleDefId))
-                        {
-                            eligibleRoleIds.Add(roleDefId);
-                        }
-                    }
-                }
+            (List<string> eligibleRoleIds, HashSet<string> pimActiveRoleIds) = await GetPIMRoles(
+                graphClient,
+                uid
+            );
 
-                // Active PIM assignments (current activations)
-                var act =
-                    await graphClient.RoleManagement.Directory.RoleAssignmentScheduleInstances.GetAsync(
-                        q =>
-                        {
-                            q.QueryParameters.Filter =
-                                $"principalId eq '{uid}' and assignmentType eq 'Activated'";
-                            q.QueryParameters.Top = 50;
-                        }
-                    );
-                if (act?.Value != null)
-                {
-                    foreach (var a in act.Value)
-                    {
-                        var roleDefId = a.RoleDefinitionId;
-                        if (!string.IsNullOrWhiteSpace(roleDefId))
-                        {
-                            pimActiveRoleIds.Add(roleDefId);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Swallow errors if app lacks PIM read permissions; eligibility is optional metadata
-            }
+            currentRoleIds.AddRange(pimActiveRoleIds);
+            currentRoleIds.AddRange(eligibleRoleIds);
 
             // Audit logs: directory audits filtered by user and time
             var usedOperations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -180,12 +137,11 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
             var opTargets = new Dictionary<string, Dictionary<string, ReviewTarget>>(
                 StringComparer.OrdinalIgnoreCase
             );
-            var audits = await graphClient.AuditLogs.DirectoryAudits.GetAsync(q =>
-            {
-                q.QueryParameters.Filter =
-                    $"activityDateTime ge {request.From:O} and activityDateTime le {request.To:O} and initiatedBy/user/id eq '{uid}'";
-                q.QueryParameters.Top = 100;
-            });
+            DirectoryAuditCollectionResponse? audits = await GetAuditEntriesInitiatedBy(
+                request,
+                graphClient,
+                uid
+            );
             if (audits?.Value != null)
             {
                 foreach (var a in audits.Value)
@@ -228,9 +184,11 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
             var operationsList = usedOperations
                 .Select(op =>
                 {
-                    var perms = _permissionMap.Value.TryGetValue(op, out var p) ? p : [];
-                    var targets = opTargets.TryGetValue(op, out var t)
-                        ? [.. t.Values]
+                    var perms = _permissionMap.Value.TryGetValue(op, out var permissions)
+                        ? permissions
+                        : [];
+                    var targets = opTargets.TryGetValue(op, out var allTargets)
+                        ? [.. allTargets.Values]
                         : new List<ReviewTarget>();
 
                     // For each permission, determine which of the user's current roles grants it
@@ -245,21 +203,24 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                             var privileged =
                                 actionPrivilege.TryGetValue(name, out var isPriv) && isPriv;
                             var grantedBy = new List<string>();
-                            foreach (var rd in currentRoleDefs)
+                            foreach (var roleDefinition in currentRoleDefs)
                             {
                                 var allows =
-                                    rd!.RolePermissions?.Any(rp =>
-                                        (rp.AllowedResourceActions ?? new List<string>()).Any(a =>
-                                            string.Equals(
-                                                a,
-                                                name,
-                                                StringComparison.OrdinalIgnoreCase
-                                            )
+                                    roleDefinition!.RolePermissions?.Any(rolePermission =>
+                                        (rolePermission.AllowedResourceActions ?? []).Any(
+                                            resourceAction =>
+                                                string.Equals(
+                                                    resourceAction,
+                                                    name,
+                                                    StringComparison.OrdinalIgnoreCase
+                                                )
                                         )
                                     ) ?? false;
-                                if (allows && !string.IsNullOrWhiteSpace(rd.DisplayName))
+                                if (
+                                    allows && !string.IsNullOrWhiteSpace(roleDefinition.DisplayName)
+                                )
                                 {
-                                    grantedBy.Add(rd.DisplayName!);
+                                    grantedBy.Add(roleDefinition.DisplayName!);
                                 }
                             }
                             return new PermissionDetail(name, privileged, grantedBy);
@@ -281,9 +242,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
 
             // Build the full set of permissions needed from operation names (unfiltered by current roles)
             var requiredPermissionsAll = usedOperations
-                .SelectMany(op =>
-                    _permissionMap.Value.TryGetValue(op, out var p) ? p : Array.Empty<string>()
-                )
+                .SelectMany(op => _permissionMap.Value.TryGetValue(op, out var p) ? p : [])
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -292,7 +251,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
             List<SuggestedRole> suggestedDetails = new();
             if (requiredPermissionsAll.Count == 0)
             {
-                suggested = Array.Empty<string>();
+                suggested = [];
             }
             else
             {
@@ -307,8 +266,8 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                     {
                         Role = r,
                         Allowed = new HashSet<string>(
-                            (r.RolePermissions ?? new List<UnifiedRolePermission>()).SelectMany(
-                                rp => rp.AllowedResourceActions ?? new List<string>()
+                            (r.RolePermissions ?? []).SelectMany(rp =>
+                                rp.AllowedResourceActions ?? []
                             ),
                             StringComparer.OrdinalIgnoreCase
                         ),
@@ -316,9 +275,9 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                             ? rs
                             : new RolePrivilegeStats(
                                 PrivilegedAllowed: 0,
-                                TotalAllowed: (
-                                    r.RolePermissions ?? new List<UnifiedRolePermission>()
-                                ).Sum(rp => (rp.AllowedResourceActions ?? new List<string>()).Count)
+                                TotalAllowed: (r.RolePermissions ?? []).Sum(rp =>
+                                    (rp.AllowedResourceActions ?? []).Count
+                                )
                             ),
                     })
                     .ToList();
@@ -362,8 +321,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                     // Remove covered perms
                     foreach (var a in best.Allowed)
                     {
-                        if (uncovered.Contains(a))
-                            uncovered.Remove(a);
+                        uncovered.Remove(a);
                     }
                     // Remove chosen from candidates
                     roleAllowed.RemoveAll(x =>
@@ -398,20 +356,18 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                     .ThenBy(c => c.Role.DisplayName)
                     .ToList();
 
-                suggested = orderedChosen
-                    .Select(c => c.Role.DisplayName!)
-                    .ToArray();
+                suggested = orderedChosen.Select(c => c.Role.DisplayName!).ToArray();
 
                 // Build detailed reasons per suggested role
-                foreach (var c in orderedChosen)
+                foreach (var (Role, Stats, Allowed) in orderedChosen)
                 {
-                    int covered = c.Allowed.Count(a => requiredPermissionsAll.Contains(a));
+                    int covered = Allowed.Count(a => requiredPermissionsAll.Contains(a));
                     suggestedDetails.Add(
                         new SuggestedRole(
-                            c.Role.DisplayName!,
+                            Role.DisplayName!,
                             covered,
-                            c.Stats.PrivilegedAllowed,
-                            c.Stats.TotalAllowed
+                            Stats.PrivilegedAllowed,
+                            Stats.TotalAllowed
                         )
                     );
                 }
@@ -446,6 +402,79 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
         }
 
         return new ReviewResponse(results);
+    }
+
+    private static async Task<DirectoryAuditCollectionResponse?> GetAuditEntriesInitiatedBy(
+        ReviewRequest request,
+        GraphServiceClient graphClient,
+        string uid
+    )
+    {
+        return await graphClient.AuditLogs.DirectoryAudits.GetAsync(q =>
+        {
+            q.QueryParameters.Filter =
+                $"activityDateTime ge {request.From:O} and activityDateTime le {request.To:O} and initiatedBy/user/id eq '{uid}'";
+            q.QueryParameters.Top = 100;
+        });
+    }
+
+    private static async Task<(
+        List<string> eligibleRoleIds,
+        HashSet<string> pimActiveRoleIds
+    )> GetPIMRoles(GraphServiceClient graphClient, string uid)
+    {
+        var eligibleRoleIds = new List<string>();
+        var pimActiveRoleIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var elig =
+                await graphClient.RoleManagement.Directory.RoleEligibilityScheduleInstances.GetAsync(
+                    q =>
+                    {
+                        q.QueryParameters.Filter = $"principalId eq '{uid}'";
+                        q.QueryParameters.Top = 50;
+                    }
+                );
+            if (elig?.Value != null)
+            {
+                foreach (var e in elig.Value)
+                {
+                    var roleDefId = e.RoleDefinitionId;
+                    if (!string.IsNullOrWhiteSpace(roleDefId))
+                    {
+                        eligibleRoleIds.Add(roleDefId);
+                    }
+                }
+            }
+
+            // Active PIM assignments (current activations)
+            var act =
+                await graphClient.RoleManagement.Directory.RoleAssignmentScheduleInstances.GetAsync(
+                    q =>
+                    {
+                        q.QueryParameters.Filter =
+                            $"principalId eq '{uid}' and assignmentType eq 'Activated'";
+                        q.QueryParameters.Top = 50;
+                    }
+                );
+            if (act?.Value != null)
+            {
+                foreach (var a in act.Value)
+                {
+                    var roleDefId = a.RoleDefinitionId;
+                    if (!string.IsNullOrWhiteSpace(roleDefId))
+                    {
+                        pimActiveRoleIds.Add(roleDefId);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Swallow errors if app lacks PIM read permissions; eligibility is optional metadata
+        }
+
+        return (eligibleRoleIds, pimActiveRoleIds);
     }
 
     private static string? FriendlyType(string? type)
