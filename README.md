@@ -7,10 +7,17 @@ Full-stack app to perform access reviews of Entra ID users.
 
 ## What it does
 
-- Search users and groups from Entra ID (client-side search box calls API)
+- Search and select users and groups from Entra ID
 - Choose a time period for review
-- API aggregates audit logs per user, maps operations to required permissions, compares against current roles, and suggests least-privilege roles
-- UI displays results; select users to see remediation suggestions
+- Backend processing per user:
+  - Aggregates directory audit logs within the selected window
+  - Maps operation names (ActivityDisplayName) to required Graph permissions via `server/Data/permissions-map.json`
+  - Determines which permissions are actually granted today via the user’s current directory roles and surfaces the granting role names
+  - Flags privileged permissions and includes Entra PIM data: eligible roles and currently active PIM assignments (if API permissions allow)
+  - Suggests least-privilege roles using a minimal set-cover of required permissions derived from the user’s operations, preferring roles with fewer privileged actions and smaller overall scope
+- UI highlights:
+  - Permissions grouped by granting role with badges (PIM, Privileged) and an expandable Targets section
+  - Suggested roles include a “Why suggested” note (covered required permissions, privileged count, total allowed)
 
 ## Prereqs
 
@@ -22,13 +29,13 @@ Full-stack app to perform access reviews of Entra ID users.
 
 Create two app registrations:
 
-1) SPA (frontend)
+1. SPA (frontend)
 
 - Type: Single-page application
 - Redirect URI: <http://localhost:5173>
 - Expose no API. Add delegated permissions to the backend API scope once created.
 
-2) Web API (backend)
+2. Web API (backend)
 
 - Type: Web API (confidential)
 - Redirect URI (Web): <http://localhost:5099/signin-oidc> (not used directly but required by some portals)
@@ -54,20 +61,20 @@ Note: Some endpoints require elevated delegated permissions. Adjust as needed.
 
 ## Configure local environment
 
-Backend: create `c:/src/github.com/frodehus/EntraRoleAssignmentAuditor/server/appsettings.Development.json` with your values:
+Backend: create `server/appsettings.Development.json` with your values:
 
 {
-  "AzureAd": {
-    "Instance": "<https://login.microsoftonline.com/>",
-    "TenantId": "YOUR_TENANT_ID",
-    "ClientId": "BACKEND_APP_ID",
-    "ClientSecret": "BACKEND_APP_CLIENT_SECRET",
-    "Audience": "api://BACKEND_APP_ID",
-    "Domain": "yourtenant.onmicrosoft.com"
-  },
-  "Cors": {
-    "AllowedOrigins": ["http://localhost:5173"]
-  }
+"AzureAd": {
+"Instance": "<https://login.microsoftonline.com/>",
+"TenantId": "YOUR_TENANT_ID",
+"ClientId": "BACKEND_APP_ID",
+"ClientSecret": "BACKEND_APP_CLIENT_SECRET",
+"Audience": "api://BACKEND_APP_ID",
+"Domain": "yourtenant.onmicrosoft.com"
+},
+"Cors": {
+"AllowedOrigins": ["http://localhost:5173"]
+}
 }
 
 Frontend: copy `.env.example` to `.env` and set:
@@ -98,5 +105,3 @@ Open <http://localhost:5173>
 ## Notes
 
 - The permission-to-role mapping is a sample in `server/Data/permissions-map.json`. Extend it to your operations and policies.
-- Review flow favors clarity over completeness; audit log coverage varies by service.
-- UI theming: Light/Dark mode is available via the header toggle and respects system preference on first load. A subtle theme-aware gradient background is applied globally.

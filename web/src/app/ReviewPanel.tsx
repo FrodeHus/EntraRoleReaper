@@ -22,6 +22,12 @@ type UserReview = {
   eligibleRoleIds?: string[];
   usedOperations: string[];
   suggestedRoleIds: string[];
+  suggestedRoles?: {
+    name: string;
+    coveredRequired: number;
+    privilegedAllowed: number;
+    totalAllowed: number;
+  }[];
   operationCount: number;
   roleMeta?: { name: string; pim: boolean }[];
   operations: {
@@ -387,7 +393,31 @@ export function ReviewPanel({
                         </Button>
                       </div>
                     </td>
-                    <td className="p-2">{r.suggestedRoleIds.join(", ")}</td>
+                    <td className="p-2">
+                      {(() => {
+                        const roles = r.suggestedRoles;
+                        if (roles && roles.length > 0) {
+                          return (
+                            <div className="space-y-1">
+                              {roles.map((sr, i) => (
+                                <div key={`${sr.name}-${i}`}>
+                                  <div className="font-medium text-xs">
+                                    {sr.name}
+                                  </div>
+                                  <div className="text-[11px] text-muted-foreground">
+                                    Why: covers {sr.coveredRequired} required •
+                                    priv {sr.privilegedAllowed} • total{" "}
+                                    {sr.totalAllowed}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+                        // Fallback to legacy string list
+                        return r.suggestedRoleIds.join(", ");
+                      })()}
+                    </td>
                   </tr>
                 ))}
               </tbody>

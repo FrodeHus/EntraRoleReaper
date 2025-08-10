@@ -20,6 +20,13 @@ public record ReviewOperation(
 
 public record RoleMeta(string Name, bool Pim);
 
+public record SuggestedRole(
+    string Name,
+    int CoveredRequired,
+    int PrivilegedAllowed,
+    int TotalAllowed
+);
+
 public record UserReview(
     string UserId,
     string UserDisplayName,
@@ -27,6 +34,7 @@ public record UserReview(
     string[] EligibleRoleIds,
     string[] UsedOperations,
     string[] SuggestedRoleIds,
+    IReadOnlyList<SuggestedRole> SuggestedRoles,
     int OperationCount,
     IReadOnlyList<ReviewOperation> Operations,
     IReadOnlyList<RoleMeta> RoleMeta
@@ -271,39 +279,40 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                 })
                 .ToList();
 
-            var requiredPermissions = operationsList
-                .SelectMany(op => op.RequiredPermissions)
+            // Build the full set of permissions needed from operation names (unfiltered by current roles)
+            var requiredPermissionsAll = usedOperations
+                .SelectMany(op =>
+                    _permissionMap.Value.TryGetValue(op, out var p) ? p : Array.Empty<string>()
+                )
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            // Suggest roles that cover all required permissions, preferring fewer privileged actions
+            // Suggest a minimal set of roles that covers the required permissions, preferring least-privileged
             string[] suggested;
-            if (requiredPermissions.Length == 0)
+            List<SuggestedRole> suggestedDetails = new();
+            if (requiredPermissionsAll.Count == 0)
             {
                 suggested = Array.Empty<string>();
             }
             else
             {
-                int usedPrivRequired = requiredPermissions.Count(p =>
-                    actionPrivilege.TryGetValue(p, out var b) && b
-                );
-
-                suggested = roles
+                // Precompute role -> allowed actions set
+                var roleAllowed = roles
                     .Values.Where(r =>
                         r.RolePermissions != null
                         && r.RolePermissions.Any()
-                        && requiredPermissions.All(p =>
-                            r.RolePermissions!.Any(rp =>
-                                (rp.AllowedResourceActions ?? new List<string>()).Any(a =>
-                                    string.Equals(a, p, StringComparison.OrdinalIgnoreCase)
-                                )
-                            )
-                        )
+                        && !string.IsNullOrWhiteSpace(r.DisplayName)
                     )
                     .Select(r => new
                     {
                         Role = r,
-                        Stats = (r.Id != null && roleStats.TryGetValue(r.Id, out var rs))
+                        Allowed = new HashSet<string>(
+                            (r.RolePermissions ?? new List<UnifiedRolePermission>()).SelectMany(
+                                rp => rp.AllowedResourceActions ?? new List<string>()
+                            ),
+                            StringComparer.OrdinalIgnoreCase
+                        ),
+                        Stats = (r.Id != null && roleStats.TryGetValue(r.Id!, out var rs))
                             ? rs
                             : new RolePrivilegeStats(
                                 PrivilegedAllowed: 0,
@@ -312,13 +321,100 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                                 ).Sum(rp => (rp.AllowedResourceActions ?? new List<string>()).Count)
                             ),
                     })
-                    .OrderBy(x => Math.Max(0, x.Stats.PrivilegedAllowed - usedPrivRequired)) // extra privileged beyond required
-                    .ThenBy(x => x.Stats.PrivilegedAllowed) // overall privileged in role
-                    .ThenBy(x => x.Stats.TotalAllowed) // smaller roles preferred
-                    .ThenBy(x => x.Role.DisplayName)
-                    .Select(x => x.Role.DisplayName!)
-                    .Take(5)
+                    .ToList();
+
+                var uncovered = new HashSet<string>(
+                    requiredPermissionsAll,
+                    StringComparer.OrdinalIgnoreCase
+                );
+                var chosen =
+                    new List<(
+                        UnifiedRoleDefinition Role,
+                        RolePrivilegeStats Stats,
+                        HashSet<string> Allowed
+                    )>();
+
+                // Greedy set cover: pick the role that covers the most uncovered perms; tiebreak by least privileged and size
+                while (uncovered.Count > 0)
+                {
+                    var best = roleAllowed
+                        .Select(x => new
+                        {
+                            x.Role,
+                            x.Allowed,
+                            x.Stats,
+                            CoverCount = x.Allowed.Count(a => uncovered.Contains(a)),
+                        })
+                        .Where(x => x.CoverCount > 0)
+                        .OrderByDescending(x => x.CoverCount)
+                        .ThenBy(x => x.Stats.PrivilegedAllowed)
+                        .ThenBy(x => x.Stats.TotalAllowed)
+                        .ThenBy(x => x.Role.DisplayName)
+                        .FirstOrDefault();
+
+                    if (best == null)
+                    {
+                        // Can't cover remaining perms; break to avoid infinite loop
+                        break;
+                    }
+
+                    chosen.Add((best.Role, best.Stats, best.Allowed));
+                    // Remove covered perms
+                    foreach (var a in best.Allowed)
+                    {
+                        if (uncovered.Contains(a))
+                            uncovered.Remove(a);
+                    }
+                    // Remove chosen from candidates
+                    roleAllowed.RemoveAll(x =>
+                        string.Equals(x.Role.Id, best.Role.Id, StringComparison.OrdinalIgnoreCase)
+                    );
+                }
+
+                // Redundancy cleanup: drop any role that isn't needed for coverage
+                if (chosen.Count > 1)
+                {
+                    var required = new HashSet<string>(
+                        requiredPermissionsAll,
+                        StringComparer.OrdinalIgnoreCase
+                    );
+                    for (int i = chosen.Count - 1; i >= 0; i--)
+                    {
+                        var without = chosen
+                            .Where((_, idx) => idx != i)
+                            .SelectMany(c => c.Allowed)
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                        if (required.All(p => without.Contains(p)))
+                        {
+                            chosen.RemoveAt(i);
+                        }
+                    }
+                }
+
+                // Order the final selection by least privileged then size
+                var orderedChosen = chosen
+                    .OrderBy(c => c.Stats.PrivilegedAllowed)
+                    .ThenBy(c => c.Stats.TotalAllowed)
+                    .ThenBy(c => c.Role.DisplayName)
+                    .ToList();
+
+                suggested = orderedChosen
+                    .Select(c => c.Role.DisplayName!)
                     .ToArray();
+
+                // Build detailed reasons per suggested role
+                foreach (var c in orderedChosen)
+                {
+                    int covered = c.Allowed.Count(a => requiredPermissionsAll.Contains(a));
+                    suggestedDetails.Add(
+                        new SuggestedRole(
+                            c.Role.DisplayName!,
+                            covered,
+                            c.Stats.PrivilegedAllowed,
+                            c.Stats.TotalAllowed
+                        )
+                    );
+                }
             }
 
             // Build role metadata for UI labels (PIM badge on active PIM roles)
@@ -341,6 +437,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                     [.. eligibleRoleIds.Distinct()],
                     [.. usedOperations],
                     suggested,
+                    suggestedDetails,
                     operationsList.Count,
                     operationsList,
                     roleMeta
