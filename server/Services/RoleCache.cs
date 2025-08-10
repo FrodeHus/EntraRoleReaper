@@ -15,11 +15,7 @@ public interface IRoleCache
     IReadOnlyDictionary<string, RolePrivilegeStats> GetRolePrivilegeStats();
 }
 
-public class RoleCache(
-    IGraphServiceFactory factory,
-    IMemoryCache cache,
-    IHttpContextAccessor accessor
-) : IRoleCache
+public class RoleCache(IGraphServiceFactory factory, IMemoryCache cache) : IRoleCache
 {
     private const string CacheKey = "RoleDefinitions";
     private const string ActionMapKey = "ActionPrivilegeMap";
