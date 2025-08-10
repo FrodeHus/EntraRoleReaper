@@ -40,37 +40,39 @@ export function SearchUsers({ accessToken, selected, onChange }: { accessToken: 
   return (
     <div className="space-y-4">
       <div className="flex gap-2 items-center">
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search users or groups" className="border px-3 py-2 rounded w-96" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search users or groups"
+          className="border px-3 py-2 rounded w-96"
+        />
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={includeGroups} onChange={e => setIncludeGroups(e.target.checked)} /> Include groups
+          <input
+            type="checkbox"
+            checked={includeGroups}
+            onChange={(e) => setIncludeGroups(e.target.checked)}
+          />{" "}
+          Include groups
         </label>
       </div>
       {results.length > 0 && (
         <div className="border rounded p-2 max-w-xl">
-          {results.map(r => (
+          {results.map((r) => (
             <div key={r.id} className="flex justify-between items-center py-1">
               <div>
                 <span className="font-medium">{r.displayName}</span>
                 <span className="ml-2 text-xs text-gray-500">{r.type}</span>
               </div>
-              <button className="text-sm px-2 py-1 border rounded" onClick={() => add(r)}>Add</button>
+              <button
+                className="text-sm px-2 py-1 border rounded"
+                onClick={() => add(r)}
+              >
+                Add
+              </button>
             </div>
           ))}
         </div>
       )}
-      {selected.length > 0 && (
-        <div>
-          <h3 className="font-semibold mb-2">Selected</h3>
-          <div className="flex flex-wrap gap-2">
-            {selected.map(s => (
-              <span key={`${s.type}:${s.id}`} className="px-2 py-1 bg-gray-100 rounded text-sm">
-                {s.displayName}
-                <button className="ml-2" onClick={() => remove(s.id, s.type)}>×</button>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
-  )
+  );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { addDays, formatISO } from "date-fns";
+import { formatISO, subHours, subDays } from "date-fns";
 import {
   Sheet,
   SheetContent,
@@ -42,8 +42,41 @@ export function ReviewPanel({
   accessToken: string | null;
   selectedIds: string[];
 }) {
-  const [from, setFrom] = useState<string>(formatISO(addDays(new Date(), -30)));
-  const [to, setTo] = useState<string>(formatISO(new Date()));
+  const timeRanges = [
+    {
+      label: "Last 3 hours",
+      value: "3h",
+      getFrom: () => formatISO(subHours(new Date(), 3)),
+    },
+    {
+      label: "Last 24 hours",
+      value: "24h",
+      getFrom: () => formatISO(subHours(new Date(), 24)),
+    },
+    {
+      label: "Last 3 days",
+      value: "3d",
+      getFrom: () => formatISO(subDays(new Date(), 3)),
+    },
+    {
+      label: "Last 14 days",
+      value: "14d",
+      getFrom: () => formatISO(subDays(new Date(), 14)),
+    },
+    {
+      label: "Last 30 days",
+      value: "30d",
+      getFrom: () => formatISO(subDays(new Date(), 30)),
+    },
+  ];
+  const [selectedRange, setSelectedRange] = useState<string>("30d");
+  const to = formatISO(new Date());
+  const from = useMemo(() => {
+    const found = timeRanges.find((r) => r.value === selectedRange);
+    return found
+      ? found.getFrom()
+      : timeRanges[timeRanges.length - 1].getFrom();
+  }, [selectedRange]);
   const [report, setReport] = useState<UserReview[] | null>(null);
   const [selection, setSelection] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"ops" | "name">("ops");
@@ -123,24 +156,19 @@ export function ReviewPanel({
     <div className="space-y-4">
       <div className="flex items-end gap-2">
         <div>
-          <label className="block text-sm text-gray-600">From</label>
-          <input
-            aria-label="from"
-            type="datetime-local"
-            value={from.substring(0, 16)}
-            onChange={(e) => setFrom(new Date(e.target.value).toISOString())}
+          <label className="block text-sm text-gray-600">Time range</label>
+          <select
+            aria-label="time range"
             className="border px-3 py-2 rounded"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-600">To</label>
-          <input
-            aria-label="to"
-            type="datetime-local"
-            value={to.substring(0, 16)}
-            onChange={(e) => setTo(new Date(e.target.value).toISOString())}
-            className="border px-3 py-2 rounded"
-          />
+            value={selectedRange}
+            onChange={(e) => setSelectedRange(e.target.value)}
+          >
+            {timeRanges.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
         </div>
         <button
           onClick={run}

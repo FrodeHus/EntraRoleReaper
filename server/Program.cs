@@ -59,13 +59,6 @@ app.UseSwaggerUI();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Warm up role cache on startup
-using (var scope = app.Services.CreateScope())
-{
-    var roleCache = scope.ServiceProvider.GetRequiredService<IRoleCache>();
-    await roleCache.InitializeAsync();
-}
-
 // Minimal API endpoints
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
