@@ -83,12 +83,9 @@ public class RoleCache(IGraphServiceFactory factory, IMemoryCache cache) : IRole
                 continue;
 
             // Page through all resource actions for the namespace
-            var raBuilder = graph
-                .RoleManagement
-                .Directory
-                .ResourceNamespaces[ns.Name]
-                .ResourceActions;
-            var resourceActions = await raBuilder.GetAsync();
+            var resourceActions = await graph
+                .RoleManagement.Directory.ResourceNamespaces[ns.Name]
+                .ResourceActions.GetAsync();
 
             foreach (var resourceAction in resourceActions?.Value ?? [])
             {

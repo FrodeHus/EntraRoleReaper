@@ -18,6 +18,29 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
         return [];
     });
 
+    private readonly Lazy<HashSet<string>> _suggestionExcludes = new(() =>
+    {
+        try
+        {
+            var path = Path.Combine(
+                AppContext.BaseDirectory,
+                "Data",
+                "suggested-role-exclude.json"
+            );
+            if (File.Exists(path))
+            {
+                var json = File.ReadAllText(path);
+                var arr = JsonSerializer.Deserialize<string[]>(json) ?? [];
+                return new HashSet<string>(arr, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        catch
+        {
+            // ignore, fallback to empty set
+        }
+        return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    });
+
     public async Task<ReviewResponse> ReviewAsync(ReviewRequest request)
     {
         var graphClient = await factory.CreateForUserAsync();
@@ -214,11 +237,13 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
             else
             {
                 // Precompute role -> allowed actions set
+                var excludes = _suggestionExcludes.Value;
                 var roleAllowed = roles
                     .Values.Where(r =>
                         r.RolePermissions != null
-                        && r.RolePermissions.Any()
+                        && r.RolePermissions.Count != 0
                         && !string.IsNullOrWhiteSpace(r.DisplayName)
+                        && !excludes.Contains(r.DisplayName!)
                     )
                     .Select(r => new
                     {
@@ -314,11 +339,16 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                     .ThenBy(c => c.Role.DisplayName)
                     .ToList();
 
-                suggested = orderedChosen.Select(c => c.Role.DisplayName!).ToArray();
+                suggested = orderedChosen
+                    .Where(c => !excludes.Contains(c.Role.DisplayName!))
+                    .Select(c => c.Role.DisplayName!)
+                    .ToArray();
 
                 // Build detailed reasons per suggested role
                 foreach (var (Role, Stats, Allowed) in orderedChosen)
                 {
+                    if (excludes.Contains(Role.DisplayName!))
+                        continue;
                     int covered = Allowed.Count(a => requiredPermissionsAll.Contains(a));
                     suggestedDetails.Add(
                         new SuggestedRole(

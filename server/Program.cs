@@ -1,8 +1,8 @@
-using RoleReaper.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
+using RoleReaper.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,10 +41,7 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc(
-        "v1",
-        new OpenApiInfo { Title = "RoleReaper API", Version = "v1" }
-    );
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "RoleReaper API", Version = "v1" });
 });
 
 var app = builder.Build();

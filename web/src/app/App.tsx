@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Sun, Moon, Users, Plus, X } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Users,
+  Plus,
+  X,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import {
   InteractionStatus,
   InteractionRequiredAuthError,
 } from "@azure/msal-browser";
-import { SearchUsers } from "./SearchUsers";
+import { SearchUsers, type DirectoryItem } from "./SearchUsers";
 import { ReviewPanel } from "./ReviewPanel";
 import {
   Sheet,
@@ -34,10 +42,9 @@ export default function App() {
       ? "dark"
       : "light";
   });
-  const [selected, setSelected] = useState<
-    { id: string; displayName: string; type: "user" | "group" }[]
-  >([]);
+  const [selected, setSelected] = useState<DirectoryItem[]>([]);
   const [openSearch, setOpenSearch] = useState(false);
+  const [subjectsOpen, setSubjectsOpen] = useState(false);
   const reviewerName = accounts[0]?.name || accounts[0]?.username || "";
   const tenantDomain = (() => {
     const upn = accounts[0]?.username ?? "";
@@ -56,95 +63,69 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    // Schedules a silent token refresh a bit before expiry
     const schedule = (expiresOn?: Date | null) => {
       if (refreshTimer.current) {
         clearTimeout(refreshTimer.current);
         refreshTimer.current = null;
       }
       if (!expiresOn) return;
-      const now = Date.now();
-      const exp = expiresOn.getTime();
-      lastTokenExp.current = exp;
-      // Refresh 2 minutes before expiry, clamp to [30s, 50m]
-      const twoMin = 2 * 60 * 1000;
-      const minDelay = 30 * 1000;
-      const maxDelay = 50 * 60 * 1000;
-      let delay = Math.max(minDelay, exp - now - twoMin);
-      delay = Math.min(delay, maxDelay);
-      if (delay <= 0) delay = minDelay;
-      refreshTimer.current = setTimeout(() => void fetchToken(), delay);
+      const skewMs = 60 * 1000; // 60s skew
+      const dueIn = Math.max(5_000, expiresOn.getTime() - Date.now() - skewMs);
+      refreshTimer.current = setTimeout(() => {
+        void fetchToken();
+      }, dueIn);
     };
 
+    // Fetch access token silently and set refresh
     const fetchToken = async () => {
-      if (!authed || accounts.length === 0) return;
-      if (!navigator.onLine) {
-        // If offline, retry after 30s
-        if (refreshTimer.current) clearTimeout(refreshTimer.current);
-        refreshTimer.current = setTimeout(() => void fetchToken(), 30 * 1000);
-        return;
-      }
       try {
+        if (!authed || accounts.length === 0) return;
+        // Avoid fetching while an interactive flow is in progress
+        if (inProgress && inProgress !== InteractionStatus.None) return;
         const result = await instance.acquireTokenSilent({
-          scopes: [apiScope],
           account: accounts[0],
+          scopes: [apiScope],
         });
         setAccessToken(result.accessToken);
+        lastTokenExp.current = result.expiresOn?.getTime() ?? null;
         schedule(result.expiresOn ?? null);
       } catch (err) {
-        // Retry after short backoff; fall back to interactive if required
         if (err instanceof InteractionRequiredAuthError) {
-          await instance.acquireTokenRedirect({ scopes: [apiScope] });
+          // Ignore here; main.tsx will surface user-cancel events if needed
           return;
         }
-        // Non-interaction error: retry in 60s
-        if (refreshTimer.current) clearTimeout(refreshTimer.current);
-        refreshTimer.current = setTimeout(() => void fetchToken(), 60 * 1000);
+        // For other errors, surface a toast once
+        toast.error("Failed to refresh session token.");
       }
     };
-
-    // Kick off token fetch/refresh chain when authenticated
-    if (authed && accounts.length > 0) {
-      void fetchToken();
-    } else {
-      setAccessToken(null);
-      if (refreshTimer.current) {
-        clearTimeout(refreshTimer.current);
-        refreshTimer.current = null;
-      }
-      lastTokenExp.current = null;
-    }
 
     const onVisibility = () => {
-      if (
-        document.visibilityState === "visible" &&
-        authed &&
-        accounts.length > 0
-      ) {
-        // If within 3 minutes of expiry, refresh now
-        const now = Date.now();
-        const threeMin = 3 * 60 * 1000;
-        if (lastTokenExp.current && lastTokenExp.current - now < threeMin) {
-          void fetchToken();
-        }
+      if (document.visibilityState === "visible") {
+        void fetchToken();
       }
     };
-    document.addEventListener("visibilitychange", onVisibility);
+
     const onOnline = () => {
-      if (authed && accounts.length > 0) void fetchToken();
+      void fetchToken();
     };
+
     const onUserCancelled = () => {
       toast.info(
         "Sign-in was cancelled. Some features may stop working until you sign in again.",
-        {
-          duration: 6000,
-        }
+        { duration: 6000 }
       );
     };
+
+    document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("online", onOnline);
     window.addEventListener(
       "msal:userCancelled" as any,
       onUserCancelled as any
     );
+
+    // Initial fetch
+    void fetchToken();
 
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
@@ -158,7 +139,7 @@ export default function App() {
         refreshTimer.current = null;
       }
     };
-  }, [authed, accounts, instance]);
+  }, [authed, accounts, instance, inProgress]);
 
   const login = () => instance.loginRedirect({ scopes: [apiScope] });
   const logout = () => instance.logoutRedirect();
@@ -174,6 +155,7 @@ export default function App() {
               src={`${import.meta.env.BASE_URL}entrarolereaper_logo.png`}
               alt="RoleReaper logo"
               loading="eager"
+              className="h-24 w-24"
               decoding="async"
             />
           </div>
@@ -229,10 +211,19 @@ export default function App() {
           </div>
         ) : (
           <>
-            {/* Subjects card */}
+            {/* Subjects card (collapsible) */}
             <section className="border bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden">
               <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b">
-                <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="flex items-center gap-2 hover:opacity-90"
+                  onClick={() => setSubjectsOpen((o) => !o)}
+                >
+                  {subjectsOpen ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <h2 className="text-sm font-medium tracking-wide">
                     Subjects
@@ -242,7 +233,7 @@ export default function App() {
                       {selected.length}
                     </span>
                   )}
-                </div>
+                </button>
                 <div className="flex items-center gap-2">
                   {selected.length > 0 && (
                     <Button
@@ -259,40 +250,54 @@ export default function App() {
                   </Button>
                 </div>
               </div>
-              <div className="p-4 sm:p-5">
-                {selected.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No subjects selected. Use “Add users or groups” to begin.
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {selected.map((s) => (
-                      <span
-                        key={`${s.type}:${s.id}`}
-                        className="inline-flex items-center gap-1 pl-2 pr-1 py-1 rounded-full text-xs bg-secondary text-secondary-foreground border"
-                      >
-                        <span className="font-medium">{s.displayName}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 ml-1 text-muted-foreground hover:text-foreground"
-                          onClick={() =>
-                            setSelected((prev) =>
-                              prev.filter(
-                                (x) => !(x.id === s.id && x.type === s.type)
-                              )
-                            )
-                          }
-                          aria-label={`Remove ${s.displayName}`}
-                          title="Remove"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {subjectsOpen && (
+                <div className="p-4 sm:p-5">
+                  {selected.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No subjects selected. Use “Add users or groups” to begin.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 text-left">
+                          <tr>
+                            <th className="p-2">Display name</th>
+                            <th className="p-2">Type</th>
+                            <th className="p-2 sr-only">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selected.map((s) => (
+                            <tr key={`${s.type}:${s.id}`} className="border-t">
+                              <td className="p-2">{s.displayName}</td>
+                              <td className="p-2 capitalize">{s.type}</td>
+                              <td className="p-2 text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                  onClick={() =>
+                                    setSelected((prev) =>
+                                      prev.filter(
+                                        (x) =>
+                                          !(x.id === s.id && x.type === s.type)
+                                      )
+                                    )
+                                  }
+                                  aria-label={`Remove ${s.displayName}`}
+                                  title="Remove"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             <Sheet open={openSearch} onOpenChange={setOpenSearch}>
@@ -326,7 +331,9 @@ export default function App() {
               <div className="p-4 sm:p-5">
                 <ReviewPanel
                   accessToken={accessToken}
-                  selectedIds={selected.map((s) => `${s.type}:${s.id}`)}
+                  selectedIds={selected
+                    .filter((s) => s.type === "user" || s.type === "group")
+                    .map((s) => `${s.type}:${s.id}`)}
                 />
               </div>
             </section>

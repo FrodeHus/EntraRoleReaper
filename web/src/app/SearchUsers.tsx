@@ -71,7 +71,7 @@ export function SearchUsers({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 items-center">
+      <div className="flex flex-col gap-3 items-Left">
         <div className="relative">
           <Input
             value={q}

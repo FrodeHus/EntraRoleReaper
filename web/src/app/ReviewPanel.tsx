@@ -101,6 +101,10 @@ export function ReviewPanel({
   const [openSheetFor, setOpenSheetFor] = useState<UserReview | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState<boolean>(false);
+  // Cache of role id -> display name for removal chips
+  const [roleNameCache, setRoleNameCache] = useState<Record<string, string>>(
+    {}
+  );
   // Role details sheet state
   type RoleDetails = {
     id?: string;
@@ -133,6 +137,30 @@ export function ReviewPanel({
     /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
       s
     );
+
+  // Fetch and cache role display names for a set of role ids
+  const ensureRoleNames = async (ids: string[]) => {
+    if (!accessToken) return;
+    const missing = ids.filter((id) => isGuid(id) && !roleNameCache[id]);
+    if (missing.length === 0) return;
+    // Fetch sequentially to keep it simple and avoid overfetching
+    for (const id of missing) {
+      try {
+        const url = new URL("/api/role", import.meta.env.VITE_API_URL);
+        url.searchParams.set("id", id);
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) continue;
+        const rd = (await res.json()) as { id?: string; name?: string };
+        if (rd?.name) {
+          setRoleNameCache((prev) => ({ ...prev, [id]: rd.name! }));
+        }
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   const openRoleDetails = async (opts: { id?: string; name: string }) => {
     if (!accessToken) return;
@@ -213,6 +241,30 @@ export function ReviewPanel({
     if (!report || selection.length === 0) return [] as UserReview[];
     return report.filter((r) => selection.includes(r.userId));
   }, [report, selection]);
+
+  // Prefetch removal role names for visible rows
+  useEffect(() => {
+    if (!accessToken || !report || paged.length === 0) return;
+    const idsToFetch = new Set<string>();
+    for (const r of paged) {
+      // Prefer suggestedRoles with ids
+      const suggestIds = (r.suggestedRoles ?? [])
+        .map((sr) => (sr as any).id as string | undefined)
+        .filter((x): x is string => !!x);
+      let suggestedIdSet = new Set<string>(suggestIds);
+      // Fallback to suggestedRoleIds that are GUIDs
+      if (suggestedIdSet.size === 0) {
+        const legacyIds = (r.suggestedRoleIds ?? []).filter((s) => isGuid(s));
+        suggestedIdSet = new Set<string>(legacyIds);
+      }
+      if (suggestedIdSet.size === 0) continue;
+      for (const id of r.currentRoleIds) {
+        if (!suggestedIdSet.has(id)) idsToFetch.add(id);
+      }
+    }
+    void ensureRoleNames(Array.from(idsToFetch));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, paged]);
 
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
@@ -439,6 +491,16 @@ export function ReviewPanel({
                       {(() => {
                         const roles = r.suggestedRoles;
                         if (roles && roles.length > 0) {
+                          const suggestedIdSet = new Set(
+                            roles
+                              .map((sr) => (sr as any).id as string | undefined)
+                              .filter((x): x is string => !!x)
+                          );
+                          const removals = r.currentRoleIds.filter((id) =>
+                            suggestedIdSet.size > 0
+                              ? !suggestedIdSet.has(id)
+                              : false
+                          );
                           return (
                             <div className="space-y-1">
                               {roles.map((sr, i) => (
@@ -455,6 +517,14 @@ export function ReviewPanel({
                                   >
                                     {sr.name}
                                   </button>
+                                  {(sr as any).id &&
+                                    !r.currentRoleIds.includes(
+                                      (sr as any).id
+                                    ) && (
+                                      <span className="ml-2 align-middle text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 text-[10px] dark:text-emerald-300 dark:bg-emerald-900/20 dark:border-emerald-700">
+                                        Add
+                                      </span>
+                                    )}
                                   <div className="text-[11px] text-muted-foreground">
                                     Why: covers {sr.coveredRequired} required •
                                     priv {sr.privilegedAllowed} • total{" "}
@@ -462,27 +532,102 @@ export function ReviewPanel({
                                   </div>
                                 </div>
                               ))}
+                              {removals.length > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-2">
+                                  {removals.map((id, j) => (
+                                    <span
+                                      key={`rm-${id}-${j}`}
+                                      className="inline-flex items-center gap-2 px-2 py-0.5 rounded border"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          openRoleDetails({
+                                            id,
+                                            name: roleNameCache[id] ?? id,
+                                          })
+                                        }
+                                        className="text-xs underline text-primary hover:opacity-80"
+                                      >
+                                        {roleNameCache[id] ?? id}
+                                      </button>
+                                      <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
+                                        Remove
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           );
                         }
                         // Fallback to legacy string list
                         return (
                           <div className="space-y-1">
-                            {r.suggestedRoleIds.map((name, i) => (
-                              <button
-                                key={`${name}-${i}`}
-                                type="button"
-                                onClick={() =>
-                                  openRoleDetails({
-                                    id: isGuid(name) ? name : undefined,
-                                    name,
-                                  })
-                                }
-                                className="font-medium text-xs underline text-primary hover:opacity-80 block text-left"
-                              >
-                                {name}
-                              </button>
-                            ))}
+                            {(() => {
+                              const suggestedIdSet = new Set(
+                                r.suggestedRoleIds
+                                  .filter((s) => isGuid(s))
+                                  .map((s) => s)
+                              );
+                              const removals = r.currentRoleIds.filter((id) =>
+                                suggestedIdSet.size > 0
+                                  ? !suggestedIdSet.has(id)
+                                  : false
+                              );
+                              return (
+                                <>
+                                  {r.suggestedRoleIds.map((name, i) => (
+                                    <div key={`${name}-${i}`}>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          openRoleDetails({
+                                            id: isGuid(name) ? name : undefined,
+                                            name,
+                                          })
+                                        }
+                                        className="font-medium text-xs underline text-primary hover:opacity-80"
+                                      >
+                                        {name}
+                                      </button>
+                                      {isGuid(name) &&
+                                        !r.currentRoleIds.includes(name) && (
+                                          <span className="ml-2 align-middle text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1 text-[10px] dark:text-emerald-300 dark:bg-emerald-900/20 dark:border-emerald-700">
+                                            Add
+                                          </span>
+                                        )}
+                                    </div>
+                                  ))}
+                                  {removals.length > 0 && (
+                                    <div className="mt-1 flex flex-wrap gap-2">
+                                      {removals.map((id, j) => (
+                                        <span
+                                          key={`rm-${id}-${j}`}
+                                          className="inline-flex items-center gap-2 px-2 py-0.5 rounded border"
+                                        >
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              openRoleDetails({
+                                                id,
+                                                name: roleNameCache[id] ?? id,
+                                              })
+                                            }
+                                            className="text-xs underline text-primary hover:opacity-80"
+                                          >
+                                            {roleNameCache[id] ?? id}
+                                          </button>
+                                          <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
+                                            Remove
+                                          </span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
                         );
                       })()}
