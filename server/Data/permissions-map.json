@@ -1,0 +1,8 @@
+{
+  "Add member to group": ["GroupMember.ReadWrite.All"],
+  "Remove member from group": ["GroupMember.ReadWrite.All"],
+  "Reset user password": ["Directory.AccessAsUser.All", "User.ReadWrite.All"],
+  "Update user": ["User.ReadWrite.All"],
+  "Assign directory role": ["RoleManagement.ReadWrite.Directory"],
+  "Remove directory role assignment": ["RoleManagement.ReadWrite.Directory"]
+}
