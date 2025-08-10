@@ -1,17 +1,17 @@
 using Azure.Identity;
 using Microsoft.Graph;
-using Microsoft.Identity.Client;
 
 namespace EntraRoleAuditor.Services;
 
 public interface IGraphServiceFactory
 {
-    Task<GraphServiceClient> CreateForUserAsync(string bearerToken);
+    Task<GraphServiceClient> CreateForUserAsync();
 }
 
-public class GraphServiceFactory(IConfiguration config) : IGraphServiceFactory
+public class GraphServiceFactory(IConfiguration config, IHttpContextAccessor accessor)
+    : IGraphServiceFactory
 {
-    public async Task<GraphServiceClient> CreateForUserAsync(string bearerToken)
+    public async Task<GraphServiceClient> CreateForUserAsync()
     {
         var tenantId =
             config["AzureAd:TenantId"]
@@ -23,7 +23,13 @@ public class GraphServiceFactory(IConfiguration config) : IGraphServiceFactory
             config["AzureAd:ClientSecret"]
             ?? throw new InvalidOperationException("Missing AzureAd:ClientSecret");
 
-        var cred = new OnBehalfOfCredential(tenantId, clientId, clientSecret, bearerToken);
+        var token = accessor
+            .HttpContext?.Request.Headers.Authorization.ToString()
+            ?.Replace("Bearer ", "");
+        if (string.IsNullOrEmpty(token))
+            throw new UnauthorizedAccessException("Authorization token is missing.");
+
+        var cred = new OnBehalfOfCredential(tenantId, clientId, clientSecret, token);
         var client = new GraphServiceClient(
             cred,
             ["https://graph.microsoft.com/.default"],

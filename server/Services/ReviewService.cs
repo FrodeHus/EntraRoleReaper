@@ -35,11 +35,7 @@ public interface IReviewService
     Task<ReviewResponse> ReviewAsync(ReviewRequest request);
 }
 
-public class ReviewService(
-    IGraphServiceFactory factory,
-    IRoleCache roleCache,
-    IHttpContextAccessor accessor
-) : IReviewService
+public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) : IReviewService
 {
     private readonly Lazy<Dictionary<string, string[]>> _permissionMap = new(() =>
     {
@@ -54,12 +50,7 @@ public class ReviewService(
 
     public async Task<ReviewResponse> ReviewAsync(ReviewRequest request)
     {
-        var token = accessor
-            .HttpContext?.Request.Headers.Authorization.ToString()
-            ?.Replace("Bearer ", "");
-        if (string.IsNullOrEmpty(token))
-            throw new UnauthorizedAccessException();
-        var graphClient = await factory.CreateForUserAsync(token);
+        var graphClient = await factory.CreateForUserAsync();
 
         // Expand groups to users
         var userIds = new HashSet<string>();

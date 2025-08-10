@@ -1,6 +1,3 @@
-using Microsoft.Graph;
-using Microsoft.Graph.Models;
-
 namespace EntraRoleAuditor.Services;
 
 public record DirectoryItem(string Id, string DisplayName, string Type);
@@ -10,17 +7,11 @@ public interface IUserSearchService
     Task<IEnumerable<DirectoryItem>> SearchAsync(string query, bool includeGroups);
 }
 
-public class UserSearchService(IGraphServiceFactory factory, IHttpContextAccessor accessor)
-    : IUserSearchService
+public class UserSearchService(IGraphServiceFactory factory) : IUserSearchService
 {
     public async Task<IEnumerable<DirectoryItem>> SearchAsync(string query, bool includeGroups)
     {
-        var token = accessor
-            .HttpContext?.Request.Headers.Authorization.ToString()
-            ?.Replace("Bearer ", "");
-        if (string.IsNullOrEmpty(token))
-            throw new UnauthorizedAccessException();
-        var graph = await factory.CreateForUserAsync(token);
+        var graph = await factory.CreateForUserAsync();
 
         var items = new List<DirectoryItem>();
 

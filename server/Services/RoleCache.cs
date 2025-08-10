@@ -29,12 +29,7 @@ public class RoleCache(
     {
         if (cache.TryGetValue(CacheKey, out _))
             return;
-        var token = accessor
-            .HttpContext?.Request.Headers.Authorization.ToString()
-            ?.Replace("Bearer ", "");
-        if (string.IsNullOrEmpty(token))
-            return; // will be populated on first authorized request
-        var graphClient = await factory.CreateForUserAsync(token);
+        var graphClient = await factory.CreateForUserAsync();
 
         Dictionary<string, UnifiedRoleDefinition> definitions = await GetAllRoleDefinitions(
             graphClient
