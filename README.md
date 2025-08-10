@@ -1,4 +1,4 @@
-# EntraRoleAuditor
+# EntraRoleAssignmentAuditor
 
 Full-stack app to perform access reviews of Entra ID users.
 
@@ -50,7 +50,7 @@ Note: Some endpoints require elevated delegated permissions. Adjust as needed.
 
 ## Configure local environment
 
-Backend: create `c:/src/github.com/frodehus/EntraRoleAuditor/server/appsettings.Development.json` with your values:
+Backend: create `c:/src/github.com/frodehus/EntraRoleAssignmentAuditor/server/appsettings.Development.json` with your values:
 
 {
   "AzureAd": {

@@ -1,4 +1,4 @@
-using EntraRoleAuditor.Services;
+using EntraRoleAssignmentAuditor.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Identity.Web;
@@ -41,7 +41,10 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "EntraRoleAuditor API", Version = "v1" });
+    c.SwaggerDoc(
+        "v1",
+        new OpenApiInfo { Title = "EntraRoleAssignmentAuditor API", Version = "v1" }
+    );
 });
 
 var app = builder.Build();

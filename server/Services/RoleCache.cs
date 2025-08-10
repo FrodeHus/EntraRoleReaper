@@ -3,7 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 
-namespace EntraRoleAuditor.Services;
+namespace EntraRoleAssignmentAuditor.Services;
 
 public record RolePrivilegeStats(int PrivilegedAllowed, int TotalAllowed);
 

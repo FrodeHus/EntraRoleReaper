@@ -1,7 +1,7 @@
 using Azure.Identity;
 using Microsoft.Graph;
 
-namespace EntraRoleAuditor.Services;
+namespace EntraRoleAssignmentAuditor.Services;
 
 public interface IGraphServiceFactory
 {
