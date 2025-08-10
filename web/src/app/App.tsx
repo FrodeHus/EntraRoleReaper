@@ -155,14 +155,18 @@ export default function App() {
               src={`${import.meta.env.BASE_URL}entrarolereaper_logo.png`}
               alt="RoleReaper logo"
               loading="eager"
-              className="h-24 w-24"
+              className="h-24 w-24 mt-8"
               decoding="async"
             />
+            <span className="text-xl font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Entra RoleReaper
+            </span>
           </div>
+
           <div className="flex items-center gap-2">
             {authed && (
               <div className="hidden sm:flex items-center gap-2 mr-2 text-xs">
-                <span className="rounded border bg-card text-card-foreground px-2 py-1">
+                <span className="rounded border bg-card text-card-foreground px- py-1">
                   <span className="text-muted-foreground">Reviewer:</span>{" "}
                   <span className="font-medium">{reviewerName}</span>
                 </span>
