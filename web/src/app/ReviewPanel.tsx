@@ -7,6 +7,7 @@ import {
   SheetTitle,
 } from "../components/ui/sheet";
 import { Button } from "../components/ui/button";
+import { Download } from "lucide-react";
 
 export type ReviewRequest = {
   usersOrGroups: string[];
@@ -165,6 +166,67 @@ export function ReviewPanel({
     return report.filter((r) => selection.includes(r.userId));
   }, [report, selection]);
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportJson = () => {
+    if (!report) return;
+    const data = selection.length > 0 ? remediation : report;
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const ts = new Date();
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const fname = `entra-review-${ts.getFullYear()}${pad(
+      ts.getMonth() + 1
+    )}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}.json`;
+    downloadBlob(blob, fname);
+  };
+
+  const toCsv = (rows: Array<Record<string, unknown>>): string => {
+    if (rows.length === 0) return "";
+    const headers = Object.keys(rows[0]);
+    const esc = (v: unknown) => {
+      const s = Array.isArray(v) ? v.join("|") : v == null ? "" : String(v);
+      const needsQuotes = /[",\n]/.test(s);
+      const escaped = s.replace(/"/g, '""');
+      return needsQuotes ? `"${escaped}"` : escaped;
+    };
+    const lines = [headers.join(",")];
+    for (const row of rows) {
+      lines.push(headers.map((h) => esc((row as any)[h])).join(","));
+    }
+    return lines.join("\n");
+  };
+
+  const exportCsv = () => {
+    if (!report) return;
+    const data = selection.length > 0 ? remediation : report;
+    const rows = data.map((r) => ({
+      userId: r.userId,
+      userDisplayName: r.userDisplayName,
+      operationCount: r.operationCount,
+      suggestedRoleIds: r.suggestedRoleIds.join("|"),
+      currentRoleIds: r.currentRoleIds.join("|"),
+      eligibleRoleIds: (r.eligibleRoleIds ?? []).join("|"),
+    }));
+    const csv = toCsv(rows);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const ts = new Date();
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const fname = `entra-review-summary-${ts.getFullYear()}${pad(
+      ts.getMonth() + 1
+    )}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}.csv`;
+    downloadBlob(blob, fname);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-end gap-2">
@@ -205,6 +267,26 @@ export function ReviewPanel({
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Report</h3>
             <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={exportJson}
+                  disabled={!report}
+                >
+                  <Download className="h-3.5 w-3.5 mr-1" /> JSON
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={exportCsv}
+                  disabled={!report}
+                >
+                  <Download className="h-3.5 w-3.5 mr-1" /> CSV
+                </Button>
+              </div>
               <div className="flex items-center gap-2">
                 <label htmlFor="sort-by" className="text-foreground/80">
                   Sort by
