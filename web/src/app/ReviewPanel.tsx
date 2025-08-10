@@ -117,14 +117,21 @@ export function ReviewPanel({
   const [openRole, setOpenRole] = useState<{
     id?: string;
     name: string;
+    requiredPerms: string[];
   } | null>(null);
   const [roleDetails, setRoleDetails] = useState<RoleDetails>(null);
   const [loadingRole, setLoadingRole] = useState<boolean>(false);
+  const [onlyRequiredPerms, setOnlyRequiredPerms] = useState<boolean>(false);
 
   useEffect(() => {
     // Reset expanded state when switching user/sheet
     setExpanded(new Set());
   }, [openSheetFor]);
+
+  // Reset role details filter when opening/closing or switching roles
+  useEffect(() => {
+    setOnlyRequiredPerms(false);
+  }, [openRole]);
 
   const toggleExpanded = (idx: number) => {
     setExpanded((prev) => {
@@ -164,9 +171,9 @@ export function ReviewPanel({
     }
   };
 
-  const openRoleDetails = async (opts: { id?: string; name: string }) => {
+  const openRoleDetails = async (opts: { id?: string; name: string; requiredPerms: string[] }) => {
     if (!accessToken) return;
-    setOpenRole({ id: opts.id, name: opts.name });
+    setOpenRole({ id: opts.id, name: opts.name, requiredPerms: opts.requiredPerms });
     setRoleDetails(null);
     setLoadingRole(true);
     try {
@@ -209,6 +216,19 @@ export function ReviewPanel({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Compute the set of required permission actions for a given user review
+  const getRequiredPerms = (r: UserReview): string[] => {
+    const set = new Set<string>();
+    for (const op of r.operations) {
+      if (op.permissionDetails && op.permissionDetails.length > 0) {
+        for (const pd of op.permissionDetails) set.add(pd.name.toLowerCase());
+      } else {
+        for (const n of op.requiredPermissions) set.add(n.toLowerCase());
+      }
+    }
+    return Array.from(set);
   };
 
   const toggle = (id: string) =>
@@ -513,6 +533,7 @@ export function ReviewPanel({
                                       openRoleDetails({
                                         id: (sr as any).id,
                                         name: sr.name,
+                                        requiredPerms: getRequiredPerms(r),
                                       })
                                     }
                                     className="font-medium text-xs underline text-primary hover:opacity-80"
@@ -547,6 +568,7 @@ export function ReviewPanel({
                                           openRoleDetails({
                                             id,
                                             name: roleNameCache[id] ?? id,
+                                            requiredPerms: getRequiredPerms(r),
                                           })
                                         }
                                         className="text-xs underline text-primary hover:opacity-80"
@@ -587,6 +609,7 @@ export function ReviewPanel({
                                           openRoleDetails({
                                             id: isGuid(name) ? name : undefined,
                                             name,
+                                            requiredPerms: getRequiredPerms(r),
                                           })
                                         }
                                         className="font-medium text-xs underline text-primary hover:opacity-80"
@@ -614,6 +637,7 @@ export function ReviewPanel({
                                               openRoleDetails({
                                                 id,
                                                 name: roleNameCache[id] ?? id,
+                                                requiredPerms: getRequiredPerms(r),
                                               })
                                             }
                                             className="text-xs underline text-primary hover:opacity-80"
@@ -675,9 +699,22 @@ export function ReviewPanel({
                   )}
                   {!loadingRole && roleDetails && (
                     <>
-                      <div>
-                        <div className="font-semibold">Name</div>
-                        <div>{roleDetails.name || openRole.name}</div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold">Name</div>
+                          <div>{roleDetails.name || openRole.name}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant={onlyRequiredPerms ? "default" : "outline"}
+                            size="sm"
+                            className="h-8"
+                            onClick={() => setOnlyRequiredPerms((v) => !v)}
+                            title={onlyRequiredPerms ? "Show all permissions" : "Show only required and covering"}
+                          >
+                            {onlyRequiredPerms ? "Show all" : "Required only"}
+                          </Button>
+                        </div>
                       </div>
                       {roleDetails.description && (
                         <div>
@@ -728,19 +765,74 @@ export function ReviewPanel({
                         <div className="font-semibold mb-1">Permissions</div>
                         {roleDetails.permissions?.length ? (
                           <div className="flex flex-wrap gap-2">
-                            {roleDetails.permissions.map((p, i) => (
-                              <span
-                                key={`${p.action}-${i}`}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded border"
-                              >
-                                <span>{p.action}</span>
-                                {p.privileged && (
-                                  <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
-                                    Privileged
+                            {(() => {
+                              const req = new Set(
+                                (openRole?.requiredPerms ?? []).map((r) => r.toLowerCase())
+                              );
+                              const covers = (action: string, required: string) => {
+                                // Normalize
+                                const a = action.toLowerCase();
+                                const r = required.toLowerCase();
+                                if (a === r) return true; // exact covers
+                                // Wildcard covering: "xxx/*" covers any r starting with prefix
+                                if (a.endsWith("/*")) {
+                                  const prefix = a.slice(0, -2);
+                                  return r.startsWith(prefix + "/") || r === prefix;
+                                }
+                                // Parent path covers child if exact path prefix (conservative)
+                                if (r.startsWith(a + "/")) return true;
+                                return false;
+                              };
+                              const requiredOnly = roleDetails.permissions.filter((p) => {
+                                const a = p.action.toLowerCase();
+                                if (req.has(a)) return true;
+                                for (const r of req) if (covers(a, r)) return true;
+                                return false;
+                              });
+                              const list = onlyRequiredPerms ? requiredOnly : roleDetails.permissions;
+                              return list.map((p, i) => {
+                                const a = p.action.toLowerCase();
+                                const isExact = req.has(a);
+                                const matchedReq: string[] = [];
+                                if (!isExact) {
+                                  for (const r of req) if (covers(a, r)) matchedReq.push(r);
+                                }
+                                const isCover = !isExact && matchedReq.length > 0;
+                                const title = isExact
+                                  ? "Required for user's operations"
+                                  : isCover
+                                  ? `Covers: ${matchedReq.join(", ")}`
+                                  : undefined;
+                                return (
+                                  <span
+                                    key={`${p.action}-${i}`}
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${
+                                      isExact || isCover
+                                        ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
+                                        : ""
+                                    }`}
+                                    title={title}
+                                  >
+                                    <span>{p.action}</span>
+                                    {isExact && (
+                                      <span className="text-blue-700 bg-blue-50 border border-blue-200 rounded px-1 text-[10px] dark:text-blue-300 dark:bg-blue-900/20 dark:border-blue-700">
+                                        Required
+                                      </span>
+                                    )}
+                                    {isCover && (
+                                      <span className="text-blue-700 bg-blue-50 border border-blue-200 rounded px-1 text-[10px] dark:text-blue-300 dark:bg-blue-900/20 dark:border-blue-700">
+                                        Covers
+                                      </span>
+                                    )}
+                                    {p.privileged && (
+                                      <span className="text-red-700 bg-red-50 border border-red-200 rounded px-1 text-[10px] dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
+                                        Privileged
+                                      </span>
+                                    )}
                                   </span>
-                                )}
-                              </span>
-                            ))}
+                                );
+                              });
+                            })()}
                           </div>
                         ) : (
                           <div className="text-muted-foreground">None</div>
