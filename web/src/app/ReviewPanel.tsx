@@ -17,6 +17,8 @@ import type {
 } from "./review/types";
 import { OperationsSheet } from "./review/OperationsSheet";
 import { SuggestedRolesCell } from "./review/SuggestedRolesCell";
+import { CurrentRolesCell } from "./review/CurrentRolesCell";
+import { RemovedRolesCell } from "./review/RemovedRolesCell";
 
 export function ReviewPanel({
   accessToken,
@@ -230,24 +232,16 @@ export function ReviewPanel({
     return report.filter((r) => selection.includes(r.userId));
   }, [report, selection]);
 
-  // Prefetch removal role names for visible rows
+  // Prefetch role display names (current roles and legacy suggested GUIDs) for visible rows
   useEffect(() => {
     if (!accessToken || !report || paged.length === 0) return;
     const idsToFetch = new Set<string>();
     for (const r of paged) {
-      // Prefer suggestedRoles with ids
-      const suggestIds = (r.suggestedRoles ?? [])
-        .map((sr) => (sr as any).id as string | undefined)
-        .filter((x): x is string => !!x);
-      let suggestedIdSet = new Set<string>(suggestIds);
-      // Fallback to suggestedRoleIds that are GUIDs
-      if (suggestedIdSet.size === 0) {
-        const legacyIds = (r.suggestedRoleIds ?? []).filter((s) => isGuid(s));
-        suggestedIdSet = new Set<string>(legacyIds);
-      }
-      if (suggestedIdSet.size === 0) continue;
-      for (const id of r.currentRoleIds) {
-        if (!suggestedIdSet.has(id)) idsToFetch.add(id);
+      // Prefetch all current role names for visible rows
+      for (const id of r.currentRoleIds) idsToFetch.add(id);
+      // Prefetch legacy suggested role GUIDs (if present)
+      for (const s of r.suggestedRoleIds ?? []) {
+        if (isGuid(s)) idsToFetch.add(s);
       }
     }
     void ensureRoleNames(Array.from(idsToFetch));
@@ -448,7 +442,9 @@ export function ReviewPanel({
                   <th className="text-left p-2">Select</th>
                   <th className="text-left p-2">User</th>
                   <th className="text-left p-2">Operations</th>
+                  <th className="text-left p-2">Current roles</th>
                   <th className="text-left p-2">Suggested roles</th>
+                  <th className="text-left p-2">Removed roles</th>
                 </tr>
               </thead>
               <tbody>
@@ -477,11 +473,27 @@ export function ReviewPanel({
                       </div>
                     </td>
                     <td className="p-2">
+                      <CurrentRolesCell
+                        review={r}
+                        roleNameCache={roleNameCache}
+                        openRoleDetails={openRoleDetails}
+                        getRequiredPerms={getRequiredPerms}
+                      />
+                    </td>
+                    <td className="p-2">
                       <SuggestedRolesCell
                         review={r}
                         getRequiredPerms={getRequiredPerms}
                         openRoleDetails={openRoleDetails}
                         roleNameCache={roleNameCache}
+                      />
+                    </td>
+                    <td className="p-2">
+                      <RemovedRolesCell
+                        review={r}
+                        roleNameCache={roleNameCache}
+                        openRoleDetails={openRoleDetails}
+                        getRequiredPerms={getRequiredPerms}
                       />
                     </td>
                   </tr>
