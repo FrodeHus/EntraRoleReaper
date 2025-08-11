@@ -84,8 +84,10 @@ app.MapGet(
         "/api/cache/status",
         async (IRoleCache cache) =>
         {
+            await cache.InitializeAsync();
             var ts = await cache.GetLastUpdatedAsync();
-            return Results.Ok(new { lastUpdatedUtc = ts });
+            var count = cache.GetAll().Count;
+            return Results.Ok(new { lastUpdatedUtc = ts, roleCount = count });
         }
     )
     .RequireAuthorization();

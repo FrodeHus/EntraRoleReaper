@@ -28,6 +28,83 @@ import {
 const apiScope = import.meta.env.VITE_API_SCOPE as string;
 const apiBase = import.meta.env.VITE_API_URL as string;
 
+function CacheStatus({ accessToken }: { accessToken: string | null }) {
+  const [roleCount, setRoleCount] = useState<number | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchStatus = async () => {
+    if (!accessToken) return;
+    try {
+      const url = new URL("/api/cache/status", apiBase);
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      setRoleCount(typeof json.roleCount === "number" ? json.roleCount : null);
+      if (json.lastUpdatedUtc) {
+        const dt = new Date(json.lastUpdatedUtc);
+        setLastUpdated(
+          isNaN(dt.getTime())
+            ? String(json.lastUpdatedUtc)
+            : dt.toLocaleString()
+        );
+      } else setLastUpdated(null);
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    void fetchStatus();
+    const id = setInterval(fetchStatus, 60_000);
+    return () => clearInterval(id);
+  }, [accessToken]);
+
+  const refreshCache = async () => {
+    if (!accessToken) return;
+    setLoading(true);
+    try {
+      const url = new URL("/api/cache/refresh", apiBase);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) return;
+      // Immediately fetch new status
+      await fetchStatus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground">Role definitions in cache</span>
+        <span className="font-medium">{roleCount ?? "-"}</span>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-muted-foreground">Cache last update</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{lastUpdated ?? "-"}</span>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={refreshCache}
+            aria-label="Refresh role cache"
+            title="Refresh role cache"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function App() {
   const { instance, inProgress, accounts } = useMsal();
   const authed = useIsAuthenticated();
@@ -185,16 +262,6 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-2 mr-2 text-xs">
-                <span className="rounded border bg-card text-card-foreground px- py-1">
-                  <span className="text-muted-foreground">Reviewer:</span>{" "}
-                  <span className="font-medium">{reviewerName}</span>
-                </span>
-                <span className="rounded border bg-card text-card-foreground px-2 py-1">
-                  <span className="text-muted-foreground">Tenant:</span>{" "}
-                  <span className="font-medium">{tenantDomain || "-"}</span>
-                </span>
-              </div>
               <Button
                 variant="outline"
                 size="icon"
@@ -207,15 +274,6 @@ export default function App() {
                 ) : (
                   <Moon className="h-4 w-4" />
                 )}
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={refreshCache}
-                aria-label="Refresh role cache"
-                title="Refresh role cache"
-              >
-                <RefreshCw className="h-4 w-4" />
               </Button>
               <Button variant="outline" onClick={logout}>
                 Sign out
@@ -252,94 +310,121 @@ export default function App() {
           </div>
         ) : (
           <>
-            {/* Subjects card (collapsible) */}
-            <section className="border bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b">
-                <button
-                  type="button"
-                  className="flex items-center gap-2 hover:opacity-90"
-                  onClick={() => setSubjectsOpen((o) => !o)}
-                >
-                  {subjectsOpen ? (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-medium tracking-wide">
-                    Subjects
-                  </h2>
-                  {selected.length > 0 && (
-                    <span className="ml-2 inline-flex items-center rounded-full bg-secondary text-secondary-foreground text-xs px-2 py-0.5">
-                      {selected.length}
-                    </span>
-                  )}
-                </button>
-                <div className="flex items-center gap-2">
-                  {selected.length > 0 && (
-                    <Button
-                      variant="link"
-                      className="text-sm"
-                      onClick={() => setSelected([])}
-                      aria-label="Clear selected users and groups"
-                    >
-                      Clear
+            {/* Two-column layout: Subjects + Summary */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Subjects card (collapsible) */}
+              <section className="border bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b">
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 hover:opacity-90"
+                    onClick={() => setSubjectsOpen((o) => !o)}
+                  >
+                    {subjectsOpen ? (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <h2 className="text-sm font-medium tracking-wide">
+                      Subjects
+                    </h2>
+                    {selected.length > 0 && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-secondary text-secondary-foreground text-xs px-2 py-0.5">
+                        {selected.length}
+                      </span>
+                    )}
+                  </button>
+                  <div className="flex items-center gap-2">
+                    {selected.length > 0 && (
+                      <Button
+                        variant="link"
+                        className="text-sm"
+                        onClick={() => setSelected([])}
+                        aria-label="Clear selected users and groups"
+                      >
+                        Clear
+                      </Button>
+                    )}
+                    <Button onClick={() => setOpenSearch(true)}>
+                      <Plus className="h-4 w-4 mr-2" /> Add users or groups
                     </Button>
-                  )}
-                  <Button onClick={() => setOpenSearch(true)}>
-                    <Plus className="h-4 w-4 mr-2" /> Add users or groups
-                  </Button>
+                  </div>
                 </div>
-              </div>
-              {subjectsOpen && (
-                <div className="p-4 sm:p-5">
-                  {selected.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No subjects selected. Use “Add users or groups” to begin.
-                    </p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-muted/50 text-left">
-                          <tr>
-                            <th className="p-2">Display name</th>
-                            <th className="p-2">Type</th>
-                            <th className="p-2 sr-only">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selected.map((s) => (
-                            <tr key={`${s.type}:${s.id}`} className="border-t">
-                              <td className="p-2">{s.displayName}</td>
-                              <td className="p-2 capitalize">{s.type}</td>
-                              <td className="p-2 text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                                  onClick={() =>
-                                    setSelected((prev) =>
-                                      prev.filter(
-                                        (x) =>
-                                          !(x.id === s.id && x.type === s.type)
-                                      )
-                                    )
-                                  }
-                                  aria-label={`Remove ${s.displayName}`}
-                                  title="Remove"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </td>
+                {subjectsOpen && (
+                  <div className="p-4 sm:p-5">
+                    {selected.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No subjects selected. Use “Add users or groups” to
+                        begin.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-muted/50 text-left">
+                            <tr>
+                              <th className="p-2">Display name</th>
+                              <th className="p-2">Type</th>
+                              <th className="p-2 sr-only">Actions</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                          </thead>
+                          <tbody>
+                            {selected.map((s) => (
+                              <tr
+                                key={`${s.type}:${s.id}`}
+                                className="border-t"
+                              >
+                                <td className="p-2">{s.displayName}</td>
+                                <td className="p-2 capitalize">{s.type}</td>
+                                <td className="p-2 text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                    onClick={() =>
+                                      setSelected((prev) =>
+                                        prev.filter(
+                                          (x) =>
+                                            !(
+                                              x.id === s.id && x.type === s.type
+                                            )
+                                        )
+                                      )
+                                    }
+                                    aria-label={`Remove ${s.displayName}`}
+                                    title="Remove"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* Summary / Context panel */}
+              <section className="border bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden">
+                <div className="px-4 sm:px-5 py-3 border-b">
+                  <h2 className="text-sm font-medium tracking-wide">Context</h2>
                 </div>
-              )}
-            </section>
+                <div className="p-4 sm:p-5 grid grid-cols-1 gap-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Reviewer</span>
+                    <span className="font-medium">{reviewerName || "-"}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Tenant</span>
+                    <span className="font-medium">{tenantDomain || "-"}</span>
+                  </div>
+                  <CacheStatus accessToken={accessToken} />
+                </div>
+              </section>
+            </div>
 
             <Sheet open={openSearch} onOpenChange={setOpenSearch}>
               <SheetContent side="right">
