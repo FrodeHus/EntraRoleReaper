@@ -7,7 +7,7 @@ import {
   SheetTitle,
 } from "../components/ui/sheet";
 import { Button } from "../components/ui/button";
-import { Download, LogsIcon } from "lucide-react";
+import { Download, LogsIcon, Info, Minus } from "lucide-react";
 import { RoleDetailsSheet } from "./review/RoleDetailsSheet";
 import type {
   ReviewRequest,
@@ -19,6 +19,7 @@ import { OperationsSheet } from "./review/OperationsSheet";
 import { SuggestedRolesCell } from "./review/SuggestedRolesCell";
 import { CurrentRolesCell } from "./review/CurrentRolesCell";
 import { RemovedRolesCell } from "./review/RemovedRolesCell";
+import { RoleChangesSheet } from "./review/RoleChangesSheet";
 
 export function ReviewPanel({
   accessToken,
@@ -83,6 +84,8 @@ export function ReviewPanel({
   } | null>(null);
   const [roleDetails, setRoleDetails] = useState<RoleDetails>(null);
   const [loadingRole, setLoadingRole] = useState<boolean>(false);
+  const [openRoleChangesFor, setOpenRoleChangesFor] =
+    useState<UserReview | null>(null);
 
   useEffect(() => {
     // Reset expanded state when switching user/sheet
@@ -309,6 +312,23 @@ export function ReviewPanel({
     downloadBlob(blob, fname);
   };
 
+  const computeCounts = (r: UserReview) => {
+    const current = r.currentRoleIds ?? [];
+    const fromStructured = (r.suggestedRoles ?? [])
+      .map((sr) => (sr as any).id as string | undefined)
+      .filter((x): x is string => !!x);
+    const suggested =
+      fromStructured.length > 0
+        ? fromStructured
+        : (r.suggestedRoleIds ?? []).filter((s) => isGuid(s));
+    const add = suggested.filter((id) => !current.includes(id));
+    const remove =
+      suggested.length > 0
+        ? current.filter((id) => !new Set(suggested).has(id))
+        : [];
+    return { current: current.length, add: add.length, remove: remove.length };
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-end gap-2">
@@ -442,62 +462,98 @@ export function ReviewPanel({
                   <th className="text-left p-2">Select</th>
                   <th className="text-left p-2">User</th>
                   <th className="text-left p-2">Operations</th>
-                  <th className="text-left p-2">Current roles</th>
-                  <th className="text-left p-2">Suggested roles</th>
-                  <th className="text-left p-2">Removed roles</th>
+                  <th className="text-left p-2">Current</th>
+                  <th className="text-left p-2">Added</th>
+                  <th className="text-left p-2">Removed</th>
+                  <th className="text-left p-2">Details</th>
                 </tr>
               </thead>
               <tbody>
-                {paged.map((r) => (
-                  <tr key={r.userId} className="border-t align-top">
-                    <td className="p-2">
-                      <input
-                        aria-label={`select ${r.userDisplayName}`}
-                        type="checkbox"
-                        checked={selection.includes(r.userId)}
-                        onChange={() => toggle(r.userId)}
-                      />
-                    </td>
-                    <td className="p-2">{r.userDisplayName}</td>
-                    <td className="p-2">
-                      <div className="flex items-center gap-2">
-                        <span>{r.operationCount}</span>
+                {paged.map((r) => {
+                  const counts = computeCounts(r);
+                  return (
+                    <tr key={r.userId} className="border-t align-top">
+                      <td className="p-2">
+                        <input
+                          aria-label={`select ${r.userDisplayName}`}
+                          type="checkbox"
+                          checked={selection.includes(r.userId)}
+                          onChange={() => toggle(r.userId)}
+                        />
+                      </td>
+                      <td className="p-2">{r.userDisplayName}</td>
+                      <td className="p-2">
+                        <div className="flex items-center gap-2">
+                          <span>{r.operationCount}</span>
+                          <Button
+                            variant="link"
+                            size="icon"
+                            className="p-0 h-auto"
+                            onClick={() => setOpenSheetFor(r)}
+                          >
+                            <LogsIcon />
+                          </Button>
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        {counts.current === 0 ? (
+                          <span
+                            className="inline-flex items-center justify-center w-5 h-5 text-muted-foreground"
+                            title="None"
+                          >
+                            <Minus className="h-4 w-4" aria-hidden />
+                            <span className="sr-only">None</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded border text-xs">
+                            {counts.current}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-2">
+                        {counts.add === 0 ? (
+                          <span
+                            className="inline-flex items-center justify-center w-5 h-5 text-muted-foreground"
+                            title="None"
+                          >
+                            <Minus className="h-4 w-4" aria-hidden />
+                            <span className="sr-only">None</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded border text-xs text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-900/20 dark:border-emerald-700">
+                            +{counts.add}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-2">
+                        {counts.remove === 0 ? (
+                          <span
+                            className="inline-flex items-center justify-center w-5 h-5 text-muted-foreground"
+                            title="None"
+                          >
+                            <Minus className="h-4 w-4" aria-hidden />
+                            <span className="sr-only">None</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded border text-xs text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-900/20 dark:border-red-700">
+                            -{counts.remove}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-2">
                         <Button
                           variant="link"
                           size="icon"
                           className="p-0 h-auto"
-                          onClick={() => setOpenSheetFor(r)}
+                          onClick={() => setOpenRoleChangesFor(r)}
+                          title="View role changes"
                         >
-                          <LogsIcon />
+                          <Info />
                         </Button>
-                      </div>
-                    </td>
-                    <td className="p-2">
-                      <CurrentRolesCell
-                        review={r}
-                        roleNameCache={roleNameCache}
-                        openRoleDetails={openRoleDetails}
-                        getRequiredPerms={getRequiredPerms}
-                      />
-                    </td>
-                    <td className="p-2">
-                      <SuggestedRolesCell
-                        review={r}
-                        getRequiredPerms={getRequiredPerms}
-                        openRoleDetails={openRoleDetails}
-                        roleNameCache={roleNameCache}
-                      />
-                    </td>
-                    <td className="p-2">
-                      <RemovedRolesCell
-                        review={r}
-                        roleNameCache={roleNameCache}
-                        openRoleDetails={openRoleDetails}
-                        getRequiredPerms={getRequiredPerms}
-                      />
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -524,6 +580,16 @@ export function ReviewPanel({
               if (!o) setOpenSheetFor(null);
             }}
             review={openSheetFor}
+          />
+          <RoleChangesSheet
+            open={openRoleChangesFor !== null}
+            onOpenChange={(o) => {
+              if (!o) setOpenRoleChangesFor(null);
+            }}
+            review={openRoleChangesFor}
+            roleNameCache={roleNameCache}
+            openRoleDetails={openRoleDetails}
+            getRequiredPerms={getRequiredPerms}
           />
           {selection.length > 0 && (
             <div className="mt-2">
