@@ -25,10 +25,10 @@ RUN npm run build
 FROM nginx:1.27-alpine AS final
 
 # Create non-root user and group
-RUN addgroup -S web && adduser -S web -G web
+RUN addgroup -S rolereaper-web && adduser -S rolereaper -G rolereaper-web
 
 # Create temp dirs for non-root runtime
-RUN mkdir -p /tmp/client_temp /tmp/proxy_temp
+RUN mkdir -p /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp
 
 # Copy built assets
 COPY --from=build /app/dist /usr/share/nginx/html
@@ -37,6 +37,6 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY web/nginx.conf /etc/nginx/nginx.conf
 
 # Reduce privileges
-USER web
+USER rolereaper
 EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]

@@ -18,7 +18,7 @@ RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final
 
 # Create non-root user
-RUN addgroup -S app && adduser -S app -G app
+RUN addgroup -S rolereaper && adduser -S rolereaper -G rolereaper
 WORKDIR /app
 
 # Copy published output
@@ -30,5 +30,5 @@ ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 EXPOSE 8080
 
 # Least privilege
-USER app
+USER rolereaper
 ENTRYPOINT ["dotnet", "EntraRoleReaper.Api.dll"]
