@@ -7,7 +7,7 @@ import {
   SheetTitle,
 } from "../components/ui/sheet";
 import { Button } from "../components/ui/button";
-import { Download } from "lucide-react";
+import { Download, LogsIcon } from "lucide-react";
 import { RoleDetailsSheet } from "./review/RoleDetailsSheet";
 import type {
   ReviewRequest,
@@ -468,10 +468,11 @@ export function ReviewPanel({
                         <span>{r.operationCount}</span>
                         <Button
                           variant="link"
+                          size="icon"
                           className="p-0 h-auto"
                           onClick={() => setOpenSheetFor(r)}
                         >
-                          More details
+                          <LogsIcon />
                         </Button>
                       </div>
                     </td>
