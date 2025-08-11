@@ -1,0 +1,9 @@
+bin/
+obj/
+**/*.user
+**/*.suo
+**/.DS_Store
+**/.vscode
+**/*.cache
+**/*.log
+secrets*

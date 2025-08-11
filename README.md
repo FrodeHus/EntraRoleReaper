@@ -67,6 +67,47 @@ Backend: create `server/appsettings.Development.json` with your values:
 "AzureAd": {
 "Instance": "<https://login.microsoftonline.com/>",
 "TenantId": "YOUR_TENANT_ID",
+
+## Docker compose (server + web)
+
+This repo includes Dockerfiles for both the API (server) and the web SPA, plus a docker-compose file to run the full stack locally with least privileges.
+
+1. Create a `.env` file at the repo root with your values:
+
+```dotenv
+AZUREAD_TENANT_ID=
+AZUREAD_CLIENT_ID=
+AZUREAD_CLIENT_SECRET=
+AZUREAD_AUDIENCE=
+AZUREAD_DOMAIN=
+
+VITE_AAD_TENANT_ID=
+VITE_AAD_CLIENT_ID=
+VITE_API_SCOPE=
+```
+
+Notes:
+
+- AZUREAD\_\* configure the API's Microsoft Identity Platform OBO flow.
+- VITE\_\* configure the SPA's MSAL client and API scope at build time.
+- The SPA is served at <http://localhost:5173> and proxies /api/\* to the API container.
+
+1. Build and run the stack:
+
+```bash
+docker compose build
+docker compose up
+```
+
+The web UI will be available at <http://localhost:5173>.
+
+Security hardening applied:
+
+- Non-root users in both containers.
+- Read-only root filesystem with a tmpfs mounted at /tmp.
+- Dropped all Linux capabilities and no-new-privileges.
+- Nginx listens on an unprivileged port (8080) inside the container.
+
 "ClientId": "BACKEND_APP_ID",
 "ClientSecret": "BACKEND_APP_CLIENT_SECRET",
 "Audience": "api://BACKEND_APP_ID",

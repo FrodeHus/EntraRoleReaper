@@ -1,0 +1,56 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: entrarolereaper-server:local
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      # Azure AD config provided via environment for containerization
+      AzureAd__Instance: "https://login.microsoftonline.com/"
+      AzureAd__TenantId: "${AZUREAD_TENANT_ID}"
+      AzureAd__ClientId: "${AZUREAD_CLIENT_ID}"
+      AzureAd__ClientSecret: "${AZUREAD_CLIENT_SECRET}"
+      AzureAd__Audience: "${AZUREAD_AUDIENCE}"
+      AzureAd__Domain: "${AZUREAD_DOMAIN}"
+      # CORS: array binding uses indices
+      Cors__AllowedOrigins__0: "http://localhost:5173"
+    expose:
+      - "8080"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev
+    networks:
+      - appnet
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        VITE_AAD_TENANT_ID: ${VITE_AAD_TENANT_ID}
+        VITE_AAD_CLIENT_ID: ${VITE_AAD_CLIENT_ID}
+        VITE_API_SCOPE: ${VITE_API_SCOPE}
+        VITE_API_URL: http://localhost:5173
+    image: entrarolereaper-web:local
+    depends_on:
+      - server
+    ports:
+      - "5173:8080"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
