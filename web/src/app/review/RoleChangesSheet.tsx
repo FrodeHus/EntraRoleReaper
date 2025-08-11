@@ -48,6 +48,8 @@ export function RoleChangesSheet({
     ? currentIds.filter((id) => !suggestedSet.has(id)).map((id) => ({ id, name: roleNameCache[id] ?? id }))
     : [];
 
+  const eligibleSet = new Set(r?.eligibleRoleIds ?? []);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right">
@@ -57,42 +59,40 @@ export function RoleChangesSheet({
         {!r ? null : (
           <div className="mt-4 space-y-6 text-sm">
             <div>
-              <div className="font-medium mb-2">Current roles ({current.length})</div>
+              <div className="font-medium mb-2">
+                Current roles ({current.length})
+              </div>
               {current.length === 0 ? (
                 <div className="text-muted-foreground">None</div>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {current.map(({ id, name }) => (
-                    <button
+                    <span
                       key={id}
-                      type="button"
-                      onClick={() => openRoleDetails({ id, name, requiredPerms: getRequiredPerms(r) })}
-                      className="text-xs underline text-primary hover:opacity-80"
-                      title={id}
+                      className="inline-flex items-center gap-2 px-2 py-0.5 rounded border"
                     >
-                      {name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <div className="font-medium mb-2 text-emerald-600 dark:text-emerald-400">Will add ({toAdd.length})</div>
-              {toAdd.length === 0 ? (
-                <div className="text-muted-foreground">None</div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {toAdd.map(({ id, name }) => (
-                    <span key={`add-${id}`} className="inline-flex items-center gap-2 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20">
                       <button
                         type="button"
-                        onClick={() => openRoleDetails({ id, name, requiredPerms: getRequiredPerms(r) })}
+                        onClick={() =>
+                          openRoleDetails({
+                            id,
+                            name,
+                            requiredPerms: getRequiredPerms(r),
+                          })
+                        }
                         className="text-xs underline text-primary hover:opacity-80"
+                        title={id}
                       >
                         {name}
                       </button>
-                      <span className="text-emerald-700 dark:text-emerald-300 text-[10px]">Add</span>
+                      {eligibleSet.has(id) && (
+                        <span
+                          className="text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1 text-[10px] dark:text-indigo-300 dark:bg-indigo-900/20 dark:border-indigo-700"
+                          title="Eligible via PIM"
+                        >
+                          PIM
+                        </span>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -100,21 +100,69 @@ export function RoleChangesSheet({
             </div>
 
             <div>
-              <div className="font-medium mb-2 text-red-600 dark:text-red-400">Will remove ({toRemove.length})</div>
+              <div className="font-medium mb-2 text-emerald-600 dark:text-emerald-400">
+                Will add ({toAdd.length})
+              </div>
+              {toAdd.length === 0 ? (
+                <div className="text-muted-foreground">None</div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {toAdd.map(({ id, name }) => (
+                    <span
+                      key={`add-${id}`}
+                      className="inline-flex items-center gap-2 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20"
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openRoleDetails({
+                            id,
+                            name,
+                            requiredPerms: getRequiredPerms(r),
+                          })
+                        }
+                        className="text-xs underline text-primary hover:opacity-80"
+                      >
+                        {name}
+                      </button>
+                      <span className="text-emerald-700 dark:text-emerald-300 text-[10px]">
+                        Add
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="font-medium mb-2 text-red-600 dark:text-red-400">
+                Will remove ({toRemove.length})
+              </div>
               {toRemove.length === 0 ? (
                 <div className="text-muted-foreground">None</div>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {toRemove.map(({ id, name }) => (
-                    <span key={`rm-${id}`} className="inline-flex items-center gap-2 px-2 py-0.5 rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20">
+                    <span
+                      key={`rm-${id}`}
+                      className="inline-flex items-center gap-2 px-2 py-0.5 rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20"
+                    >
                       <button
                         type="button"
-                        onClick={() => openRoleDetails({ id, name, requiredPerms: getRequiredPerms(r) })}
+                        onClick={() =>
+                          openRoleDetails({
+                            id,
+                            name,
+                            requiredPerms: getRequiredPerms(r),
+                          })
+                        }
                         className="text-xs underline text-primary hover:opacity-80"
                       >
                         {name}
                       </button>
-                      <span className="text-red-700 dark:text-red-300 text-[10px]">Remove</span>
+                      <span className="text-red-700 dark:text-red-300 text-[10px]">
+                        Remove
+                      </span>
                     </span>
                   ))}
                 </div>
