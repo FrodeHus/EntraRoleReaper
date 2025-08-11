@@ -352,7 +352,7 @@ export default function App() {
                   </div>
                 </div>
                 {subjectsOpen && (
-                  <div className="p-4 sm:p-5">
+                  <div className="p-4 sm:p-5 max-h-[50vh] overflow-y-auto">
                     {selected.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         No subjects selected. Use “Add users or groups” to
