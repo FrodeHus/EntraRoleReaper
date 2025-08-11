@@ -13,5 +13,7 @@
     <PackageReference Include="Microsoft.Graph" Version="5.89.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.8" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
   </ItemGroup>
 </Project>

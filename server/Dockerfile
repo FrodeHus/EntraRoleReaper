@@ -21,9 +21,14 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final
 RUN addgroup -S rolereaper && adduser -S rolereaper -G rolereaper
 WORKDIR /app
 
+# Create writable cache directory for sqlite
+RUN mkdir -p /cache \
+	&& chown -R rolereaper:rolereaper /cache \
+	&& chmod 700 /cache
+
 # Copy published output
 COPY --from=build /app/publish ./
-COPY --from=build /src/server/Data ./Data
+COPY --from=build /src/server/Configuration ./Configuration
 
 # App configuration
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080

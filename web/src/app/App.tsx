@@ -8,6 +8,7 @@ import {
   X,
   ChevronRight,
   ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
@@ -144,6 +145,25 @@ export default function App() {
   const login = () => instance.loginRedirect({ scopes: [apiScope] });
   const logout = () => instance.logoutRedirect();
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+  const refreshCache = async () => {
+    if (!accessToken) {
+      toast.error("Missing access token");
+      return;
+    }
+    try {
+      const url = new URL("/api/cache/refresh", apiBase);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toast.success("Cache refresh triggered");
+    } catch (e) {
+      toast.error("Failed to refresh cache");
+    }
+  };
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -187,6 +207,15 @@ export default function App() {
                 ) : (
                   <Moon className="h-4 w-4" />
                 )}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={refreshCache}
+                aria-label="Refresh role cache"
+                title="Refresh role cache"
+              >
+                <RefreshCw className="h-4 w-4" />
               </Button>
               <Button variant="outline" onClick={logout}>
                 Sign out

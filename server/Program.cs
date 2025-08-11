@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
+using RoleReaper.Data;
 using RoleReaper.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,8 +35,20 @@ builder.Services.AddCors();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
+
+// SQLite cache path is configurable via Cache:SqliteConnection or Cache:SqlitePath
+var sqliteConn = builder.Configuration.GetValue<string>("Cache:SqliteConnection");
+if (string.IsNullOrWhiteSpace(sqliteConn))
+{
+    var sqlitePath = builder.Configuration.GetValue<string>(
+        "Cache:SqlitePath",
+        "/tmp/rolereaper_cache.sqlite"
+    );
+    sqliteConn = $"Data Source={sqlitePath}";
+}
+builder.Services.AddDbContext<CacheDbContext>(opt => opt.UseSqlite(sqliteConn));
 builder.Services.AddSingleton<IGraphServiceFactory, GraphServiceFactory>();
-builder.Services.AddSingleton<IRoleCache, RoleCache>();
+builder.Services.AddScoped<IRoleCache, RoleCache>();
 builder.Services.AddScoped<IUserSearchService, UserSearchService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 
@@ -45,6 +59,13 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+// Ensure database created (SQLite file in /tmp)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<CacheDbContext>();
+    db.Database.EnsureCreated();
+}
 
 app.UseCors(policy =>
     policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()
@@ -58,6 +79,28 @@ app.UseAuthorization();
 
 // Minimal API endpoints
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+// Cache status endpoint
+app.MapGet(
+        "/api/cache/status",
+        async (IRoleCache cache) =>
+        {
+            var ts = await cache.GetLastUpdatedAsync();
+            return Results.Ok(new { lastUpdatedUtc = ts });
+        }
+    )
+    .RequireAuthorization();
+
+// Force refresh endpoint
+app.MapPost(
+        "/api/cache/refresh",
+        async (IRoleCache cache) =>
+        {
+            await cache.RefreshAsync();
+            var ts = await cache.GetLastUpdatedAsync();
+            return Results.Ok(new { lastUpdatedUtc = ts });
+        }
+    )
+    .RequireAuthorization();
 
 app.MapGet(
         "/api/search",

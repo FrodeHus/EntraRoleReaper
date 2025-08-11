@@ -9,7 +9,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
 {
     private readonly Lazy<Dictionary<string, string[]>> _permissionMap = new(() =>
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "Data", "permissions-map.json");
+        var path = Path.Combine(AppContext.BaseDirectory, "Configuration", "permissions-map.json");
         if (File.Exists(path))
         {
             var json = File.ReadAllText(path);
@@ -24,7 +24,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
         {
             var path = Path.Combine(
                 AppContext.BaseDirectory,
-                "Data",
+                "Configuration",
                 "suggested-role-exclude.json"
             );
             if (File.Exists(path))
