@@ -360,9 +360,19 @@ public class ReviewService(
         // Ensure operation map cache is initialized
         await operationMapCache.InitializeAsync();
         var opMap = operationMapCache.GetAll();
+        var propMap = operationMapCache.GetPropertyMap();
         foreach (var op in usedOperations)
         {
-            var perms = opMap.TryGetValue(op, out var p) ? p : Array.Empty<string>();
+            var basePerms = opMap.TryGetValue(op, out var p) ? p : Array.Empty<string>();
+            if (propMap.TryGetValue(op, out var perProp))
+            {
+                var union = new HashSet<string>(basePerms, StringComparer.OrdinalIgnoreCase);
+                foreach (var arr in perProp.Values)
+                    foreach (var act in arr)
+                        union.Add(act);
+                basePerms = union.ToArray();
+            }
+            var perms = basePerms;
             var targets = opTargets.TryGetValue(op, out var allTargets)
                 ? allTargets.Values.ToList()
                 : new List<ReviewTarget>();

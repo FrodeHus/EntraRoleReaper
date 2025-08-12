@@ -49,6 +49,16 @@ public class OperationMapEntity
         new List<ResourceActionEntity>();
 }
 
+// New: property-level mapping (Operation + PropertyName -> many ResourceActions)
+public class OperationPropertyMapEntity
+{
+    public int Id { get; set; }
+    public string OperationName { get; set; } = string.Empty;
+    public string PropertyName { get; set; } = string.Empty;
+    public virtual ICollection<ResourceActionEntity> ResourceActions { get; set; } =
+        new List<ResourceActionEntity>();
+}
+
 public class RolePermissionEntity
 {
     public int Id { get; set; }

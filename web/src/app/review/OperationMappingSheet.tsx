@@ -40,30 +40,54 @@ export function OperationMappingSheet({
   const [error, setError] = useState<string | null>(null);
   const [showMappedOnly, setShowMappedOnly] = useState(true);
 
+  // Parse composite token operation::property (property optional)
+  const parsed = useMemo(() => {
+    if (!operationName) return { op: null as string | null, prop: null as string | null };
+    const parts = operationName.split("::");
+    if (parts.length === 2) return { op: parts[0], prop: parts[1] };
+    return { op: operationName, prop: null as string | null };
+  }, [operationName]);
+
   const load = useCallback(async () => {
-    if (!operationName || !accessToken) return;
+    if (!parsed.op || !accessToken) return;
     try {
       setLoading(true);
       setError(null);
-      const url = new URL(
-        `/api/operations/map/${encodeURIComponent(operationName)}`,
-        apiBase
-      );
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (!res.ok) throw new Error("Failed to load mapping");
-      const json = (await res.json()) as MappingData;
-      setData(json);
-      const sel = new Set(json.mapped.map((m) => m.id));
-      setSelected(sel);
-      setOriginalSelected(new Set(sel));
+      if (parsed.prop) {
+        // Property-level: need union of all actions + property specific mapped
+        const baseUrl = new URL(`/api/operations/map/${encodeURIComponent(parsed.op)}`, apiBase);
+        const propUrl = new URL(`/api/operations/map/${encodeURIComponent(parsed.op)}/properties`, apiBase);
+        const [baseRes, propRes] = await Promise.all([
+          fetch(baseUrl, { headers: { Authorization: `Bearer ${accessToken}` } }),
+          fetch(propUrl, { headers: { Authorization: `Bearer ${accessToken}` } })
+        ]);
+        if (!baseRes.ok) throw new Error("Failed to load base mapping");
+        if (!propRes.ok) throw new Error("Failed to load property mapping list");
+        const baseJson = (await baseRes.json()) as MappingData; // has all actions
+        const propsJson = (await propRes.json()) as Array<{ id: number; propertyName: string; actions: { id: number; action: string; isPrivileged: boolean }[] }>;
+        const match = propsJson.find(p => p.propertyName === parsed.prop);
+        const mapped = match ? match.actions.map(a => ({ id: a.id, action: a.action, isPrivileged: a.isPrivileged })) : [];
+        const merged: MappingData = { operationName: `${parsed.op}::${parsed.prop}`, exists: true, mapped, all: baseJson.all };
+        setData(merged);
+        const sel = new Set(mapped.map(m => m.id));
+        setSelected(sel);
+        setOriginalSelected(new Set(sel));
+      } else {
+        const url = new URL(`/api/operations/map/${encodeURIComponent(parsed.op)}`, apiBase);
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+        if (!res.ok) throw new Error("Failed to load mapping");
+        const json = (await res.json()) as MappingData;
+        setData(json);
+        const sel = new Set(json.mapped.map(m => m.id));
+        setSelected(sel);
+        setOriginalSelected(new Set(sel));
+      }
     } catch (e: any) {
       setError(e.message || "Failed to load");
     } finally {
       setLoading(false);
     }
-  }, [operationName, accessToken, apiBase]);
+  }, [parsed, accessToken, apiBase]);
 
   useEffect(() => {
     if (open) {
@@ -209,30 +233,46 @@ export function OperationMappingSheet({
   const mappedIds = useMemo(() => new Set(data?.mapped.map(m => m.id) ?? []), [data]);
 
   const save = useCallback(async (next: Set<number>) => {
-    if (!operationName || !accessToken) return;
+    if (!parsed.op || !accessToken) return;
     try {
       setSaving(true);
-      const url = new URL(`/api/operations/map/${encodeURIComponent(operationName)}`, apiBase);
-      const body = JSON.stringify(Array.from(next));
-      const res = await fetch(url, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body,
-      });
-      if (!res.ok) throw new Error("Failed to save mapping");
-      const json = (await res.json()) as MappingData;
-      setData(json);
-      const sel = new Set(json.mapped.map(m => m.id));
-      setSelected(sel);
-      setOriginalSelected(new Set(sel));
-  toast.success("Mapping saved", { description: `${json.mapped.length} actions mapped` });
-  window.dispatchEvent(new CustomEvent('operation-mappings-updated'));
+      const bodyArr = Array.from(next);
+      let saved: MappingData | null = null;
+      if (parsed.prop) {
+        const url = new URL(`/api/operations/map/${encodeURIComponent(parsed.op)}/properties/${encodeURIComponent(parsed.prop)}`, apiBase);
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify(bodyArr),
+        });
+        if (!res.ok) throw new Error("Failed to save property mapping");
+        // After save, reload to get authoritative list
+        await load();
+        saved = null; // load handles state
+      } else {
+        const url = new URL(`/api/operations/map/${encodeURIComponent(parsed.op)}`, apiBase);
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify(bodyArr),
+        });
+        if (!res.ok) throw new Error("Failed to save mapping");
+        const json = (await res.json()) as MappingData;
+        saved = json;
+        setData(json);
+        const sel = new Set(json.mapped.map(m => m.id));
+        setSelected(sel);
+        setOriginalSelected(new Set(sel));
+      }
+      const mappedLen = saved ? saved.mapped.length : next.size;
+      toast.success("Mapping saved", { description: `${mappedLen} actions mapped` });
+      window.dispatchEvent(new CustomEvent('operation-mappings-updated'));
     } catch (e: any) {
       setError(e.message || "Failed to save");
     } finally {
       setSaving(false);
     }
-  }, [operationName, accessToken, apiBase]);
+  }, [parsed, accessToken, apiBase, load]);
 
   const toggle = (id: number) => {
     setSelected(prev => {

@@ -100,7 +100,6 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         const json = await res.json();
         setActionsItems(json.items || []);
         setActionsTotalPages(json.totalPages || 1);
-        setActionsPage(json.page || page);
       } catch {
         setActionsItems([]);
       } finally {
@@ -114,14 +113,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     if (activeTab === "actions") {
       loadActions(1, actionsSearch, actionsSort, actionsDir, actionsPrivFilter);
     }
-  }, [
-    activeTab,
-    actionsSearch,
-    actionsSort,
-    actionsDir,
-    actionsPrivFilter,
-    loadActions,
-  ]);
+  }, [activeTab, actionsSearch, actionsSort, actionsDir, actionsPrivFilter, loadActions]);
 
   // Load roles when roles tab active or filter toggled
   useEffect(() => {
@@ -274,14 +266,12 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                 Export operation mappings
               </Button>
               <p className="text-xs text-muted-foreground mt-1">
-                Download current operation-to-permissions mapping as seed JSON.
+                Download current operation and property-level mappings. Legacy operations without property mappings export as an array; those with properties export an object containing actions and a properties map.
               </p>
             </div>
             <div>
               <form onSubmit={(e) => e.preventDefault()} className="space-y-2">
-                <label className="text-xs font-medium">
-                  Import operation mappings
-                </label>
+                <label className="text-xs font-medium">Import operation/property mappings</label>
                 <input
                   type="file"
                   accept="application/json,.json"
@@ -296,9 +286,14 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                     e.target.value = "";
                   }}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Upload a JSON seed file mapping operations to actions.
-                  Existing operations are replaced.
+                <p className="text-xs text-muted-foreground space-y-1">
+                  <span>Upload JSON. Accepted formats:</span>
+                  <br />
+                  <code className="bg-muted px-1 py-0.5 rounded text-[10px] inline-block">{`{"Operation": ["action"]}`}</code>
+                  <span className="mx-1">or</span>
+                  <code className="bg-muted px-1 py-0.5 rounded text-[10px] inline-block">{`{"Operation": {"actions": ["action"], "properties": {"Prop": ["action"]}}}`}</code>
+                  <br />
+                  <span>All existing mappings (including property mappings) will be replaced.</span>
                 </p>
               </form>
             </div>

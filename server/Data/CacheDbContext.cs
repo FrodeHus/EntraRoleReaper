@@ -7,6 +7,7 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
     public DbSet<RoleDefinitionEntity> RoleDefinitions => Set<RoleDefinitionEntity>();
     public DbSet<ResourceActionEntity> ResourceActions => Set<ResourceActionEntity>();
     public DbSet<OperationMapEntity> OperationMaps => Set<OperationMapEntity>();
+    public DbSet<OperationPropertyMapEntity> OperationPropertyMaps => Set<OperationPropertyMapEntity>();
     public DbSet<RolePermissionEntity> RolePermissions => Set<RolePermissionEntity>();
     public DbSet<MetaEntity> Meta => Set<MetaEntity>();
 
@@ -64,6 +65,25 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
             b.HasIndex(e => e.OperationName).IsUnique();
             b.Property(e => e.OperationName).HasMaxLength(512).IsRequired();
         });
+
+        modelBuilder.Entity<OperationPropertyMapEntity>(b =>
+        {
+            b.ToTable("operation_property_map");
+            b.HasKey(e => e.Id);
+            b.HasIndex(e => new { e.OperationName, e.PropertyName }).IsUnique();
+            b.Property(e => e.OperationName).HasMaxLength(512).IsRequired();
+            b.Property(e => e.PropertyName).HasMaxLength(512).IsRequired();
+        });
+
+        modelBuilder
+            .Entity<OperationPropertyMapEntity>()
+            .HasMany(o => o.ResourceActions)
+            .WithMany()
+            .UsingEntity<Dictionary<string, object>>(
+                "operation_property_resource_actions",
+                l => l.HasOne<ResourceActionEntity>().WithMany().HasForeignKey("ResourceActionId"),
+                r => r.HasOne<OperationPropertyMapEntity>().WithMany().HasForeignKey("OperationPropertyMapId")
+            );
 
         // Many-to-many OperationMap <-> ResourceAction
         modelBuilder

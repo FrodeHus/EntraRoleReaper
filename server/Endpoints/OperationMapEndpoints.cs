@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using RoleReaper.Data;
 using RoleReaper.Services;
 
@@ -166,88 +167,220 @@ public static class OperationMapEndpoints
             return Results.Ok(response);
         }).RequireAuthorization();
 
-        // Export all operation mappings in seed file format (operationName -> [action, ...])
+        // Export operation & property-level mappings.
+        // Format per operation key:
+        //  - If only operation-level actions exist (no property maps): ["action", ...] (legacy compatible)
+        //  - If property maps exist (with or without operation-level actions):
+        //      { "actions": ["action", ...], "properties": { "PropertyName": ["action", ...], ... } }
         app.MapGet("/api/operations/map/export", async (CacheDbContext db) =>
         {
-            var items = await db.OperationMaps
+            var opMaps = await db.OperationMaps
                 .Include(o => o.ResourceActions)
-                .OrderBy(o => o.OperationName)
-                .Select(o => new
-                {
-                    o.OperationName,
-                    Actions = o.ResourceActions
-                        .OrderBy(a => a.Action)
-                        .Select(a => a.Action)
-                        .ToList()
-                })
                 .ToListAsync();
-            var dict = items.ToDictionary(
-                i => i.OperationName,
-                i => (object)i.Actions,
+            var propMaps = await db.OperationPropertyMaps
+                .Include(p => p.ResourceActions)
+                .ToListAsync();
+
+            var allOperationNames = new HashSet<string>(
+                opMaps.Select(o => o.OperationName).Concat(propMaps.Select(p => p.OperationName)),
                 StringComparer.OrdinalIgnoreCase);
-            return Results.Ok(dict);
+
+            var result = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            foreach (var opName in allOperationNames.OrderBy(n => n, StringComparer.OrdinalIgnoreCase))
+            {
+                var opEntity = opMaps.FirstOrDefault(o => o.OperationName.Equals(opName, StringComparison.OrdinalIgnoreCase));
+                var propGroup = propMaps
+                    .Where(p => p.OperationName.Equals(opName, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(p => p.PropertyName)
+                    .ToList();
+                var opActions = (opEntity?.ResourceActions ?? new List<ResourceActionEntity>())
+                    .OrderBy(a => a.Action)
+                    .Select(a => a.Action)
+                    .ToList();
+                if (propGroup.Count == 0)
+                {
+                    // Legacy simple array form
+                    result[opName] = opActions;
+                }
+                else
+                {
+                    var propObj = propGroup.ToDictionary(
+                        p => p.PropertyName,
+                        p => (IEnumerable<string>)p.ResourceActions.OrderBy(a => a.Action).Select(a => a.Action).ToList(),
+                        StringComparer.OrdinalIgnoreCase);
+                    result[opName] = new
+                    {
+                        actions = opActions, // can be empty
+                        properties = propObj
+                    };
+                }
+            }
+            return Results.Ok(result);
         }).RequireAuthorization();
 
-        // Import (upsert) operation mappings from seed format { "Operation": ["action", ...], ... }
-        app.MapPost(
-                "/api/operations/map/import",
-                async (
-                    Dictionary<string, string[]> payload,
-                    CacheDbContext db,
-                    IOperationMapCache opCache
-                ) =>
+        // Import (upsert) mappings. Accepts legacy { "Op": ["action", ...] } or new format { "Op": { actions: [..], properties: { Prop: [..] } } }
+        app.MapPost("/api/operations/map/import", async (JsonElement payload, CacheDbContext db, IOperationMapCache opCache) =>
         {
-            payload ??= new(StringComparer.OrdinalIgnoreCase);
-            if (payload.Count == 0) return Results.BadRequest(new { error = "Empty payload" });
-            // Clear existing mappings completely so imported file becomes the authoritative set
-            var existingMaps = await db.OperationMaps.Include(o => o.ResourceActions).ToListAsync();
-            int removed = existingMaps.Count;
+            if (payload.ValueKind != JsonValueKind.Object)
+                return Results.BadRequest(new { error = "Root must be an object" });
+
+            // Wipe existing operation & property mappings
+            var existingOps = await db.OperationMaps.Include(o => o.ResourceActions).ToListAsync();
+            var existingProps = await db.OperationPropertyMaps.Include(p => p.ResourceActions).ToListAsync();
+            int removed = existingOps.Count + existingProps.Count;
             if (removed > 0)
             {
-                db.OperationMaps.RemoveRange(existingMaps);
-                await db.SaveChangesAsync(); // persist removal early to avoid key conflicts / residual relationships
+                db.OperationMaps.RemoveRange(existingOps);
+                db.OperationPropertyMaps.RemoveRange(existingProps);
+                await db.SaveChangesAsync();
             }
-            // Collect all distinct action names (case-insensitive)
+
             var allActionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var kvp in payload)
+            var operations = new List<(string Name, IEnumerable<string> Actions)>();
+            var propMappings = new List<(string Operation, string Property, IEnumerable<string> Actions)>();
+
+            foreach (var prop in payload.EnumerateObject())
             {
-                if (string.IsNullOrWhiteSpace(kvp.Key)) continue;
-                foreach (var act in kvp.Value ?? Array.Empty<string>())
-                    if (!string.IsNullOrWhiteSpace(act)) allActionNames.Add(act.Trim());
+                var opName = prop.Name.Trim();
+                if (string.IsNullOrWhiteSpace(opName)) continue;
+                if (prop.Value.ValueKind == JsonValueKind.Array)
+                {
+                    var acts = prop.Value.EnumerateArray()
+                        .Where(e => e.ValueKind == JsonValueKind.String)
+                        .Select(e => e.GetString()!.Trim())
+                        .Where(s => !string.IsNullOrWhiteSpace(s))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    foreach (var a in acts) allActionNames.Add(a);
+                    operations.Add((opName, acts));
+                }
+                else if (prop.Value.ValueKind == JsonValueKind.Object)
+                {
+                    var obj = prop.Value;
+                    List<string> opActs = new();
+                    if (obj.TryGetProperty("actions", out var actionsElem) && actionsElem.ValueKind == JsonValueKind.Array)
+                    {
+                        opActs = actionsElem.EnumerateArray()
+                            .Where(e => e.ValueKind == JsonValueKind.String)
+                            .Select(e => e.GetString()!.Trim())
+                            .Where(s => !string.IsNullOrWhiteSpace(s))
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                            .ToList();
+                        foreach (var a in opActs) allActionNames.Add(a);
+                    }
+                    if (obj.TryGetProperty("properties", out var propsElem) && propsElem.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (var p in propsElem.EnumerateObject())
+                        {
+                            var propName = p.Name.Trim();
+                            if (string.IsNullOrWhiteSpace(propName)) continue;
+                            if (p.Value.ValueKind != JsonValueKind.Array) continue;
+                            var pActs = p.Value.EnumerateArray()
+                                .Where(e => e.ValueKind == JsonValueKind.String)
+                                .Select(e => e.GetString()!.Trim())
+                                .Where(s => !string.IsNullOrWhiteSpace(s))
+                                .Distinct(StringComparer.OrdinalIgnoreCase)
+                                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                                .ToList();
+                            foreach (var a in pActs) allActionNames.Add(a);
+                            propMappings.Add((opName, propName, pActs));
+                        }
+                    }
+                    operations.Add((opName, opActs));
+                }
             }
-            // Load existing actions
+
+            // Load existing actions only once
             var actionEntities = await db.ResourceActions
                 .Where(a => allActionNames.Contains(a.Action))
                 .ToListAsync();
             var actionLookup = actionEntities.ToDictionary(a => a.Action, a => a, StringComparer.OrdinalIgnoreCase);
             var unknownActions = allActionNames.Where(a => !actionLookup.ContainsKey(a)).OrderBy(a => a).ToList();
-            int created = 0, updated = 0; // updated will remain 0 since we wiped first, but keep field for response consistency
-            foreach (var kvp in payload)
+
+            int created = 0;
+            int propertyCreated = 0;
+            foreach (var op in operations)
             {
-                var opName = kvp.Key?.Trim();
-                if (string.IsNullOrWhiteSpace(opName)) continue;
-                var wanted = (kvp.Value ?? Array.Empty<string>())
-                    .Where(a => !string.IsNullOrWhiteSpace(a) && actionLookup.ContainsKey(a))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Select(a => actionLookup[a])
-                    .OrderBy(a => a.Action)
-                    .ToList();
-                var entity = new RoleReaper.Data.OperationMapEntity { OperationName = opName };
-                foreach (var act in wanted) entity.ResourceActions.Add(act);
+                var entity = new RoleReaper.Data.OperationMapEntity { OperationName = op.Name };
+                foreach (var act in op.Actions.Where(a => actionLookup.ContainsKey(a)))
+                    entity.ResourceActions.Add(actionLookup[act]);
                 db.OperationMaps.Add(entity);
                 created++;
             }
+            foreach (var pm in propMappings)
+            {
+                var entity = new OperationPropertyMapEntity { OperationName = pm.Operation, PropertyName = pm.Property };
+                foreach (var act in pm.Actions.Where(a => actionLookup.ContainsKey(a)))
+                    entity.ResourceActions.Add(actionLookup[act]);
+                db.OperationPropertyMaps.Add(entity);
+                propertyCreated++;
+            }
             await db.SaveChangesAsync();
-                    await opCache.RefreshAsync();
+            await opCache.RefreshAsync();
             return Results.Ok(new
             {
                 created,
-                updated,
-                totalOperations = created + updated,
+                propertyCreated,
+                totalOperations = created,
                 removed,
                 unknownActions
             });
         }).RequireAuthorization();
+
+            // Property-level mapping endpoints
+            app.MapGet("/api/operations/map/{operationName}/properties", async (string operationName, CacheDbContext db) =>
+            {
+                if (string.IsNullOrWhiteSpace(operationName)) return Results.BadRequest();
+                var rows = await db.OperationPropertyMaps
+                    .Where(p => p.OperationName == operationName)
+                    .Include(p => p.ResourceActions)
+                    .ToListAsync();
+                var result = rows
+                    .OrderBy(r => r.PropertyName)
+                    .Select(r => new
+                    {
+                        r.Id,
+                        r.PropertyName,
+                        actions = r.ResourceActions.Select(a => new { a.Id, a.Action, a.IsPrivileged }).OrderBy(a => a.Action).ToList()
+                    });
+                return Results.Ok(result);
+            }).RequireAuthorization();
+
+            app.MapPut("/api/operations/map/{operationName}/properties/{propertyName}", async (string operationName, string propertyName, int[] actionIds, CacheDbContext db, IOperationMapCache opCache) =>
+            {
+                if (string.IsNullOrWhiteSpace(operationName) || string.IsNullOrWhiteSpace(propertyName)) return Results.BadRequest();
+                var entity = await db.OperationPropertyMaps
+                    .Include(p => p.ResourceActions)
+                    .SingleOrDefaultAsync(p => p.OperationName == operationName && p.PropertyName == propertyName);
+                if (entity == null)
+                {
+                    entity = new OperationPropertyMapEntity { OperationName = operationName, PropertyName = propertyName };
+                    db.OperationPropertyMaps.Add(entity);
+                }
+                var distinct = actionIds?.Distinct().ToArray() ?? Array.Empty<int>();
+                var actions = await db.ResourceActions.Where(a => distinct.Contains(a.Id)).ToListAsync();
+                entity.ResourceActions.Clear();
+                foreach (var a in actions) entity.ResourceActions.Add(a);
+                await db.SaveChangesAsync();
+                await opCache.RefreshAsync();
+                return Results.Ok(new
+                {
+                    entity.OperationName,
+                    entity.PropertyName,
+                    actions = entity.ResourceActions.Select(a => new { a.Id, a.Action, a.IsPrivileged })
+                });
+            }).RequireAuthorization();
+
+            app.MapDelete("/api/operations/map/{operationName}/properties/{propertyName}", async (string operationName, string propertyName, CacheDbContext db, IOperationMapCache opCache) =>
+            {
+                var entity = await db.OperationPropertyMaps.SingleOrDefaultAsync(p => p.OperationName == operationName && p.PropertyName == propertyName);
+                if (entity == null) return Results.NotFound();
+                db.OperationPropertyMaps.Remove(entity);
+                await db.SaveChangesAsync();
+                await opCache.RefreshAsync();
+                return Results.NoContent();
+            }).RequireAuthorization();
         return app;
     }
 }

@@ -346,23 +346,34 @@ export function OperationsSheet({
                                       newValue?: string;
                                     },
                                     mIdx: number
-                                  ) => (
-                                    <div
-                                      key={mIdx}
-                                      className="text-[10px] font-mono break-all"
-                                    >
-                                      <span className="font-semibold">
-                                        {mp.displayName}:
-                                      </span>{" "}
-                                      <span className="text-red-600 dark:text-red-400">
-                                        {mp.oldValue ?? ""}
-                                      </span>{" "}
-                                      <span className="mx-1">→</span>
-                                      <span className="text-emerald-600 dark:text-emerald-400">
-                                        {mp.newValue ?? ""}
-                                      </span>
-                                    </div>
-                                  )
+                                  ) => {
+                                    const propToken = `${op.op}::${mp.displayName}`;
+                                    return (
+                                      <div
+                                        key={mIdx}
+                                        className="text-[10px] font-mono break-all group relative pr-16"
+                                      >
+                                        <span className="font-semibold">
+                                          {mp.displayName}:
+                                        </span>{" "}
+                                        <span className="text-red-600 dark:text-red-400">
+                                          {mp.oldValue ?? ""}
+                                        </span>{" "}
+                                        <span className="mx-1">→</span>
+                                        <span className="text-emerald-600 dark:text-emerald-400">
+                                          {mp.newValue ?? ""}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => openMapping(propToken)}
+                                          className="absolute top-0 right-0 opacity-70 group-hover:opacity-100 text-[9px] px-1 py-0.5 border rounded bg-muted text-muted-foreground hover:bg-muted/80 transition"
+                                          title="Map actions for this specific property change"
+                                        >
+                                          Map
+                                        </button>
+                                      </div>
+                                    );
+                                  }
                                 )}
                               </div>
                             )}
