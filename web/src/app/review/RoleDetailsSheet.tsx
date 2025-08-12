@@ -20,11 +20,16 @@ export function RoleDetailsSheet({
   const [collapsedSets, setCollapsedSets] = useState<Set<number>>(new Set());
   useEffect(() => setOnlyRequiredPerms(false), [open]);
   useEffect(() => {
-    // Reset collapse state when opening a different role/details
-    if (open) setCollapsedSets(new Set());
-  }, [open, details?.id, details?.name]);
+    // Initialize all permission sets as collapsed when opening / changing role
+    if (open) {
+      const count = details?.rolePermissions?.length ?? 0;
+      setCollapsedSets(new Set(Array.from({ length: count }, (_, i) => i)));
+    }
+  }, [open, details?.id, details?.name, details?.rolePermissions?.length]);
 
-  const reqSet = new Set((role?.requiredPerms ?? []).map((r) => r.toLowerCase()));
+  const reqSet = new Set(
+    (role?.requiredPerms ?? []).map((r) => r.toLowerCase())
+  );
   const covers = (action: string, required: string) => {
     const a = action.toLowerCase();
     const r = required.toLowerCase();
@@ -186,7 +191,7 @@ export function RoleDetailsSheet({
                                   });
                                 }}
                                 className="inline-flex items-center gap-1 px-1 py-0.5 rounded border bg-muted/40 hover:bg-muted transition-colors"
-                                aria-expanded={collapsed ? false : true}
+                                aria-expanded={!collapsed}
                                 aria-controls={`perm-set-${gi}`}
                               >
                                 <span className="text-[10px]">
