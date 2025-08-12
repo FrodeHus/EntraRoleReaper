@@ -408,18 +408,20 @@ export function ReviewPanel({
             ))}
           </select>
         </div>
-        <Button onClick={run} disabled={loading || selectedIds.length === 0}>
-          {loading ? "Running…" : "Run review"}
+        <Button
+          onClick={run}
+          disabled={loading || selectedIds.length === 0}
+          aria-busy={loading || undefined}
+        >
+          {loading && (
+            <span
+              className="inline-block h-4 w-4 mr-2 rounded-full border-2 border-background/40 dark:border-foreground/30 border-t-transparent animate-spin"
+              aria-hidden
+            />
+          )}
+          <span>{loading ? "Running…" : "Run review"}</span>
+          <span className="sr-only">{loading ? "Preparing report" : ""}</span>
         </Button>
-        {loading && (
-          <span
-            className="text-sm text-muted-foreground"
-            role="status"
-            aria-live="polite"
-          >
-            Preparing report…
-          </span>
-        )}
       </div>
 
       {report && (

@@ -89,13 +89,27 @@ export function CacheStatusChip({ accessToken, apiBase }: Props) {
     : `Role cache: ${count ?? '-'} role definitions. Last update: ${displayTime}${rel ? ` (${rel} ago)` : ''}${stale ? ' (stale)' : ''}`;
 
   return (
-    <span className={`${baseClasses} ${variant}`} title={title} aria-label={title} role="status">
+    <span
+      className={`${baseClasses} ${variant}`}
+      title={title}
+      aria-label={title}
+      role="status"
+    >
       {loading ? (
-        <span className="inline-block h-3 w-3 rounded-full border-2 border-t-transparent border-current animate-spin" aria-hidden></span>
+        <span
+          className="inline-block h-3 w-3 rounded-full border-2 border-t-transparent border-current animate-spin"
+          aria-hidden
+        ></span>
       ) : (
-        <span className="inline-block h-2 w-2 rounded-full bg-current opacity-70" aria-hidden></span>
+        <span
+          className="inline-block h-2 w-2 rounded-full bg-current opacity-70"
+          aria-hidden
+        ></span>
       )}
-  Cache: {count ?? '-'}{rel && !loading && !error ? ` · ${rel}` : ''}{(stale || (count ?? 0) === 0) && !loading && !error ? '!' : ''}
+      Cache: {count ?? "-"}
+      {typeof count === "number" ? " roles" : ""}
+      {rel && !loading && !error ? ` · ${rel}` : ""}
+      {(stale || (count ?? 0) === 0) && !loading && !error ? "!" : ""}
     </span>
   );
 }
