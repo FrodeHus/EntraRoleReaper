@@ -12,12 +12,14 @@ export function CurrentRolesCell({
   getRequiredPerms: (r: UserReview) => string[];
 }) {
   const r = review;
-  if (!r.currentRoleIds || r.currentRoleIds.length === 0) {
+  if (!r.activeRoles || r.activeRoles.length === 0) {
     return <span className="text-muted-foreground">None</span>;
   }
-
-  const names = r.currentRoleIds.map((id) => ({ id, name: roleNameCache[id] ?? id }));
-  const eligibleSet = new Set(r.eligibleRoleIds ?? []);
+  const names = r.activeRoles.map((sr) => ({
+    id: sr.id,
+    name: roleNameCache[sr.id] ?? sr.displayName,
+  }));
+  const eligibleSet = new Set(r.eligiblePimRoles.map((er) => er.id));
 
   return (
     <div className="flex flex-wrap gap-2">

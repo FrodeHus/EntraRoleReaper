@@ -1,14 +1,25 @@
 namespace RoleReaper.Services;
 
+public record SimpleUser(string Id, string DisplayName);
+
+public record OperationTarget(string? Id, string? DisplayName);
+
+public record OperationPermission(string Name, IReadOnlyList<string> GrantedByRoleIds);
+
+public record OperationReview(
+    string Operation,
+    IReadOnlyList<OperationTarget> Targets,
+    IReadOnlyList<OperationPermission> Permissions
+);
+
+public record SimpleRole(string Id, string DisplayName);
+
+// New simplified UserReview per updated contract
 public record UserReview(
-    string UserId,
-    string UserDisplayName,
-    string[] CurrentRoleIds,
-    string[] EligibleRoleIds,
-    string[] UsedOperations,
-    string[] SuggestedRoleIds,
-    IReadOnlyList<SuggestedRole> SuggestedRoles,
-    int OperationCount,
-    IReadOnlyList<ReviewOperation> Operations,
-    IReadOnlyList<RoleMeta> RoleMeta
+    SimpleUser User,
+    IReadOnlyList<SimpleRole> ActiveRoles,
+    IReadOnlyList<SimpleRole> EligiblePimRoles,
+    IReadOnlyList<OperationReview> Operations,
+    IReadOnlyList<SimpleRole> AddedRoles,
+    IReadOnlyList<SimpleRole> RemovedRoles
 );

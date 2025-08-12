@@ -4,37 +4,18 @@ export type ReviewRequest = {
   to: string;
 };
 
+export type SimpleRole = { id: string; displayName: string };
 export type UserReview = {
-  userId: string;
-  userDisplayName: string;
-  currentRoleIds: string[];
-  eligibleRoleIds?: string[];
-  usedOperations: string[];
-  suggestedRoleIds: string[];
-  suggestedRoles?: {
-    id?: string;
-    name: string;
-    coveredRequired: number;
-    privilegedAllowed: number;
-    totalAllowed: number;
-  }[];
-  operationCount: number;
-  roleMeta?: { name: string; pim: boolean }[];
+  user: { id: string; displayName: string };
+  activeRoles: SimpleRole[];
+  eligiblePimRoles: SimpleRole[];
   operations: {
     operation: string;
-    requiredPermissions: string[];
-    targets: {
-      id?: string;
-      displayName?: string;
-      type?: string;
-      label?: string;
-    }[];
-    permissionDetails?: {
-      name: string;
-      privileged: boolean;
-      grantedByRoles?: string[];
-    }[];
+    targets: { id?: string; displayName?: string }[];
+    permissions: { name: string; grantedByRoleIds: string[] }[];
   }[];
+  addedRoles: SimpleRole[];
+  removedRoles: SimpleRole[];
 };
 
 export type ReviewResponse = { results: UserReview[] };

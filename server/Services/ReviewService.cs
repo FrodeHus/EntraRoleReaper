@@ -374,18 +374,127 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                 .Select(g => new RoleMeta(g.Key, g.Any(x => x.Pim)))
                 .ToList();
 
+            // Build operation reviews for new contract
+            var opReviews = operationsList
+                .Select(op =>
+                {
+                    var targets = op
+                        .Targets.DistinctBy(t => (t.Id ?? "") + "|" + (t.DisplayName ?? ""))
+                        .Select(t => new OperationTarget(t.Id, t.DisplayName))
+                        .ToList();
+                    // For each permission detail we now map to role IDs (active + eligible) that grant it
+                    var currentAndEligible = new HashSet<string>(
+                        currentRoleIds.Concat(eligibleRoleIds),
+                        StringComparer.OrdinalIgnoreCase
+                    );
+                    var nameToId = roles
+                        .Values.Where(r =>
+                            !string.IsNullOrWhiteSpace(r.DisplayName)
+                            && !string.IsNullOrWhiteSpace(r.Id)
+                        )
+                        .GroupBy(r => r.DisplayName!, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Select(r => r.Id!).First(),
+                            StringComparer.OrdinalIgnoreCase
+                        );
+                    var permissions = op
+                        .PermissionDetails.Select(pd =>
+                        {
+                            var grantingIds =
+                                pd.GrantedByRoles.Select(n =>
+                                        nameToId.TryGetValue(n, out var id) ? id : null
+                                    )
+                                    .Where(id => id != null && currentAndEligible.Contains(id))
+                                    .Distinct()!
+                                    .ToList() as IReadOnlyList<string>;
+                            return new OperationPermission(pd.Name, grantingIds);
+                        })
+                        .ToList();
+                    return new OperationReview(op.Operation, targets, permissions);
+                })
+                .ToList();
+
+            // Determine added / removed roles (suggested vs current) using IDs where possible
+            var currentSet = new HashSet<string>(currentRoleIds, StringComparer.OrdinalIgnoreCase);
+            var suggestedRoleIds = suggestedDetails
+                .Where(sr => !string.IsNullOrWhiteSpace(sr.Id))
+                .Select(sr => sr.Id)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            // If we had no detailed ids (edge case), try map display names
+            if (suggestedRoleIds.Count == 0)
+            {
+                var byName = roles
+                    .Values.Where(r =>
+                        !string.IsNullOrWhiteSpace(r.DisplayName)
+                        && !string.IsNullOrWhiteSpace(r.Id)
+                    )
+                    .ToDictionary(
+                        r => r.DisplayName!,
+                        r => r.Id!,
+                        StringComparer.OrdinalIgnoreCase
+                    );
+                foreach (var name in suggested)
+                {
+                    if (byName.TryGetValue(name, out var id))
+                        suggestedRoleIds.Add(id);
+                }
+            }
+            var suggestedSet = new HashSet<string>(
+                suggestedRoleIds,
+                StringComparer.OrdinalIgnoreCase
+            );
+            var added = suggestedRoleIds.Where(id => !currentSet.Contains(id)).ToList();
+            var removed =
+                suggestedSet.Count > 0
+                    ? currentRoleIds.Where(id => !suggestedSet.Contains(id)).ToList()
+                    : new List<string>();
+            var simpleAdded = added
+                .Select(id =>
+                    roles.TryGetValue(id, out var rdef)
+                        ? new SimpleRole(id, rdef?.DisplayName ?? id)
+                        : new SimpleRole(id, id)
+                )
+                .ToList();
+            var simpleRemoved = removed
+                .Select(id =>
+                    roles.TryGetValue(id, out var rdef)
+                        ? new SimpleRole(id, rdef?.DisplayName ?? id)
+                        : new SimpleRole(id, id)
+                )
+                .ToList();
+
+            var distinctCurrent = currentRoleIds
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var simpleActive = distinctCurrent
+                .Select(id =>
+                    roles.TryGetValue(id, out var rdef)
+                        ? new SimpleRole(id, rdef?.DisplayName ?? id)
+                        : new SimpleRole(id, id)
+                )
+                .ToList();
+            var distinctEligible = eligibleRoleIds
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var simpleEligible = distinctEligible
+                .Select(id =>
+                    roles.TryGetValue(id, out var rdef)
+                        ? new SimpleRole(id, rdef?.DisplayName ?? id)
+                        : new SimpleRole(id, id)
+                )
+                .ToList();
+
             results.Add(
                 new UserReview(
-                    uid,
-                    display,
-                    [.. currentRoleIds.Distinct()],
-                    [.. eligibleRoleIds.Distinct()],
-                    [.. usedOperations],
-                    suggested,
-                    suggestedDetails,
-                    operationsList.Count,
-                    operationsList,
-                    roleMeta
+                    new SimpleUser(uid, display),
+                    simpleActive,
+                    simpleEligible,
+                    opReviews,
+                    simpleAdded,
+                    simpleRemoved
                 )
             );
         }

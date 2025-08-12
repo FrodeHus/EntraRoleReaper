@@ -7,19 +7,16 @@ import {
   SheetTitle,
 } from "../components/ui/sheet";
 import { Button } from "../components/ui/button";
-import { Download, LogsIcon, Info, Minus } from "lucide-react";
+import { Download, Minus, LogsIcon, Info } from "lucide-react";
 import { RoleDetailsSheet } from "./review/RoleDetailsSheet";
+import { OperationsSheet } from "./review/OperationsSheet";
+import { RoleChangeDetailsSheet } from "./review/RoleChangeDetailsSheet";
 import type {
   ReviewRequest,
   UserReview,
   ReviewResponse,
   RoleDetails,
 } from "./review/types";
-import { OperationsSheet } from "./review/OperationsSheet";
-import { SuggestedRolesCell } from "./review/SuggestedRolesCell";
-import { CurrentRolesCell } from "./review/CurrentRolesCell";
-import { RemovedRolesCell } from "./review/RemovedRolesCell";
-import { RoleChangesSheet } from "./review/RoleChangesSheet";
 
 export function ReviewPanel({
   accessToken,
@@ -70,7 +67,9 @@ export function ReviewPanel({
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [openSheetFor, setOpenSheetFor] = useState<UserReview | null>(null);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [openRoleChangeFor, setOpenRoleChangeFor] = useState<UserReview | null>(
+    null
+  );
   const [loading, setLoading] = useState<boolean>(false);
   // Cache of role id -> display name for removal chips
   const [roleNameCache, setRoleNameCache] = useState<Record<string, string>>(
@@ -84,24 +83,9 @@ export function ReviewPanel({
   } | null>(null);
   const [roleDetails, setRoleDetails] = useState<RoleDetails>(null);
   const [loadingRole, setLoadingRole] = useState<boolean>(false);
-  const [openRoleChangesFor, setOpenRoleChangesFor] =
-    useState<UserReview | null>(null);
-
-  useEffect(() => {
-    // Reset expanded state when switching user/sheet
-    setExpanded(new Set());
-  }, [openSheetFor]);
+  // Role changes sheet removed (added/removed shown inline)
 
   // no-op
-
-  const toggleExpanded = (idx: number) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
-      return next;
-    });
-  };
 
   const isGuid = (s: string) =>
     /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
@@ -189,16 +173,11 @@ export function ReviewPanel({
     }
   };
 
-  // Compute the set of required permission actions for a given user review
+  // Compute required permissions from new contract
   const getRequiredPerms = (r: UserReview): string[] => {
     const set = new Set<string>();
-    for (const op of r.operations) {
-      if (op.permissionDetails && op.permissionDetails.length > 0) {
-        for (const pd of op.permissionDetails) set.add(pd.name.toLowerCase());
-      } else {
-        for (const n of op.requiredPermissions) set.add(n.toLowerCase());
-      }
-    }
+    for (const op of r.operations)
+      for (const p of op.permissions) set.add(p.name.toLowerCase());
     return Array.from(set);
   };
 
@@ -213,10 +192,10 @@ export function ReviewPanel({
     copy.sort((a, b) => {
       let cmp = 0;
       if (sortBy === "ops") {
-        cmp = a.operationCount - b.operationCount;
+        cmp = a.operations.length - b.operations.length;
       } else {
-        // Case-insensitive locale compare for userDisplayName
-        cmp = a.userDisplayName.localeCompare(b.userDisplayName, undefined, {
+        // Case-insensitive locale compare for user display name
+        cmp = a.user.displayName.localeCompare(b.user.displayName, undefined, {
           sensitivity: "base",
         });
       }
@@ -232,20 +211,21 @@ export function ReviewPanel({
 
   const remediation = useMemo(() => {
     if (!report || selection.length === 0) return [] as UserReview[];
-    return report.filter((r) => selection.includes(r.userId));
+    return report.filter((r) => selection.includes(r.user.id));
   }, [report, selection]);
 
-  // Prefetch role display names (current roles and legacy suggested GUIDs) for visible rows
+  // Prefetch role display names for active, eligible, added, removed role ids
   useEffect(() => {
     if (!accessToken || !report || paged.length === 0) return;
     const idsToFetch = new Set<string>();
     for (const r of paged) {
-      // Prefetch all current role names for visible rows
-      for (const id of r.currentRoleIds) idsToFetch.add(id);
-      // Prefetch legacy suggested role GUIDs (if present)
-      for (const s of r.suggestedRoleIds ?? []) {
-        if (isGuid(s)) idsToFetch.add(s);
-      }
+      for (const sr of r.activeRoles) idsToFetch.add(sr.id);
+      for (const sr of r.eligiblePimRoles) idsToFetch.add(sr.id);
+      for (const ar of r.addedRoles) idsToFetch.add(ar.id);
+      for (const rr of r.removedRoles) idsToFetch.add(rr.id);
+      for (const op of r.operations)
+        for (const p of op.permissions)
+          for (const rid of p.grantedByRoleIds) idsToFetch.add(rid);
     }
     void ensureRoleNames(Array.from(idsToFetch));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -295,12 +275,13 @@ export function ReviewPanel({
     if (!report) return;
     const data = selection.length > 0 ? remediation : report;
     const rows = data.map((r) => ({
-      userId: r.userId,
-      userDisplayName: r.userDisplayName,
-      operationCount: r.operationCount,
-      suggestedRoleIds: r.suggestedRoleIds.join("|"),
-      currentRoleIds: r.currentRoleIds.join("|"),
-      eligibleRoleIds: (r.eligibleRoleIds ?? []).join("|"),
+      userId: r.user.id,
+      userDisplayName: r.user.displayName,
+      operationCount: r.operations.length,
+      activeRoleIds: r.activeRoles.map((a) => a.id).join("|"),
+      eligiblePimRoleIds: r.eligiblePimRoles.map((a) => a.id).join("|"),
+      addedRoleIds: r.addedRoles.map((a) => a.id).join("|"),
+      removedRoleIds: r.removedRoles.map((a) => a.id).join("|"),
     }));
     const csv = toCsv(rows);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -312,22 +293,11 @@ export function ReviewPanel({
     downloadBlob(blob, fname);
   };
 
-  const computeCounts = (r: UserReview) => {
-    const current = r.currentRoleIds ?? [];
-    const fromStructured = (r.suggestedRoles ?? [])
-      .map((sr) => (sr as any).id as string | undefined)
-      .filter((x): x is string => !!x);
-    const suggested =
-      fromStructured.length > 0
-        ? fromStructured
-        : (r.suggestedRoleIds ?? []).filter((s) => isGuid(s));
-    const add = suggested.filter((id) => !current.includes(id));
-    const remove =
-      suggested.length > 0
-        ? current.filter((id) => !new Set(suggested).has(id))
-        : [];
-    return { current: current.length, add: add.length, remove: remove.length };
-  };
+  const computeCounts = (r: UserReview) => ({
+    current: r.activeRoles.length,
+    add: r.addedRoles.length,
+    remove: r.removedRoles.length,
+  });
 
   return (
     <div className="space-y-4">
@@ -462,37 +432,39 @@ export function ReviewPanel({
                   <th className="text-left p-2">Select</th>
                   <th className="text-left p-2">User</th>
                   <th className="text-left p-2">Operations</th>
-                  <th className="text-left p-2">Current</th>
-                  <th className="text-left p-2">Added</th>
-                  <th className="text-left p-2">Removed</th>
-                  <th className="text-left p-2">Details</th>
+                  <th className="text-left p-2">Active roles</th>
+                  <th className="text-left p-2">Add</th>
+                  <th className="text-left p-2">Remove</th>
+                  <th className="text-left p-2">Changes</th>
                 </tr>
               </thead>
               <tbody>
                 {paged.map((r) => {
                   const counts = computeCounts(r);
                   return (
-                    <tr key={r.userId} className="border-t align-top">
+                    <tr key={r.user.id} className="border-t align-top">
                       <td className="p-2">
                         <input
-                          aria-label={`select ${r.userDisplayName}`}
+                          aria-label={`select ${r.user.displayName}`}
                           type="checkbox"
-                          checked={selection.includes(r.userId)}
-                          onChange={() => toggle(r.userId)}
+                          checked={selection.includes(r.user.id)}
+                          onChange={() => toggle(r.user.id)}
                         />
                       </td>
-                      <td className="p-2">{r.userDisplayName}</td>
+                      <td className="p-2">{r.user.displayName}</td>
                       <td className="p-2">
                         <div className="flex items-center gap-2">
-                          <span>{r.operationCount}</span>
-                          <Button
-                            variant="link"
-                            size="icon"
-                            className="p-0 h-auto"
-                            onClick={() => setOpenSheetFor(r)}
-                          >
-                            <LogsIcon />
-                          </Button>
+                          <span>{r.operations.length}</span>
+                          {r.operations.length > 0 && (
+                            <Button
+                              variant="link"
+                              size="icon"
+                              className="p-0 h-auto"
+                              onClick={() => setOpenSheetFor(r)}
+                            >
+                              <LogsIcon />
+                            </Button>
+                          )}
                         </div>
                       </td>
                       <td className="p-2">
@@ -545,8 +517,8 @@ export function ReviewPanel({
                           variant="link"
                           size="icon"
                           className="p-0 h-auto"
-                          onClick={() => setOpenRoleChangesFor(r)}
-                          title="View role changes"
+                          onClick={() => setOpenRoleChangeFor(r)}
+                          title="Show role change details"
                         >
                           <Info />
                         </Button>
@@ -580,16 +552,16 @@ export function ReviewPanel({
               if (!o) setOpenSheetFor(null);
             }}
             review={openSheetFor}
+            roleNameLookup={(id) => roleNameCache[id] ?? id}
           />
-          <RoleChangesSheet
-            open={openRoleChangesFor !== null}
+          <RoleChangeDetailsSheet
+            open={openRoleChangeFor !== null}
             onOpenChange={(o) => {
-              if (!o) setOpenRoleChangesFor(null);
+              if (!o) setOpenRoleChangeFor(null);
             }}
-            review={openRoleChangesFor}
-            roleNameCache={roleNameCache}
+            review={openRoleChangeFor}
+            roleNameLookup={(id) => roleNameCache[id] ?? id}
             openRoleDetails={openRoleDetails}
-            getRequiredPerms={getRequiredPerms}
           />
           {selection.length > 0 && (
             <div className="mt-2">
@@ -606,10 +578,16 @@ export function ReviewPanel({
           <h3 className="font-semibold">Remediation summary</h3>
           <div className="border rounded p-3 bg-card text-card-foreground">
             {remediation.map((r) => (
-              <div key={r.userId} className="py-2 border-b last:border-0">
-                <div className="font-medium">{r.userDisplayName}</div>
+              <div key={r.user.id} className="py-2 border-b last:border-0">
+                <div className="font-medium">{r.user.displayName}</div>
                 <div className="text-sm text-muted-foreground">
-                  Suggested: {r.suggestedRoleIds.join(", ") || "No change"}
+                  Add:{" "}
+                  {r.addedRoles.map((a) => a.displayName).join(", ") || "None"}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Remove:{" "}
+                  {r.removedRoles.map((a) => a.displayName).join(", ") ||
+                    "None"}
                 </div>
               </div>
             ))}
