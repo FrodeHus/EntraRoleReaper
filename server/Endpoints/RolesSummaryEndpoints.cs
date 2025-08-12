@@ -27,7 +27,15 @@ public static class RolesSummaryEndpoints
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var term = search.Trim();
-                q = q.Where(r => r.DisplayName.Contains(term));
+                        if (term.Contains('*'))
+                        {
+                            var pattern = term.Replace('*', '%').ToLowerInvariant();
+                            q = q.Where(r => EF.Functions.Like(r.DisplayName.ToLower(), pattern));
+                        }
+                        else
+                        {
+                            q = q.Where(r => r.DisplayName.Contains(term));
+                        }
             }
             if (privilegedOnly == true)
             {

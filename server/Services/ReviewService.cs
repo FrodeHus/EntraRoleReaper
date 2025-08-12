@@ -403,14 +403,41 @@ public class ReviewService(
             {
                 var privileged = actionPrivilege.TryGetValue(name, out var isPriv) && isPriv;
                 var grantedBy = new List<string>();
-                var grantConds = new List<string>();
+                var grantConds = new List<string>(); // aggregate distinct later
+                var matchedPerRole = new List<string>(); // aligns with grantedBy (empty string if none)
                 foreach (var roleDefinition in currentRoleDefs)
                 {
                     if (roleDefinition?.RolePermissions == null)
                         continue;
                     bool allowed = false;
                     string? appliedCond = null;
-                    foreach (var rp in roleDefinition.RolePermissions)
+                    // Prioritize conditional permission sets so that more specific context-sensitive
+                    // grants are evaluated before broader ones:
+                    // 1. $ResourceIsSelf
+                    // 2. $SubjectIsOwner
+                    // 3. All others (including null / empty conditions)
+                    var orderedRolePerms = roleDefinition.RolePermissions.OrderBy(rp =>
+                    {
+                        var cond = rp.Condition?.Trim();
+                        if (
+                            string.Equals(
+                                cond,
+                                "$ResourceIsSelf",
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                        )
+                            return 0;
+                        if (
+                            string.Equals(
+                                cond,
+                                "$SubjectIsOwner",
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                        )
+                            return 1;
+                        return 2;
+                    });
+                    foreach (var rp in orderedRolePerms)
                     {
                         var actions = rp.AllowedResourceActions ?? Enumerable.Empty<string>();
                         if (
@@ -434,22 +461,29 @@ public class ReviewService(
                     {
                         grantedBy.Add(roleDefinition.DisplayName!);
                         if (appliedCond != null)
+                        {
                             grantConds.Add(appliedCond);
+                            matchedPerRole.Add(appliedCond);
+                        }
+                        else
+                        {
+                            matchedPerRole.Add(string.Empty);
+                        }
                     }
                 }
-                if (grantedBy.Count > 0)
-                {
-                    details.Add(
-                        new PermissionDetail(
-                            name,
-                            privileged,
-                            grantedBy,
-                            grantConds.Count > 0
-                                ? grantConds.Distinct(StringComparer.OrdinalIgnoreCase).ToList()
-                                : null
-                        )
-                    );
-                }
+                // Always include the permission detail (even if not currently granted by any active role)
+                // so the client can surface "uncovered" mapped actions.
+                details.Add(
+                    new PermissionDetail(
+                        name,
+                        privileged,
+                        grantedBy, // empty list if not granted
+                        grantConds.Count > 0
+                            ? grantConds.Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+                            : null,
+                        matchedPerRole.Count > 0 ? matchedPerRole : null
+                    )
+                );
             }
 
             var filteredPerms = details
@@ -657,12 +691,13 @@ public class ReviewService(
                                 .Distinct()!
                                 .ToList() as IReadOnlyList<string>;
                         var isPrivileged = actionPrivilege.TryGetValue(pd.Name, out var ip) && ip;
+                        var pdTyped = pd as PermissionDetail;
                         return new OperationPermission(
                             pd.Name,
                             isPrivileged,
                             grantingIds,
-                            // pass through conditions if present
-                            (pd as PermissionDetail)?.GrantConditions
+                            pdTyped?.GrantConditions,
+                            pdTyped?.MatchedConditionsPerRole
                         );
                     })
                     .ToList();

@@ -28,7 +28,25 @@ public static class OperationMapEndpoints
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var term = search.Trim();
-                q = q.Where(o => o.OperationName.Contains(term) || o.ResourceActions.Any(a => a.Action.Contains(term)));
+                        if (term.Contains('*'))
+                        {
+                            // Wildcard search: translate * to % and use EF.Functions.Like (case-insensitive by lowercasing both sides)
+                            var pattern = term.Replace('*', '%');
+                            var lowerPattern = pattern.ToLowerInvariant();
+                            q = q.Where(o =>
+                                EF.Functions.Like(o.OperationName.ToLower(), lowerPattern)
+                                || o.ResourceActions.Any(a =>
+                                    EF.Functions.Like(a.Action.ToLower(), lowerPattern)
+                                )
+                            );
+                        }
+                        else
+                        {
+                            q = q.Where(o =>
+                                o.OperationName.Contains(term)
+                                || o.ResourceActions.Any(a => a.Action.Contains(term))
+                            );
+                        }
             }
             var total = await q.CountAsync();
             var sortKey = string.IsNullOrWhiteSpace(sort) ? "operationName" : sort.ToLowerInvariant();

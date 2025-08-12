@@ -49,8 +49,17 @@ public static class ActionsEndpoints
                         take = 1;
                     if (take > 200)
                         take = 200;
-                    var items = await db
-                        .ResourceActions.Where(a => a.Action.Contains(term))
+                    IQueryable<ResourceActionEntity> raq = db.ResourceActions;
+                    if (term.Contains('*'))
+                    {
+                        var pattern = term.Replace('*', '%').ToLowerInvariant();
+                        raq = raq.Where(a => EF.Functions.Like(a.Action.ToLower(), pattern));
+                    }
+                    else
+                    {
+                        raq = raq.Where(a => a.Action.Contains(term));
+                    }
+                    var items = await raq
                         .OrderBy(a => a.Action)
                         .Take(take)
                         .Select(a => new
@@ -91,7 +100,15 @@ public static class ActionsEndpoints
                     if (!string.IsNullOrWhiteSpace(search))
                     {
                         var term = search.Trim();
-                        q = q.Where(a => a.Action.Contains(term));
+                        if (term.Contains('*'))
+                        {
+                            var pattern = term.Replace('*', '%').ToLowerInvariant();
+                            q = q.Where(a => EF.Functions.Like(a.Action.ToLower(), pattern));
+                        }
+                        else
+                        {
+                            q = q.Where(a => a.Action.Contains(term));
+                        }
                     }
                     if (!string.IsNullOrWhiteSpace(privileged))
                     {

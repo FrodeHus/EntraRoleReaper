@@ -25,6 +25,7 @@ export type UserReview = {
       isPrivileged: boolean;
       grantedByRoleIds: string[];
       grantConditions?: string[] | null;
+      matchedConditionsPerRole?: (string | null)[] | null;
     }[];
   }[];
   addedRoles: SimpleRole[];

@@ -14,7 +14,8 @@ public record OperationPermission(
     string Name,
     bool IsPrivileged,
     IReadOnlyList<string> GrantedByRoleIds,
-    IReadOnlyList<string>? GrantConditions
+    IReadOnlyList<string>? GrantConditions,
+    IReadOnlyList<string>? MatchedConditionsPerRole
 );
 
 public record OperationReview(
