@@ -30,5 +30,8 @@ export type RoleDetails = {
   description?: string;
   resourceScopes?: string[];
   resourceScopesDetailed?: { value: string; description: string }[];
-  permissions: { action: string; privileged: boolean }[];
+  rolePermissions: {
+    condition?: string | null;
+    actions: { action: string; privileged: boolean }[];
+  }[];
 } | null;

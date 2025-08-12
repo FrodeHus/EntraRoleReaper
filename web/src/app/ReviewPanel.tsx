@@ -25,6 +25,7 @@ import type {
   ReviewResponse,
   RoleDetails,
 } from "./review/types";
+import { normalizeRoleDetails } from "../lib/normalizeRoleDetails";
 
 export function ReviewPanel({
   accessToken,
@@ -166,20 +167,10 @@ export function ReviewPanel({
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) return;
-      const json = await res.json();
-      const details: RoleDetails = {
-        id: json.id,
-        name: json.displayName || json.name,
-        description: json.description,
-        resourceScopes: json.resourceScopes || [],
-        resourceScopesDetailed: json.resourceScopesDetailed || [],
-        permissions: (json.permissions || []).map((p: any) => ({
-          action: p.action || p,
-          privileged: !!p.privileged,
-        })),
-      };
-      setRoleDetails(details);
-      roleDetailsCache.current.set(id, details);
+  const json = await res.json();
+  const details = normalizeRoleDetails(json) as RoleDetails;
+  setRoleDetails(details);
+  if (id) roleDetailsCache.current.set(id, details);
     } finally {
       setLoadingRole(false);
     }

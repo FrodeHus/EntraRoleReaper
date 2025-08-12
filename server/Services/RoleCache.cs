@@ -250,6 +250,7 @@ public class RoleCache(
     )
     {
         // Clear existing normalized tables (relationships via join tables cascade on delete)
+        await db.RolePermissions.ExecuteDeleteAsync();
         await db.RoleDefinitions.ExecuteDeleteAsync();
         await db.ResourceActions.ExecuteDeleteAsync();
 
@@ -264,7 +265,7 @@ public class RoleCache(
             db.ResourceActions.Add(ra);
         }
 
-        // Insert role definitions with relationships
+        // Insert role definitions with relationships + granular permissions
         foreach (var (id, def) in definitions)
         {
             var rd = new RoleDefinitionEntity
@@ -280,20 +281,28 @@ public class RoleCache(
                         : null,
             };
 
+            db.RoleDefinitions.Add(rd);
+
+            // Store granular role permission rows
             if (def.RolePermissions != null)
             {
                 foreach (var perm in def.RolePermissions)
                 {
+                    var rpEntity = new RolePermissionEntity
+                    {
+                        RoleDefinitionId = rd.Id,
+                        Condition = perm.Condition,
+                    };
                     foreach (var ar in perm.AllowedResourceActions ?? [])
                     {
                         if (actionEntities.TryGetValue(ar.ToLowerInvariant(), out var ra))
                         {
-                            rd.ResourceActions.Add(ra);
+                            rpEntity.ResourceActions.Add(ra);
                         }
                     }
+                    db.RolePermissions.Add(rpEntity);
                 }
             }
-            db.RoleDefinitions.Add(rd);
         }
 
         // Upsert meta
@@ -334,7 +343,8 @@ public class RoleCache(
         }
 
         var roleRows = await db
-            .RoleDefinitions.Include(r => r.ResourceActions)
+            .RoleDefinitions.Include(r => r.RolePermissions)
+            .ThenInclude(rp => rp.ResourceActions)
             .AsNoTracking()
             .ToListAsync();
         foreach (var row in roleRows)
@@ -353,18 +363,18 @@ public class RoleCache(
                             .ToList()
                         : new List<string>(),
             };
-            if (row.ResourceActions.Count > 0)
+            if (row.RolePermissions.Count > 0)
             {
-                def.RolePermissions =
-                [
-                    new UnifiedRolePermission
+                def.RolePermissions = row
+                    .RolePermissions.Select(rp => new UnifiedRolePermission
                     {
-                        AllowedResourceActions = row
+                        AllowedResourceActions = rp
                             .ResourceActions.Select(a => a.Action)
                             .Distinct(StringComparer.OrdinalIgnoreCase)
                             .ToList(),
-                    },
-                ];
+                        Condition = rp.Condition,
+                    })
+                    .ToList();
             }
             defs[row.Id] = def;
         }

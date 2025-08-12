@@ -142,6 +142,17 @@ Frontend:
 
 Open <http://localhost:5173>
 
+## Environment variables (runtime)
+
+| Key / Name | Values | Default | Purpose |
+|------------|--------|---------|---------|
+| ROLE_REAPER_RESET_DB | 0 / 1 | 0 (unset) | When 1, drop & recreate the SQLite cache DB on startup and re-seed the operation map. When 0/unset, preserve existing DB (seed only if empty). Useful for schema/cache iteration in dev. |
+| ROLE_REAPER_DIAG | 0 / 1 | 0 (unset) | Enables diagnostic mode: EF Core sensitive data logging, detailed errors, and global exception logging. Avoid in production (may log sensitive values). |
+| Cache:SqlitePath | Path | /tmp/rolereaper_cache.sqlite | (Configuration key or env var) File path for SQLite cache; used when `Cache:SqliteConnection` not supplied. |
+| Cache:SqliteConnection | Connection string | (none) | Full ADO.NET SQLite connection string. Overrides `Cache:SqlitePath` when present. |
+
+Tip: Set `ROLE_REAPER_RESET_DB=1` only while actively evolving cache schema; unset for stable runs to retain cached role/permission data between restarts.
+
 ## Notes
 
 - The permission-to-role mapping is a sample in `server/Data/permissions-map.json`. Extend it to your operations and policies.

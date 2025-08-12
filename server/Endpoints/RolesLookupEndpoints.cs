@@ -38,13 +38,23 @@ public static class RolesLookupEndpoints
                     if (string.IsNullOrWhiteSpace(id))
                         return Results.BadRequest(new { message = "Missing id" });
                     var role = await db
-                        .RoleDefinitions.Include(r => r.ResourceActions)
+                        .RoleDefinitions.Include(r => r.RolePermissions)
+                        .ThenInclude(rp => rp.ResourceActions)
                         .FirstOrDefaultAsync(r => r.Id == id);
                     if (role == null)
                         return Results.NotFound(new { message = "Role not found" });
-                    var actions = role
-                        .ResourceActions.OrderBy(a => a.Action, StringComparer.OrdinalIgnoreCase)
-                        .Select(a => new { action = a.Action, privileged = a.IsPrivileged })
+                    var grouped = role
+                        .RolePermissions.Select(rp => new
+                        {
+                            condition = rp.Condition,
+                            actions = rp
+                                .ResourceActions.OrderBy(
+                                    a => a.Action,
+                                    StringComparer.OrdinalIgnoreCase
+                                )
+                                .Select(a => new { action = a.Action, privileged = a.IsPrivileged })
+                                .ToList(),
+                        })
                         .ToList();
                     var scopes = new List<string>();
                     if (!string.IsNullOrWhiteSpace(role.ResourceScope))
@@ -99,7 +109,7 @@ public static class RolesLookupEndpoints
                             description = role.Description,
                             resourceScopes = scopes,
                             resourceScopesDetailed = scopeDetails,
-                            permissions = actions,
+                            rolePermissions = grouped,
                         }
                     );
                 }

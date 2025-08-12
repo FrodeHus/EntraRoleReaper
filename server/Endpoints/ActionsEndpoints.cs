@@ -65,7 +65,7 @@ public static class ActionsEndpoints
             )
             .RequireAuthorization();
 
-        // List resource actions with role definitions using them (paged)
+        // List resource actions with count of roles using them (paged)
         app.MapGet(
                 "/api/actions/usage",
                 async (
@@ -86,14 +86,12 @@ public static class ActionsEndpoints
                         ps = 1;
                     if (ps > 500)
                         ps = 500;
-                    var q = db.ResourceActions.Include(a => a.RoleDefinitions).AsQueryable();
+                    // ResourceAction no longer has direct RoleDefinitions navigation; derive via RolePermissions
+                    var q = db.ResourceActions.AsQueryable();
                     if (!string.IsNullOrWhiteSpace(search))
                     {
                         var term = search.Trim();
-                        q = q.Where(a =>
-                            a.Action.Contains(term)
-                            || a.RoleDefinitions.Any(r => r.DisplayName.Contains(term))
-                        );
+                        q = q.Where(a => a.Action.Contains(term));
                     }
                     if (!string.IsNullOrWhiteSpace(privileged))
                     {
@@ -108,30 +106,47 @@ public static class ActionsEndpoints
                         ? "action"
                         : sort.Trim().ToLowerInvariant();
                     var asc = !string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
-                    q = sortKey switch
+                    // We'll project to include role usage for sorting when needed
+                    // Materialize minimal set for paging after sorting
+                    if (sortKey == "roles")
                     {
-                        "roles" => asc
-                            ? q.OrderBy(a => a.RoleDefinitions.Count).ThenBy(a => a.Action)
-                            : q.OrderByDescending(a => a.RoleDefinitions.Count)
-                                .ThenBy(a => a.Action),
-                        "privileged" => asc
+                        // Sort by number of roles using the action
+                        q = asc
+                            ? q.OrderBy(a =>
+                                    db.RolePermissions.Count(rp =>
+                                        rp.ResourceActions.Any(ra => ra.Id == a.Id)
+                                    )
+                                )
+                                .ThenBy(a => a.Action)
+                            : q.OrderByDescending(a =>
+                                    db.RolePermissions.Count(rp =>
+                                        rp.ResourceActions.Any(ra => ra.Id == a.Id)
+                                    )
+                                )
+                                .ThenBy(a => a.Action);
+                    }
+                    else if (sortKey == "privileged")
+                    {
+                        q = asc
                             ? q.OrderBy(a => a.IsPrivileged).ThenBy(a => a.Action)
-                            : q.OrderByDescending(a => a.IsPrivileged).ThenBy(a => a.Action),
-                        _ => asc ? q.OrderBy(a => a.Action) : q.OrderByDescending(a => a.Action),
-                    };
+                            : q.OrderByDescending(a => a.IsPrivileged).ThenBy(a => a.Action);
+                    }
+                    else
+                    {
+                        q = asc ? q.OrderBy(a => a.Action) : q.OrderByDescending(a => a.Action);
+                    }
                     var skip = (p - 1) * ps;
-                    var actions = await q.Skip(skip)
+                    var projected = await q.Skip(skip)
                         .Take(ps)
                         .Select(a => new
                         {
                             a.Id,
                             a.Action,
                             a.IsPrivileged,
-                            roleCount = a.RoleDefinitions.Count,
-                            roles = a
-                                .RoleDefinitions.OrderBy(r => r.DisplayName)
-                                .Select(r => new { r.Id, r.DisplayName })
-                                .ToList(),
+                            roleCount = db.RolePermissions.Count(rp =>
+                                rp.ResourceActions.Any(ra => ra.Id == a.Id)
+                            ),
+                            // TODO: Reintroduce detailed roles list if needed after navigation refactor
                         })
                         .ToListAsync();
                     var totalPages = (int)Math.Ceiling(total / (double)ps);
@@ -145,7 +160,7 @@ public static class ActionsEndpoints
                             sort = sortKey,
                             asc,
                             privileged,
-                            items = actions,
+                            items = projected,
                         }
                     );
                 }

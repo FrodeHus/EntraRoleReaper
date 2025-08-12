@@ -31,7 +31,9 @@ public static class RolesSummaryEndpoints
             }
             if (privilegedOnly == true)
             {
-                q = q.Where(r => r.ResourceActions.Any(a => a.IsPrivileged));
+                        q = q.Where(r =>
+                            r.RolePermissions.Any(p => p.ResourceActions.Any(a => a.IsPrivileged))
+                        );
             }
             var total = await q.CountAsync();
             var sortKey = string.IsNullOrWhiteSpace(sort) ? "displayName" : sort.ToLowerInvariant();
@@ -40,7 +42,19 @@ public static class RolesSummaryEndpoints
             {
                 "builtin" => asc ? q.OrderBy(r => r.IsBuiltIn).ThenBy(r => r.DisplayName) : q.OrderByDescending(r => r.IsBuiltIn).ThenBy(r => r.DisplayName),
                 "enabled" => asc ? q.OrderBy(r => r.IsEnabled).ThenBy(r => r.DisplayName) : q.OrderByDescending(r => r.IsEnabled).ThenBy(r => r.DisplayName),
-                "privileged" => asc ? q.OrderBy(r => r.ResourceActions.Any(a => a.IsPrivileged)).ThenBy(r => r.DisplayName) : q.OrderByDescending(r => r.ResourceActions.Any(a => a.IsPrivileged)).ThenBy(r => r.DisplayName),
+                        "privileged" => asc
+                            ? q.OrderBy(r =>
+                                    r.RolePermissions.Any(p =>
+                                        p.ResourceActions.Any(a => a.IsPrivileged)
+                                    )
+                                )
+                                .ThenBy(r => r.DisplayName)
+                            : q.OrderByDescending(r =>
+                                    r.RolePermissions.Any(p =>
+                                        p.ResourceActions.Any(a => a.IsPrivileged)
+                                    )
+                                )
+                                .ThenBy(r => r.DisplayName),
                 _ => asc ? q.OrderBy(r => r.DisplayName) : q.OrderByDescending(r => r.DisplayName),
             };
             var skip = (p - 1) * ps;
@@ -51,7 +65,9 @@ public static class RolesSummaryEndpoints
                 r.IsBuiltIn,
                 r.IsEnabled,
                 r.ResourceScope,
-                Privileged = r.ResourceActions.Any(a => a.IsPrivileged),
+                            Privileged = r.RolePermissions.Any(p =>
+                                p.ResourceActions.Any(a => a.IsPrivileged)
+                            ),
             }).ToListAsync();
             var meta = await db.Meta.AsNoTracking().SingleOrDefaultAsync(m => m.Key == "last_updated");
             var ticks = meta?.DateValue?.UtcTicks ?? 0L;

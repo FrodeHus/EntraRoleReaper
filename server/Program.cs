@@ -48,10 +48,16 @@ if (string.IsNullOrWhiteSpace(sqliteConn))
     );
     sqliteConn = $"Data Source={sqlitePath}";
 }
+var enableDiag = Environment.GetEnvironmentVariable("ROLE_REAPER_DIAG") == "1";
 builder.Services.AddDbContext<CacheDbContext>(opt =>
 {
     opt.UseLazyLoadingProxies();
     opt.UseSqlite(sqliteConn);
+    if (enableDiag)
+    {
+        opt.EnableSensitiveDataLogging();
+        opt.EnableDetailedErrors();
+    }
 });
 builder.Services.AddSingleton<IGraphServiceFactory, GraphServiceFactory>();
 builder.Services.AddScoped<IRoleCache, RoleCache>();
@@ -66,86 +72,62 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Ensure database created (SQLite file in /tmp)
+// Global diagnostics hooks
+if (enableDiag)
+{
+    AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+    {
+        try
+        {
+            Console.WriteLine($"[FATAL] UnhandledException: {e.ExceptionObject}");
+        }
+        catch { }
+    };
+    TaskScheduler.UnobservedTaskException += (s, e) =>
+    {
+        try
+        {
+            Console.WriteLine($"[WARN] UnobservedTaskException: {e.Exception}");
+        }
+        catch { }
+    };
+}
+
+// Database (cache) initialization with optional recreation toggle
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CacheDbContext>();
-    db.Database.EnsureCreated();
-    try
+    var reset = Environment.GetEnvironmentVariable("ROLE_REAPER_RESET_DB") == "1";
+    if (reset)
     {
-        // Verify required table 'operation_map' exists; if not, recreate DB (cache reset)
-        bool hasOperationMap = false;
-        var conn = db.Database.GetDbConnection();
-        await conn.OpenAsync();
-        using (var cmd = conn.CreateCommand())
-        {
-            cmd.CommandText =
-                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='operation_map' LIMIT 1";
-            var result = await cmd.ExecuteScalarAsync();
-            hasOperationMap = result != null;
-        }
-        if (!hasOperationMap)
-        {
-            Console.WriteLine(
-                "[Startup] Detected legacy cache schema (missing operation_map); recreating cache DB."
-            );
-            await conn.CloseAsync();
-            var cs = conn.ConnectionString;
-            var pathPart = cs.Split('=', 2).LastOrDefault();
-            if (!string.IsNullOrWhiteSpace(pathPart) && File.Exists(pathPart))
-            {
-                try
-                {
-                    File.Delete(pathPart);
-                    Console.WriteLine($"[Startup] Deleted old cache file {pathPart}.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[Startup] Failed deleting old cache file: {ex.Message}");
-                }
-            }
-            // Recreate
-            db.Database.EnsureCreated();
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[Startup] Schema verification failed: {ex.Message}");
-    }
-    // Seed OperationMap from permissions-map.json if empty (robust against missing table)
-    try
-    {
-        bool needSeed = false;
         try
         {
-            needSeed = !db.OperationMaps.Any();
+            await db.Database.EnsureDeletedAsync();
+            await db.Database.EnsureCreatedAsync();
+            Console.WriteLine("[Startup] Cache database recreated (ROLE_REAPER_RESET_DB=1).");
         }
         catch (Exception ex)
-            when (ex.Message.Contains("no such table", StringComparison.OrdinalIgnoreCase))
         {
-            Console.WriteLine(
-                "[Startup] operation_map table missing during seed check; recreating cache DB."
-            );
-            try
-            {
-                var conn = db.Database.GetDbConnection();
-                await conn.CloseAsync();
-                var cs = conn.ConnectionString;
-                var pathPart = cs.Split('=', 2).LastOrDefault();
-                if (!string.IsNullOrWhiteSpace(pathPart) && File.Exists(pathPart))
-                {
-                    File.Delete(pathPart);
-                    Console.WriteLine($"[Startup] Deleted old cache file {pathPart}.");
-                }
-            }
-            catch (Exception delEx)
-            {
-                Console.WriteLine($"[Startup] Failed deleting cache DB: {delEx.Message}");
-            }
-            db.Database.EnsureCreated();
-            needSeed = true; // new DB
+            Console.WriteLine($"[Startup] Failed recreating database: {ex.Message}");
         }
+    }
+    else
+    {
+        try
+        {
+            await db.Database.EnsureCreatedAsync();
+            Console.WriteLine("[Startup] Cache database ensured (no reset).");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Startup] Failed ensuring database: {ex.Message}");
+        }
+    }
 
+    // Seed operation map if reset OR if operation_map empty
+    try
+    {
+        bool needSeed = reset || !db.OperationMaps.Any();
         if (needSeed)
         {
             var cfgPath = Path.Combine(
@@ -155,44 +137,30 @@ using (var scope = app.Services.CreateScope())
             );
             if (File.Exists(cfgPath))
             {
-                try
+                var json = await File.ReadAllTextAsync(cfgPath);
+                var dict = JsonSerializer.Deserialize<Dictionary<string, string[]>>(json) ?? new();
+                var actionLookup = db.ResourceActions.ToDictionary(
+                    a => a.Action,
+                    a => a,
+                    StringComparer.OrdinalIgnoreCase
+                );
+                foreach (var kvp in dict)
                 {
-                    var json = await File.ReadAllTextAsync(cfgPath);
-                    var dict =
-                        JsonSerializer.Deserialize<Dictionary<string, string[]>>(json) ?? new();
-                    var actionLookup = db.ResourceActions.ToDictionary(
-                        a => a.Action,
-                        a => a,
-                        StringComparer.OrdinalIgnoreCase
-                    );
-                    foreach (var kvp in dict)
+                    var op = new OperationMapEntity { OperationName = kvp.Key };
+                    foreach (var action in kvp.Value.Distinct(StringComparer.OrdinalIgnoreCase))
                     {
-                        var op = new OperationMapEntity { OperationName = kvp.Key };
-                        foreach (var action in kvp.Value.Distinct(StringComparer.OrdinalIgnoreCase))
+                        if (!actionLookup.TryGetValue(action, out var ra))
                         {
-                            if (!actionLookup.TryGetValue(action, out var ra))
-                            {
-                                ra = new ResourceActionEntity
-                                {
-                                    Action = action,
-                                    IsPrivileged = false,
-                                };
-                                db.ResourceActions.Add(ra);
-                                actionLookup[action] = ra;
-                            }
-                            op.ResourceActions.Add(ra);
+                            ra = new ResourceActionEntity { Action = action, IsPrivileged = false };
+                            db.ResourceActions.Add(ra);
+                            actionLookup[action] = ra;
                         }
-                        db.OperationMaps.Add(op);
+                        op.ResourceActions.Add(ra);
                     }
-                    await db.SaveChangesAsync();
-                    Console.WriteLine(
-                        $"[Startup] Seeded {dict.Count} operations into operation_map."
-                    );
+                    db.OperationMaps.Add(op);
                 }
-                catch (Exception seedEx)
-                {
-                    Console.WriteLine($"Failed seeding operation map: {seedEx.Message}");
-                }
+                await db.SaveChangesAsync();
+                Console.WriteLine($"[Startup] Seeded {dict.Count} operations into operation_map.");
             }
             else
             {
@@ -202,9 +170,9 @@ using (var scope = app.Services.CreateScope())
             }
         }
     }
-    catch (Exception ex)
+    catch (Exception seedEx)
     {
-        Console.WriteLine($"[Startup] Unexpected error during operation map seeding: {ex.Message}");
+        Console.WriteLine($"[Startup] Failed seeding operation map: {seedEx.Message}");
     }
 }
 
@@ -217,6 +185,24 @@ app.UseSwaggerUI();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Simple exception logging middleware (before endpoints)
+app.Use(
+    async (ctx, next) =>
+    {
+        try
+        {
+            await next();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(
+                $"[ERR] Request {ctx.Request.Method} {ctx.Request.Path} failed: {ex}"
+            );
+            throw;
+        }
+    }
+);
 
 // Minimal API endpoints composed via extension methods (explicit static call for Health to avoid resolution issues)
 app.MapHealth()

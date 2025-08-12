@@ -604,7 +604,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
             description: "",
             resourceScopes: [],
             resourceScopesDetailed: [],
-            permissions: [],
+            rolePermissions: [],
           } as any)
         }
         loading={roleDetailsLoading}

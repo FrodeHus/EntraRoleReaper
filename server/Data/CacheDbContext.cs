@@ -7,6 +7,7 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
     public DbSet<RoleDefinitionEntity> RoleDefinitions => Set<RoleDefinitionEntity>();
     public DbSet<ResourceActionEntity> ResourceActions => Set<ResourceActionEntity>();
     public DbSet<OperationMapEntity> OperationMaps => Set<OperationMapEntity>();
+    public DbSet<RolePermissionEntity> RolePermissions => Set<RolePermissionEntity>();
     public DbSet<MetaEntity> Meta => Set<MetaEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -32,15 +33,28 @@ public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContex
             b.Property(e => e.IsPrivileged).IsRequired();
         });
 
-        // Many-to-many RoleDefinition <-> ResourceAction
+        // RoleDefinition now connects to actions through RolePermissionEntity
+
+        modelBuilder.Entity<RolePermissionEntity>(b =>
+        {
+            b.ToTable("role_permissions");
+            b.HasKey(e => e.Id);
+            b.Property(e => e.Condition);
+            b.HasOne(e => e.RoleDefinition)
+                .WithMany(r => r.RolePermissions)
+                .HasForeignKey(e => e.RoleDefinitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Many-to-many RolePermission <-> ResourceAction
         modelBuilder
-            .Entity<RoleDefinitionEntity>()
-            .HasMany(r => r.ResourceActions)
-            .WithMany(a => a.RoleDefinitions)
+            .Entity<RolePermissionEntity>()
+            .HasMany(rp => rp.ResourceActions)
+            .WithMany()
             .UsingEntity<Dictionary<string, object>>(
-                "role_definition_actions",
+                "role_permission_actions",
                 l => l.HasOne<ResourceActionEntity>().WithMany().HasForeignKey("ResourceActionId"),
-                r => r.HasOne<RoleDefinitionEntity>().WithMany().HasForeignKey("RoleDefinitionId")
+                r => r.HasOne<RolePermissionEntity>().WithMany().HasForeignKey("RolePermissionId")
             );
 
         modelBuilder.Entity<OperationMapEntity>(b =>

@@ -23,12 +23,13 @@ public class RoleDefinitionEntity
     public bool IsEnabled { get; set; }
     public string? ResourceScope { get; set; }
 
-    // RolePermissions -> collection of allowed resource actions (many-to-many)
-    public virtual ICollection<ResourceActionEntity> ResourceActions { get; set; } =
-        new List<ResourceActionEntity>();
+    // Granular role permissions (as exposed by Graph's UnifiedRolePermission)
+    public virtual ICollection<RolePermissionEntity> RolePermissions { get; set; } =
+        new List<RolePermissionEntity>();
 
     [NotMapped]
-    public bool IsPrivileged => ResourceActions.Any(a => a.IsPrivileged);
+    public bool IsPrivileged =>
+        RolePermissions.Any(p => p.ResourceActions.Any(a => a.IsPrivileged));
 }
 
 public class ResourceActionEntity
@@ -36,9 +37,6 @@ public class ResourceActionEntity
     public int Id { get; set; }
     public string Action { get; set; } = string.Empty; // unique
     public bool IsPrivileged { get; set; }
-
-    public virtual ICollection<RoleDefinitionEntity> RoleDefinitions { get; set; } =
-        new List<RoleDefinitionEntity>();
     public virtual ICollection<OperationMapEntity> Operations { get; set; } =
         new List<OperationMapEntity>();
 }
@@ -47,6 +45,18 @@ public class OperationMapEntity
 {
     public int Id { get; set; }
     public string OperationName { get; set; } = string.Empty;
+    public virtual ICollection<ResourceActionEntity> ResourceActions { get; set; } =
+        new List<ResourceActionEntity>();
+}
+
+public class RolePermissionEntity
+{
+    public int Id { get; set; }
+    public string? Condition { get; set; }
+
+    public string RoleDefinitionId { get; set; } = string.Empty;
+    public virtual RoleDefinitionEntity? RoleDefinition { get; set; }
+
     public virtual ICollection<ResourceActionEntity> ResourceActions { get; set; } =
         new List<ResourceActionEntity>();
 }

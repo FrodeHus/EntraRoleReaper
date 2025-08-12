@@ -3,6 +3,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { RoleDetailsSheet } from "./review/RoleDetailsSheet";
 import type { RoleDetails } from "./review/types";
+import { normalizeRoleDetails } from "../lib/normalizeRoleDetails";
 
 export interface RoleSummaryItem {
   id: string;
@@ -202,29 +203,15 @@ export function RolesBrowser({ accessToken }: Props) {
       const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      setRoleDetails({
-        id: json.id,
-        name: json.displayName || json.name,
-        description: json.description,
-        resourceScopes: json.resourceScopes || [],
-        resourceScopesDetailed: json.resourceScopesDetailed || [],
-        permissions: (json.permissions || []).map((p: any) => ({ action: p.action || p, privileged: !!p.privileged }))
-      });
-      // Cache
-      roleDetailsCacheRef.current.set(id, {
-        id: json.id,
-        name: json.displayName || json.name,
-        description: json.description,
-        resourceScopes: json.resourceScopes || [],
-        resourceScopesDetailed: json.resourceScopesDetailed || [],
-        permissions: (json.permissions || []).map((p: any) => ({ action: p.action || p, privileged: !!p.privileged }))
-      });
+  const normalized = normalizeRoleDetails(json) as RoleDetails;
+  setRoleDetails(normalized);
+  roleDetailsCacheRef.current.set(id, normalized);
     } catch (e) {
       setRoleDetails({
         name,
-        description: 'Failed to load details',
-        permissions: []
-      });
+        description: "Failed to load details",
+        rolePermissions: [],
+      } as RoleDetails);
     } finally {
       setDetailsLoading(false);
     }
