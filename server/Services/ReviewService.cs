@@ -45,28 +45,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
     {
         var graphClient = await factory.CreateForUserAsync();
 
-        // Expand groups to users
-        var userIds = new HashSet<string>();
-        foreach (var id in request.UsersOrGroups.Distinct())
-        {
-            if (id.StartsWith("group:"))
-            {
-                var groupId = id[6..];
-                var members = await graphClient.Groups[groupId].Members.GetAsync();
-                if (members?.Value != null)
-                {
-                    foreach (var m in members.Value.OfType<User>())
-                    {
-                        if (!string.IsNullOrEmpty(m.Id))
-                            userIds.Add(m.Id);
-                    }
-                }
-            }
-            else
-            {
-                userIds.Add(id.Replace("user:", string.Empty));
-            }
-        }
+        var userIds = await ExpandUsersOrGroupsAsync(graphClient, request.UsersOrGroups);
 
         var results = new List<UserReview>();
         await roleCache.InitializeAsync();
@@ -76,435 +55,473 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
 
         foreach (var uid in userIds)
         {
-            var user = await graphClient.Users[uid].GetAsync();
-            var display = user?.DisplayName ?? user?.UserPrincipalName ?? uid;
+            // Fetch core user + role context
+            var userCtx = await GetUserAndRolesAsync(graphClient, uid, roles);
+            var display = userCtx.DisplayName;
+            var activeRoleIds = userCtx.ActiveRoleIds;
+            var eligibleRoleIds = userCtx.EligibleRoleIds;
 
-            // Get current directory roles for the user via memberOf (DirectoryRole)
-            // NOTE: Currently only first page is retrieved. TODO: implement paging using PageIterator to ensure >1 page of directory roles are captured.
-            var activeRoleIds = new List<string>();
-            var memberships = await graphClient.Users[uid].MemberOf.GetAsync();
-            if (memberships?.Value != null)
-            {
-                foreach (var mo in memberships.Value.OfType<DirectoryRole>())
-                {
-                    var templateId = mo.RoleTemplateId;
-                    if (!string.IsNullOrEmpty(templateId))
-                    {
-                        // Map templateId to unified role definition id
-                        var match = roles.Values.FirstOrDefault(r =>
-                            string.Equals(
-                                r.TemplateId,
-                                templateId,
-                                StringComparison.OrdinalIgnoreCase
-                            )
-                        );
-                        if (match?.Id != null)
-                            activeRoleIds.Add(match.Id);
-                    }
-                }
-            }
+            // Audit operations + targets
+            var auditCtx = await CollectAuditOperationsAsync(request, graphClient, uid);
+            var usedOperations = auditCtx.UsedOperations;
+            var opTargets = auditCtx.OpTargets;
 
-            // Retrieve PIM roles (eligible + currently activated). Only activated (pimActiveRoleIds) are part of active roles; eligible are reported separately.
-            (List<string> eligibleRoleIds, HashSet<string> pimActiveRoleIds) = await GetPIMRoles(
-                graphClient,
-                uid
+            // Build operations and permission requirements
+            var operationsList = BuildOperationsList(
+                usedOperations,
+                opTargets,
+                activeRoleIds,
+                roles,
+                actionPrivilege
             );
-            activeRoleIds.AddRange(pimActiveRoleIds); // merge activated PIM roles
+            var requiredPermissionsAll = BuildRequiredPermissions(usedOperations);
 
-            // De-duplicate active role ids
-            activeRoleIds = activeRoleIds.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            // Suggest roles
+            var suggestionCtx = ComputeSuggestedRoles(requiredPermissionsAll, roles, roleStats);
+            var suggested = suggestionCtx.Suggested;
+            var suggestedDetails = suggestionCtx.Details;
 
-            // Audit logs: directory audits filtered by user and time
-            var usedOperations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            // Collect per-operation target details (unique by type+id)
-            var opTargets = new Dictionary<string, Dictionary<string, ReviewTarget>>(
-                StringComparer.OrdinalIgnoreCase
+            // Build operation permission reviews
+            var opReviews = BuildOperationReviews(
+                operationsList,
+                activeRoleIds,
+                eligibleRoleIds,
+                roles,
+                actionPrivilege
             );
-            DirectoryAuditCollectionResponse? audits = await GetAuditEntriesInitiatedBy(
-                request,
-                graphClient,
-                uid
+
+            // Compute delta (added / removed)
+            var delta = DetermineRoleChanges(
+                activeRoleIds,
+                eligibleRoleIds,
+                suggested,
+                suggestedDetails,
+                roles
             );
-            if (audits?.Value != null)
-            {
-                foreach (var a in audits.Value)
-                {
-                    if (!string.IsNullOrWhiteSpace(a.ActivityDisplayName))
-                    {
-                        usedOperations.Add(a.ActivityDisplayName);
-
-                        // Capture target resources per operation
-                        if (a.TargetResources != null && a.TargetResources.Any())
-                        {
-                            if (!opTargets.TryGetValue(a.ActivityDisplayName, out var targetsForOp))
-                            {
-                                targetsForOp = new Dictionary<string, ReviewTarget>(
-                                    StringComparer.OrdinalIgnoreCase
-                                );
-                                opTargets[a.ActivityDisplayName] = targetsForOp;
-                            }
-
-                            foreach (var tr in a.TargetResources)
-                            {
-                                var key =
-                                    $"{tr?.Type ?? ""}:{tr?.Id ?? tr?.DisplayName ?? Guid.NewGuid().ToString()}";
-                                if (!targetsForOp.ContainsKey(key))
-                                {
-                                    targetsForOp[key] = new ReviewTarget(
-                                        tr?.Id,
-                                        tr?.DisplayName,
-                                        tr?.Type,
-                                        FriendlyType(tr?.Type)
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Map operations to required permissions via static map (extendable)
-            var operationsList = usedOperations
-                .Select(op =>
-                {
-                    var perms = _permissionMap.Value.TryGetValue(op, out var permissions)
-                        ? permissions
-                        : [];
-                    var targets = opTargets.TryGetValue(op, out var allTargets)
-                        ? [.. allTargets.Values]
-                        : new List<ReviewTarget>();
-
-                    // For each permission, determine which of the user's current roles grants it
-                    var currentRoleDefs = activeRoleIds
-                        .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
-                        .Where(rd => rd != null)
-                        .ToList()!;
-
-                    var details = perms
-                        .Select(name =>
-                        {
-                            var privileged =
-                                actionPrivilege.TryGetValue(name, out var isPriv) && isPriv;
-                            var grantedBy = new List<string>();
-                            foreach (var roleDefinition in currentRoleDefs)
-                            {
-                                var allows =
-                                    roleDefinition!.RolePermissions?.Any(rolePermission =>
-                                        (rolePermission.AllowedResourceActions ?? []).Any(
-                                            resourceAction =>
-                                                string.Equals(
-                                                    resourceAction,
-                                                    name,
-                                                    StringComparison.OrdinalIgnoreCase
-                                                )
-                                        )
-                                    ) ?? false;
-                                if (
-                                    allows && !string.IsNullOrWhiteSpace(roleDefinition.DisplayName)
-                                )
-                                {
-                                    grantedBy.Add(roleDefinition.DisplayName!);
-                                }
-                            }
-                            return new PermissionDetail(name, privileged, grantedBy);
-                        })
-                        .ToList();
-
-                    // Only report permissions actually granted by the user's current roles
-                    var filteredDetails = details
-                        .Where(d => d.GrantedByRoles != null && d.GrantedByRoles.Count > 0)
-                        .ToList();
-                    var filteredPerms = filteredDetails
-                        .Select(d => d.Name)
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .ToArray();
-
-                    return new ReviewOperation(op, filteredPerms, targets, filteredDetails);
-                })
-                .ToList();
-
-            // Build the full set of permissions needed from operation names (unfiltered by current roles)
-            var requiredPermissionsAll = usedOperations
-                .SelectMany(op => _permissionMap.Value.TryGetValue(op, out var p) ? p : [])
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            // Suggest a minimal set of roles that covers the required permissions, preferring least-privileged
-            string[] suggested;
-            List<SuggestedRole> suggestedDetails = new();
-            if (requiredPermissionsAll.Count == 0)
-            {
-                suggested = [];
-            }
-            else
-            {
-                // Precompute role -> allowed actions set
-                var excludes = _suggestionExcludes.Value;
-                var roleAllowed = roles
-                    .Values.Where(r =>
-                        r.RolePermissions != null
-                        && r.RolePermissions.Count != 0
-                        && !string.IsNullOrWhiteSpace(r.DisplayName)
-                        && !excludes.Contains(r.DisplayName!)
-                    )
-                    .Select(r => new
-                    {
-                        Role = r,
-                        Allowed = new HashSet<string>(
-                            (r.RolePermissions ?? []).SelectMany(rp =>
-                                rp.AllowedResourceActions ?? []
-                            ),
-                            StringComparer.OrdinalIgnoreCase
-                        ),
-                        Stats = (r.Id != null && roleStats.TryGetValue(r.Id!, out var rs))
-                            ? rs
-                            : new RolePrivilegeStats(
-                                PrivilegedAllowed: 0,
-                                TotalAllowed: (r.RolePermissions ?? []).Sum(rp =>
-                                    (rp.AllowedResourceActions ?? []).Count
-                                )
-                            ),
-                    })
-                    .ToList();
-
-                var uncovered = new HashSet<string>(
-                    requiredPermissionsAll,
-                    StringComparer.OrdinalIgnoreCase
-                );
-                var chosen =
-                    new List<(
-                        UnifiedRoleDefinition Role,
-                        RolePrivilegeStats Stats,
-                        HashSet<string> Allowed
-                    )>();
-
-                // Greedy set cover: pick the role that covers the most uncovered perms; tiebreak by least privileged and size
-                while (uncovered.Count > 0)
-                {
-                    var best = roleAllowed
-                        .Select(x => new
-                        {
-                            x.Role,
-                            x.Allowed,
-                            x.Stats,
-                            CoverCount = x.Allowed.Count(a => uncovered.Contains(a)),
-                        })
-                        .Where(x => x.CoverCount > 0)
-                        .OrderByDescending(x => x.CoverCount)
-                        .ThenBy(x => x.Stats.PrivilegedAllowed)
-                        .ThenBy(x => x.Stats.TotalAllowed)
-                        .ThenBy(x => x.Role.DisplayName)
-                        .FirstOrDefault();
-
-                    if (best == null)
-                    {
-                        // Can't cover remaining perms; break to avoid infinite loop
-                        break;
-                    }
-
-                    chosen.Add((best.Role, best.Stats, best.Allowed));
-                    // Remove covered perms
-                    foreach (var a in best.Allowed)
-                    {
-                        uncovered.Remove(a);
-                    }
-                    // Remove chosen from candidates
-                    roleAllowed.RemoveAll(x =>
-                        string.Equals(x.Role.Id, best.Role.Id, StringComparison.OrdinalIgnoreCase)
-                    );
-                }
-
-                // Redundancy cleanup: drop any role that isn't needed for coverage
-                if (chosen.Count > 1)
-                {
-                    var required = new HashSet<string>(
-                        requiredPermissionsAll,
-                        StringComparer.OrdinalIgnoreCase
-                    );
-                    for (int i = chosen.Count - 1; i >= 0; i--)
-                    {
-                        var without = chosen
-                            .Where((_, idx) => idx != i)
-                            .SelectMany(c => c.Allowed)
-                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                        if (required.All(p => without.Contains(p)))
-                        {
-                            chosen.RemoveAt(i);
-                        }
-                    }
-                }
-
-                // Order the final selection by least privileged then size
-                var orderedChosen = chosen
-                    .OrderBy(c => c.Stats.PrivilegedAllowed)
-                    .ThenBy(c => c.Stats.TotalAllowed)
-                    .ThenBy(c => c.Role.DisplayName)
-                    .ToList();
-
-                suggested = orderedChosen
-                    .Where(c => !excludes.Contains(c.Role.DisplayName!))
-                    .Select(c => c.Role.DisplayName!)
-                    .ToArray();
-
-                // Build detailed reasons per suggested role
-                foreach (var (Role, Stats, Allowed) in orderedChosen)
-                {
-                    if (excludes.Contains(Role.DisplayName!))
-                        continue;
-                    int covered = Allowed.Count(a => requiredPermissionsAll.Contains(a));
-                    suggestedDetails.Add(
-                        new SuggestedRole(
-                            Role.Id ?? string.Empty,
-                            Role.DisplayName!,
-                            covered,
-                            Stats.PrivilegedAllowed,
-                            Stats.TotalAllowed
-                        )
-                    );
-                }
-            }
-
-            // Build role metadata for UI labels (PIM badge on active PIM roles)
-            var roleMeta = activeRoleIds
-                .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
-                .Where(rd => rd != null && !string.IsNullOrWhiteSpace(rd!.DisplayName))
-                .Select(rd => new RoleMeta(
-                    rd!.DisplayName!,
-                    pimActiveRoleIds.Contains(rd.Id ?? string.Empty)
-                ))
-                .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
-                .Select(g => new RoleMeta(g.Key, g.Any(x => x.Pim)))
-                .ToList();
-
-            // Build operation reviews for new contract
-            var opReviews = operationsList
-                .Select(op =>
-                {
-                    var targets = op
-                        .Targets.DistinctBy(t => (t.Id ?? "") + "|" + (t.DisplayName ?? ""))
-                        .Select(t => new OperationTarget(t.Id, t.DisplayName))
-                        .ToList();
-                    // For each permission detail we now map to role IDs (active + eligible) that grant it
-                    var currentAndEligible = new HashSet<string>(
-                        activeRoleIds.Concat(eligibleRoleIds),
-                        StringComparer.OrdinalIgnoreCase
-                    );
-                    var nameToId = roles
-                        .Values.Where(r =>
-                            !string.IsNullOrWhiteSpace(r.DisplayName)
-                            && !string.IsNullOrWhiteSpace(r.Id)
-                        )
-                        .GroupBy(r => r.DisplayName!, StringComparer.OrdinalIgnoreCase)
-                        .ToDictionary(
-                            g => g.Key,
-                            g => g.Select(r => r.Id!).First(),
-                            StringComparer.OrdinalIgnoreCase
-                        );
-                    var permissions = op
-                        .PermissionDetails.Select(pd =>
-                        {
-                            var grantingIds =
-                                pd.GrantedByRoles.Select(n =>
-                                        nameToId.TryGetValue(n, out var id) ? id : null
-                                    )
-                                    .Where(id => id != null && currentAndEligible.Contains(id))
-                                    .Distinct()!
-                                    .ToList() as IReadOnlyList<string>;
-                            // Determine privilege via actionPrivilege map
-                            var isPrivileged =
-                                actionPrivilege.TryGetValue(pd.Name, out var ip) && ip;
-                            return new OperationPermission(pd.Name, isPrivileged, grantingIds);
-                        })
-                        .ToList();
-                    return new OperationReview(op.Operation, targets, permissions);
-                })
-                .ToList();
-
-            // Determine added / removed roles (suggested vs current) using IDs where possible
-            var currentSet = new HashSet<string>(activeRoleIds, StringComparer.OrdinalIgnoreCase);
-            var suggestedRoleIds = suggestedDetails
-                .Where(sr => !string.IsNullOrWhiteSpace(sr.Id))
-                .Select(sr => sr.Id)
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            // If we had no detailed ids (edge case), try map display names
-            if (suggestedRoleIds.Count == 0)
-            {
-                var byName = roles
-                    .Values.Where(r =>
-                        !string.IsNullOrWhiteSpace(r.DisplayName)
-                        && !string.IsNullOrWhiteSpace(r.Id)
-                    )
-                    .ToDictionary(
-                        r => r.DisplayName!,
-                        r => r.Id!,
-                        StringComparer.OrdinalIgnoreCase
-                    );
-                foreach (var name in suggested)
-                {
-                    if (byName.TryGetValue(name, out var id))
-                        suggestedRoleIds.Add(id);
-                }
-            }
-            var suggestedSet = new HashSet<string>(
-                suggestedRoleIds,
-                StringComparer.OrdinalIgnoreCase
-            );
-            var added = suggestedRoleIds.Where(id => !currentSet.Contains(id)).ToList();
-            var removed =
-                suggestedSet.Count > 0
-                    ? activeRoleIds.Where(id => !suggestedSet.Contains(id)).ToList()
-                    : new List<string>();
-            var simpleAdded = added
-                .Select(id =>
-                    roles.TryGetValue(id, out var rdef)
-                        ? new SimpleRole(id, rdef?.DisplayName ?? id)
-                        : new SimpleRole(id, id)
-                )
-                .ToList();
-            var simpleRemoved = removed
-                .Select(id =>
-                    roles.TryGetValue(id, out var rdef)
-                        ? new SimpleRole(id, rdef?.DisplayName ?? id)
-                        : new SimpleRole(id, id)
-                )
-                .ToList();
-
-            var distinctCurrent = activeRoleIds
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var simpleActive = distinctCurrent
-                .Select(id =>
-                    roles.TryGetValue(id, out var rdef)
-                        ? new SimpleRole(id, rdef?.DisplayName ?? id)
-                        : new SimpleRole(id, id)
-                )
-                .ToList();
-            var distinctEligible = eligibleRoleIds
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var simpleEligible = distinctEligible
-                .Select(id =>
-                    roles.TryGetValue(id, out var rdef)
-                        ? new SimpleRole(id, rdef?.DisplayName ?? id)
-                        : new SimpleRole(id, id)
-                )
-                .ToList();
 
             results.Add(
                 new UserReview(
                     new SimpleUser(uid, display),
-                    simpleActive,
-                    simpleEligible,
+                    delta.Active,
+                    delta.Eligible,
                     opReviews,
-                    simpleAdded,
-                    simpleRemoved
+                    delta.Added,
+                    delta.Removed
                 )
             );
         }
 
         return new ReviewResponse(results);
+    }
+
+    // --- Helper methods extracted from ReviewAsync for single responsibilities ---
+
+    private static async Task<HashSet<string>> ExpandUsersOrGroupsAsync(
+        GraphServiceClient client,
+        IEnumerable<string> usersOrGroups
+    )
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var id in usersOrGroups.Distinct())
+        {
+            if (id.StartsWith("group:"))
+            {
+                var groupId = id[6..];
+                var members = await client.Groups[groupId].Members.GetAsync();
+                if (members?.Value == null)
+                    continue;
+                foreach (var m in members.Value.OfType<User>())
+                {
+                    if (!string.IsNullOrEmpty(m.Id))
+                        set.Add(m.Id);
+                }
+            }
+            else
+            {
+                set.Add(id.Replace("user:", string.Empty));
+            }
+        }
+        return set;
+    }
+
+    private async Task<(
+        string DisplayName,
+        List<string> ActiveRoleIds,
+        List<string> EligibleRoleIds,
+        HashSet<string> PimActiveRoleIds
+    )> GetUserAndRolesAsync(
+        GraphServiceClient client,
+        string uid,
+        IReadOnlyDictionary<string, UnifiedRoleDefinition> roles
+    )
+    {
+        var user = await client.Users[uid].GetAsync();
+        var display = user?.DisplayName ?? user?.UserPrincipalName ?? uid;
+        var activeRoleIds = await GetActiveDirectoryRoleIdsAsync(client, uid, roles);
+        var (eligibleRoleIds, pimActiveRoleIds) = await GetPIMRoles(client, uid);
+        activeRoleIds.AddRange(pimActiveRoleIds);
+        activeRoleIds = activeRoleIds.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        return (display, activeRoleIds, eligibleRoleIds, pimActiveRoleIds);
+    }
+
+    private static async Task<List<string>> GetActiveDirectoryRoleIdsAsync(
+        GraphServiceClient client,
+        string uid,
+        IReadOnlyDictionary<string, UnifiedRoleDefinition> roles
+    )
+    {
+        var list = new List<string>();
+        var memberships = await client.Users[uid].MemberOf.GetAsync();
+        if (memberships?.Value == null)
+            return list;
+        foreach (var mo in memberships.Value.OfType<DirectoryRole>())
+        {
+            var templateId = mo.RoleTemplateId;
+            if (string.IsNullOrEmpty(templateId))
+                continue;
+            var match = roles.Values.FirstOrDefault(r =>
+                string.Equals(r.TemplateId, templateId, StringComparison.OrdinalIgnoreCase)
+            );
+            if (match?.Id != null)
+                list.Add(match.Id);
+        }
+        return list;
+    }
+
+    private static async Task<(
+        HashSet<string> UsedOperations,
+        Dictionary<string, Dictionary<string, ReviewTarget>> OpTargets
+    )> CollectAuditOperationsAsync(ReviewRequest request, GraphServiceClient client, string uid)
+    {
+        var usedOperations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var opTargets = new Dictionary<string, Dictionary<string, ReviewTarget>>(
+            StringComparer.OrdinalIgnoreCase
+        );
+        DirectoryAuditCollectionResponse? audits = await GetAuditEntriesInitiatedBy(
+            request,
+            client,
+            uid
+        );
+        if (audits?.Value != null)
+        {
+            foreach (var a in audits.Value)
+            {
+                if (string.IsNullOrWhiteSpace(a.ActivityDisplayName))
+                    continue;
+                usedOperations.Add(a.ActivityDisplayName);
+                if (a.TargetResources == null || !a.TargetResources.Any())
+                    continue;
+                if (!opTargets.TryGetValue(a.ActivityDisplayName, out var targetsForOp))
+                {
+                    targetsForOp = new Dictionary<string, ReviewTarget>(
+                        StringComparer.OrdinalIgnoreCase
+                    );
+                    opTargets[a.ActivityDisplayName] = targetsForOp;
+                }
+                foreach (var tr in a.TargetResources)
+                {
+                    var key =
+                        $"{tr?.Type ?? ""}:{tr?.Id ?? tr?.DisplayName ?? Guid.NewGuid().ToString()}";
+                    if (targetsForOp.ContainsKey(key))
+                        continue;
+                    targetsForOp[key] = new ReviewTarget(
+                        tr?.Id,
+                        tr?.DisplayName,
+                        tr?.Type,
+                        FriendlyType(tr?.Type)
+                    );
+                }
+            }
+        }
+        return (usedOperations, opTargets);
+    }
+
+    private List<ReviewOperation> BuildOperationsList(
+        HashSet<string> usedOperations,
+        Dictionary<string, Dictionary<string, ReviewTarget>> opTargets,
+        List<string> activeRoleIds,
+        IReadOnlyDictionary<string, UnifiedRoleDefinition> roles,
+        IReadOnlyDictionary<string, bool> actionPrivilege
+    )
+    {
+        return usedOperations
+            .Select(op =>
+            {
+                var perms = _permissionMap.Value.TryGetValue(op, out var p) ? p : [];
+                var targets = opTargets.TryGetValue(op, out var allTargets)
+                    ? [.. allTargets.Values]
+                    : new List<ReviewTarget>();
+                var currentRoleDefs = activeRoleIds
+                    .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
+                    .Where(rd => rd != null)
+                    .ToList()!;
+                var details = perms
+                    .Select(name =>
+                    {
+                        var privileged =
+                            actionPrivilege.TryGetValue(name, out var isPriv) && isPriv;
+                        var grantedBy = new List<string>();
+                        foreach (var roleDefinition in currentRoleDefs)
+                        {
+                            var allows =
+                                roleDefinition!.RolePermissions?.Any(rp =>
+                                    (rp.AllowedResourceActions ?? []).Any(a =>
+                                        string.Equals(a, name, StringComparison.OrdinalIgnoreCase)
+                                    )
+                                ) ?? false;
+                            if (allows && !string.IsNullOrWhiteSpace(roleDefinition.DisplayName))
+                                grantedBy.Add(roleDefinition.DisplayName!);
+                        }
+                        return new PermissionDetail(name, privileged, grantedBy);
+                    })
+                    .ToList();
+                var filteredDetails = details
+                    .Where(d => d.GrantedByRoles != null && d.GrantedByRoles.Count > 0)
+                    .ToList();
+                var filteredPerms = filteredDetails
+                    .Select(d => d.Name)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                return new ReviewOperation(op, filteredPerms, targets, filteredDetails);
+            })
+            .ToList();
+    }
+
+    private HashSet<string> BuildRequiredPermissions(HashSet<string> usedOperations)
+    {
+        return usedOperations
+            .SelectMany(op => _permissionMap.Value.TryGetValue(op, out var p) ? p : [])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private (string[] Suggested, List<SuggestedRole> Details) ComputeSuggestedRoles(
+        HashSet<string> requiredPermissionsAll,
+        IReadOnlyDictionary<string, UnifiedRoleDefinition> roles,
+        IReadOnlyDictionary<string, RolePrivilegeStats> roleStats
+    )
+    {
+        string[] suggested;
+        List<SuggestedRole> suggestedDetails = new();
+        if (requiredPermissionsAll.Count == 0)
+            return (Array.Empty<string>(), suggestedDetails);
+        var excludes = _suggestionExcludes.Value;
+        var roleAllowed = roles
+            .Values.Where(r =>
+                r.RolePermissions != null
+                && r.RolePermissions.Count != 0
+                && !string.IsNullOrWhiteSpace(r.DisplayName)
+                && !excludes.Contains(r.DisplayName!)
+            )
+            .Select(r => new
+            {
+                Role = r,
+                Allowed = new HashSet<string>(
+                    (r.RolePermissions ?? []).SelectMany(rp => rp.AllowedResourceActions ?? []),
+                    StringComparer.OrdinalIgnoreCase
+                ),
+                Stats = (r.Id != null && roleStats.TryGetValue(r.Id!, out var rs))
+                    ? rs
+                    : new RolePrivilegeStats(
+                        PrivilegedAllowed: 0,
+                        TotalAllowed: (r.RolePermissions ?? []).Sum(rp =>
+                            (rp.AllowedResourceActions ?? []).Count
+                        )
+                    ),
+            })
+            .ToList();
+        var uncovered = new HashSet<string>(
+            requiredPermissionsAll,
+            StringComparer.OrdinalIgnoreCase
+        );
+        var chosen =
+            new List<(
+                UnifiedRoleDefinition Role,
+                RolePrivilegeStats Stats,
+                HashSet<string> Allowed
+            )>();
+        while (uncovered.Count > 0)
+        {
+            var best = roleAllowed
+                .Select(x => new
+                {
+                    x.Role,
+                    x.Allowed,
+                    x.Stats,
+                    CoverCount = x.Allowed.Count(a => uncovered.Contains(a)),
+                })
+                .Where(x => x.CoverCount > 0)
+                .OrderByDescending(x => x.CoverCount)
+                .ThenBy(x => x.Stats.PrivilegedAllowed)
+                .ThenBy(x => x.Stats.TotalAllowed)
+                .ThenBy(x => x.Role.DisplayName)
+                .FirstOrDefault();
+            if (best == null)
+                break;
+            chosen.Add((best.Role, best.Stats, best.Allowed));
+            foreach (var a in best.Allowed)
+                uncovered.Remove(a);
+            roleAllowed.RemoveAll(x =>
+                string.Equals(x.Role.Id, best.Role.Id, StringComparison.OrdinalIgnoreCase)
+            );
+        }
+        if (chosen.Count > 1)
+        {
+            var required = new HashSet<string>(
+                requiredPermissionsAll,
+                StringComparer.OrdinalIgnoreCase
+            );
+            for (int i = chosen.Count - 1; i >= 0; i--)
+            {
+                var without = chosen
+                    .Where((_, idx) => idx != i)
+                    .SelectMany(c => c.Allowed)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                if (required.All(p => without.Contains(p)))
+                    chosen.RemoveAt(i);
+            }
+        }
+        var orderedChosen = chosen
+            .OrderBy(c => c.Stats.PrivilegedAllowed)
+            .ThenBy(c => c.Stats.TotalAllowed)
+            .ThenBy(c => c.Role.DisplayName)
+            .ToList();
+        suggested = orderedChosen
+            .Where(c => !excludes.Contains(c.Role.DisplayName!))
+            .Select(c => c.Role.DisplayName!)
+            .ToArray();
+        foreach (var (Role, Stats, Allowed) in orderedChosen)
+        {
+            if (excludes.Contains(Role.DisplayName!))
+                continue;
+            int covered = Allowed.Count(a => requiredPermissionsAll.Contains(a));
+            suggestedDetails.Add(
+                new SuggestedRole(
+                    Role.Id ?? string.Empty,
+                    Role.DisplayName!,
+                    covered,
+                    Stats.PrivilegedAllowed,
+                    Stats.TotalAllowed
+                )
+            );
+        }
+        return (suggested, suggestedDetails);
+    }
+
+    private static List<RoleMeta> BuildRoleMeta(
+        List<string> activeRoleIds,
+        HashSet<string> pimActiveRoleIds,
+        IReadOnlyDictionary<string, UnifiedRoleDefinition> roles
+    ) =>
+        activeRoleIds
+            .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
+            .Where(rd => rd != null && !string.IsNullOrWhiteSpace(rd!.DisplayName))
+            .Select(rd => new RoleMeta(
+                rd!.DisplayName!,
+                pimActiveRoleIds.Contains(rd.Id ?? string.Empty)
+            ))
+            .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new RoleMeta(g.Key, g.Any(x => x.Pim)))
+            .ToList();
+
+    private static List<OperationReview> BuildOperationReviews(
+        List<ReviewOperation> operationsList,
+        List<string> activeRoleIds,
+        List<string> eligibleRoleIds,
+        IReadOnlyDictionary<string, UnifiedRoleDefinition> roles,
+        IReadOnlyDictionary<string, bool> actionPrivilege
+    )
+    {
+        return operationsList
+            .Select(op =>
+            {
+                var targets = op
+                    .Targets.DistinctBy(t => (t.Id ?? "") + "|" + (t.DisplayName ?? ""))
+                    .Select(t => new OperationTarget(t.Id, t.DisplayName))
+                    .ToList();
+                var currentAndEligible = new HashSet<string>(
+                    activeRoleIds.Concat(eligibleRoleIds),
+                    StringComparer.OrdinalIgnoreCase
+                );
+                var nameToId = roles
+                    .Values.Where(r =>
+                        !string.IsNullOrWhiteSpace(r.DisplayName)
+                        && !string.IsNullOrWhiteSpace(r.Id)
+                    )
+                    .GroupBy(r => r.DisplayName!, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(r => r.Id!).First(),
+                        StringComparer.OrdinalIgnoreCase
+                    );
+                var permissions = op
+                    .PermissionDetails.Select(pd =>
+                    {
+                        var grantingIds =
+                            pd.GrantedByRoles.Select(n =>
+                                    nameToId.TryGetValue(n, out var id) ? id : null
+                                )
+                                .Where(id => id != null && currentAndEligible.Contains(id))
+                                .Distinct()!
+                                .ToList() as IReadOnlyList<string>;
+                        var isPrivileged = actionPrivilege.TryGetValue(pd.Name, out var ip) && ip;
+                        return new OperationPermission(pd.Name, isPrivileged, grantingIds);
+                    })
+                    .ToList();
+                return new OperationReview(op.Operation, targets, permissions);
+            })
+            .ToList();
+    }
+
+    private static (
+        List<SimpleRole> Active,
+        List<SimpleRole> Eligible,
+        List<SimpleRole> Added,
+        List<SimpleRole> Removed
+    ) DetermineRoleChanges(
+        List<string> activeRoleIds,
+        List<string> eligibleRoleIds,
+        string[] suggested,
+        List<SuggestedRole> suggestedDetails,
+        IReadOnlyDictionary<string, UnifiedRoleDefinition> roles
+    )
+    {
+        var currentSet = new HashSet<string>(activeRoleIds, StringComparer.OrdinalIgnoreCase);
+        var suggestedRoleIds = suggestedDetails
+            .Where(sr => !string.IsNullOrWhiteSpace(sr.Id))
+            .Select(sr => sr.Id)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (suggestedRoleIds.Count == 0)
+        {
+            var byName = roles
+                .Values.Where(r =>
+                    !string.IsNullOrWhiteSpace(r.DisplayName) && !string.IsNullOrWhiteSpace(r.Id)
+                )
+                .ToDictionary(r => r.DisplayName!, r => r.Id!, StringComparer.OrdinalIgnoreCase);
+            foreach (var name in suggested)
+                if (byName.TryGetValue(name, out var id))
+                    suggestedRoleIds.Add(id);
+        }
+        var suggestedSet = new HashSet<string>(suggestedRoleIds, StringComparer.OrdinalIgnoreCase);
+        var added = suggestedRoleIds.Where(id => !currentSet.Contains(id)).ToList();
+        var removed =
+            suggestedSet.Count > 0
+                ? activeRoleIds.Where(id => !suggestedSet.Contains(id)).ToList()
+                : new List<string>();
+        List<SimpleRole> MapRoles(IEnumerable<string> ids) =>
+            ids.Select(id =>
+                    roles.TryGetValue(id, out var rdef)
+                        ? new SimpleRole(id, rdef?.DisplayName ?? id)
+                        : new SimpleRole(id, id)
+                )
+                .ToList();
+        var simpleActive = MapRoles(activeRoleIds.Distinct(StringComparer.OrdinalIgnoreCase));
+        var simpleEligible = MapRoles(eligibleRoleIds.Distinct(StringComparer.OrdinalIgnoreCase));
+        var simpleAdded = MapRoles(added);
+        var simpleRemoved = MapRoles(removed);
+        return (simpleActive, simpleEligible, simpleAdded, simpleRemoved);
     }
 
     private static async Task<DirectoryAuditCollectionResponse?> GetAuditEntriesInitiatedBy(
