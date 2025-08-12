@@ -4,7 +4,11 @@ using RoleReaper.Data;
 
 namespace RoleReaper.Services;
 
-public class OperationMapCache(CacheDbContext db, IMemoryCache memoryCache, ILogger<OperationMapCache> logger) : IOperationMapCache
+public class OperationMapCache(
+    CacheDbContext db,
+    IMemoryCache memoryCache,
+    ILogger<OperationMapCache> logger
+) : IOperationMapCache
 {
     private const string CacheKey = "OperationMapCache";
     private const string PropCacheKey = "OperationPropertyMapCache";
@@ -21,33 +25,35 @@ public class OperationMapCache(CacheDbContext db, IMemoryCache memoryCache, ILog
     {
         try
         {
-            var dict = await db.OperationMaps
-                .Include(o => o.ResourceActions)
+            var dict = await db
+                .OperationMaps.Include(o => o.ResourceActions)
                 .AsNoTracking()
                 .ToDictionaryAsync(
                     o => o.OperationName,
-                    o => o.ResourceActions
-                        .Select(a => a.Action)
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .OrderBy(a => a)
-                        .ToArray(),
-                    StringComparer.OrdinalIgnoreCase);
-            var prop = await db.OperationPropertyMaps
-                .Include(p => p.ResourceActions)
+                    o =>
+                        o.ResourceActions.Select(a => a.Action)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .OrderBy(a => a)
+                            .ToArray(),
+                    StringComparer.OrdinalIgnoreCase
+                );
+            var prop = await db
+                .OperationPropertyMaps.Include(p => p.ResourceActions)
                 .AsNoTracking()
                 .GroupBy(p => p.OperationName, StringComparer.OrdinalIgnoreCase)
                 .ToDictionaryAsync(
                     g => g.Key,
-                    g => (IReadOnlyDictionary<string, string[]>)g
-                        .ToDictionary(
-                            x => x.PropertyName,
-                            x => x.ResourceActions
-                                .Select(a => a.Action)
-                                .Distinct(StringComparer.OrdinalIgnoreCase)
-                                .OrderBy(a => a)
-                                .ToArray(),
-                            StringComparer.OrdinalIgnoreCase
-                        ),
+                    g =>
+                        (IReadOnlyDictionary<string, string[]>)
+                            g.ToDictionary(
+                                x => x.PropertyName,
+                                x =>
+                                    x.ResourceActions.Select(a => a.Action)
+                                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                                        .OrderBy(a => a)
+                                        .ToArray(),
+                                StringComparer.OrdinalIgnoreCase
+                            ),
                     StringComparer.OrdinalIgnoreCase
                 );
             memoryCache.Set(CacheKey, dict, Ttl);
@@ -56,22 +62,43 @@ public class OperationMapCache(CacheDbContext db, IMemoryCache memoryCache, ILog
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed refreshing operation map cache");
-            memoryCache.Set(CacheKey, new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase), Ttl);
-            memoryCache.Set(PropCacheKey, new Dictionary<string, IReadOnlyDictionary<string, string[]>>(StringComparer.OrdinalIgnoreCase), Ttl);
+            memoryCache.Set(
+                CacheKey,
+                new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase),
+                Ttl
+            );
+            memoryCache.Set(
+                PropCacheKey,
+                new Dictionary<string, IReadOnlyDictionary<string, string[]>>(
+                    StringComparer.OrdinalIgnoreCase
+                ),
+                Ttl
+            );
         }
     }
 
     public IReadOnlyDictionary<string, string[]> GetAll()
     {
-        if (memoryCache.TryGetValue(CacheKey, out Dictionary<string, string[]>? dict) && dict != null)
+        if (
+            memoryCache.TryGetValue(CacheKey, out Dictionary<string, string[]>? dict)
+            && dict != null
+        )
             return dict;
         return new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
     }
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string[]>> GetPropertyMap()
     {
-        if (memoryCache.TryGetValue(PropCacheKey, out Dictionary<string, IReadOnlyDictionary<string, string[]>>? dict) && dict != null)
+        if (
+            memoryCache.TryGetValue(
+                PropCacheKey,
+                out Dictionary<string, IReadOnlyDictionary<string, string[]>>? dict
+            )
+            && dict != null
+        )
             return dict;
-        return new Dictionary<string, IReadOnlyDictionary<string, string[]>>(StringComparer.OrdinalIgnoreCase);
+        return new Dictionary<string, IReadOnlyDictionary<string, string[]>>(
+            StringComparer.OrdinalIgnoreCase
+        );
     }
 }

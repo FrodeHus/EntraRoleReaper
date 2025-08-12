@@ -59,9 +59,7 @@ public class ReviewService(
             var eligibleRoleIds = userCtx.EligibleRoleIds;
 
             // Audit operations + targets
-            var auditCtx = await CollectAuditOperationsAsync(request, graphClient, uid);
-            var usedOperations = auditCtx.UsedOperations;
-            var opTargets = auditCtx.OpTargets;
+            var auditEntries = await CollectAuditOperationsAsync(request, graphClient, uid);
 
             // Load exclusions once per review cycle (could be cached, small table)
             var excludedOps = await db
@@ -70,19 +68,14 @@ public class ReviewService(
             var excludedSet = new HashSet<string>(excludedOps, StringComparer.OrdinalIgnoreCase);
 
             // Build operations and permission requirements (excluding)
-            var filteredUsedOperations = new HashSet<string>(
-                usedOperations.Where(o => !excludedSet.Contains(o)),
-                StringComparer.OrdinalIgnoreCase
+            var filteredUsedOperations = new List<AuditActivity>(
+                auditEntries.Where(o => !excludedSet.Contains(o.ActivityName))
             );
-            var filteredOpTargets = opTargets
-                .Where(kvp => !excludedSet.Contains(kvp.Key))
-                .ToDictionary(k => k.Key, v => v.Value, StringComparer.OrdinalIgnoreCase);
 
             var operationsList = await BuildOperationsListAsync(
                 graphClient,
                 uid,
                 filteredUsedOperations,
-                filteredOpTargets,
                 activeRoleIds,
                 roles,
                 actionPrivilege
@@ -203,15 +196,14 @@ public class ReviewService(
         return list;
     }
 
-    private static async Task<(
-        HashSet<string> UsedOperations,
-        Dictionary<string, Dictionary<string, ReviewTarget>> OpTargets
-    )> CollectAuditOperationsAsync(ReviewRequest request, GraphServiceClient client, string uid)
+    private static async Task<List<AuditActivity>> CollectAuditOperationsAsync(
+        ReviewRequest request,
+        GraphServiceClient client,
+        string uid
+    )
     {
-        var usedOperations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var opTargets = new Dictionary<string, Dictionary<string, ReviewTarget>>(
-            StringComparer.OrdinalIgnoreCase
-        );
+        var auditEntries = new List<AuditActivity>();
+
         DirectoryAuditCollectionResponse? audits = await GetAuditEntriesInitiatedBy(
             request,
             client,
@@ -223,62 +215,50 @@ public class ReviewService(
             {
                 if (string.IsNullOrWhiteSpace(a.ActivityDisplayName))
                     continue;
-                usedOperations.Add(a.ActivityDisplayName);
+
+                var auditEntry = new AuditActivity { ActivityName = a.ActivityDisplayName };
                 if (a.TargetResources == null || !a.TargetResources.Any())
                     continue;
-                if (!opTargets.TryGetValue(a.ActivityDisplayName, out var targetsForOp))
-                {
-                    targetsForOp = new Dictionary<string, ReviewTarget>(
-                        StringComparer.OrdinalIgnoreCase
-                    );
-                    opTargets[a.ActivityDisplayName] = targetsForOp;
-                }
+
                 foreach (var tr in a.TargetResources)
                 {
-                    var key =
-                        $"{tr?.Type ?? ""}:{tr?.Id ?? tr?.DisplayName ?? Guid.NewGuid().ToString()}";
-                    if (targetsForOp.ContainsKey(key))
-                        continue;
-                    // Build modified properties list if present
-                    IReadOnlyList<ModifiedProperty>? mods = null;
-                    try
+                    if (tr is null)
                     {
-                        var rawMods = tr?.ModifiedProperties;
-                        if (rawMods != null && rawMods.Any())
-                        {
-                            mods = rawMods
-                                .Select(mp => new ModifiedProperty(
-                                    mp?.DisplayName,
-                                    mp?.OldValue?.ToString(),
-                                    mp?.NewValue?.ToString()
-                                ))
-                                .ToList();
-                        }
+                        continue;
                     }
-                    catch { }
                     var upn = tr?.UserPrincipalName;
                     var display = tr?.DisplayName;
                     if (string.IsNullOrWhiteSpace(display) && !string.IsNullOrWhiteSpace(upn))
-                        display = upn; // fallback to UPN when display name missing
-                    targetsForOp[key] = new ReviewTarget(
-                        tr?.Id,
-                        display,
-                        tr?.Type,
-                        FriendlyType(tr?.Type),
-                        mods,
-                        upn
-                    );
+                        display = upn;
+                    var target = new AuditTargetResource
+                    {
+                        Id = tr!.Id ?? "(no id)",
+                        Type = tr.Type ?? "(no type)",
+                        DisplayName = display ?? "(no name)",
+                    };
+
+                    if (tr.ModifiedProperties != null && tr.ModifiedProperties.Any())
+                    {
+                        target.ModifiedProperties = tr
+                            .ModifiedProperties.Select(mp => new ModifiedProperty(
+                                mp.DisplayName,
+                                mp.OldValue,
+                                mp.NewValue
+                            ))
+                            .ToList();
+                    }
+                    auditEntry.TargetResources.Add(target);
                 }
+                auditEntries.Add(auditEntry);
             }
         }
-        return (usedOperations, opTargets);
+        return auditEntries;
     }
 
     private async Task<List<ReviewOperation>> BuildOperationsListAsync(
         GraphServiceClient client,
         string userId,
-        HashSet<string> usedOperations,
-        Dictionary<string, Dictionary<string, ReviewTarget>> opTargets,
+        List<AuditActivity> usedOperations,
         List<string> activeRoleIds,
         IReadOnlyDictionary<string, UnifiedRoleDefinition> roles,
         IReadOnlyDictionary<string, bool> actionPrivilege
@@ -287,20 +267,20 @@ public class ReviewService(
         var results = new List<ReviewOperation>();
         // Ownership cache (resourceId -> isOwner)
         var ownershipCache = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        async Task<bool> IsOwnerAsync(ReviewTarget t)
+        async Task<bool> IsOwnerAsync(AuditTargetResource target)
         {
-            if (string.IsNullOrWhiteSpace(t.Id))
+            if (string.IsNullOrWhiteSpace(target.Id))
                 return false;
-            if (ownershipCache.TryGetValue(t.Id!, out var cached))
+            if (ownershipCache.TryGetValue(target.Id!, out var cached))
                 return cached;
             bool owned = false;
             try
             {
-                var type = t.Type ?? string.Empty;
+                var type = target.Type ?? string.Empty;
                 if (type.Equals("application", StringComparison.OrdinalIgnoreCase))
                 {
                     var owners = await client
-                        .Applications[t.Id]
+                        .Applications[target.Id]
                         .Owners.GetAsync(q =>
                         {
                             q.QueryParameters.Top = 20;
@@ -315,7 +295,7 @@ public class ReviewService(
                 else if (type.Equals("serviceprincipal", StringComparison.OrdinalIgnoreCase))
                 {
                     var owners = await client
-                        .ServicePrincipals[t.Id]
+                        .ServicePrincipals[target.Id]
                         .Owners.GetAsync(q =>
                         {
                             q.QueryParameters.Top = 20;
@@ -330,7 +310,7 @@ public class ReviewService(
                 else if (type.Equals("group", StringComparison.OrdinalIgnoreCase))
                 {
                     var owners = await client
-                        .Groups[t.Id]
+                        .Groups[target.Id]
                         .Owners.GetAsync(q =>
                         {
                             q.QueryParameters.Top = 20;
@@ -346,11 +326,14 @@ public class ReviewService(
             catch
             { /* ignore ownership lookup failures */
             }
-            ownershipCache[t.Id!] = owned;
+            ownershipCache[target.Id!] = owned;
             return owned;
         }
 
-        async Task<bool> ConditionSatisfiedAsync(string condition, List<ReviewTarget> targets)
+        async Task<bool> ConditionSatisfiedAsync(
+            string condition,
+            List<AuditTargetResource> targets
+        )
         {
             if (targets.Count == 0)
                 return false; // no context
@@ -379,19 +362,18 @@ public class ReviewService(
         var propMap = operationMapCache.GetPropertyMap();
         foreach (var op in usedOperations)
         {
-            var basePerms = opMap.TryGetValue(op, out var p) ? p : Array.Empty<string>();
-            if (propMap.TryGetValue(op, out var perProp))
+            var basePerms = opMap.TryGetValue(op.ActivityName, out var p)
+                ? p
+                : Array.Empty<string>();
+            if (propMap.TryGetValue(op.ActivityName, out var perProp))
             {
                 var union = new HashSet<string>(basePerms, StringComparer.OrdinalIgnoreCase);
                 foreach (var arr in perProp.Values)
-                    foreach (var act in arr)
-                        union.Add(act);
+                foreach (var act in arr)
+                    union.Add(act);
                 basePerms = union.ToArray();
             }
             var perms = basePerms;
-            var targets = opTargets.TryGetValue(op, out var allTargets)
-                ? allTargets.Values.ToList()
-                : new List<ReviewTarget>();
 
             var currentRoleDefs = activeRoleIds
                 .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
@@ -450,7 +432,7 @@ public class ReviewService(
                         if (!string.IsNullOrWhiteSpace(rp.Condition))
                         {
                             var cond = rp.Condition.Trim();
-                            if (!await ConditionSatisfiedAsync(cond, targets))
+                            if (!await ConditionSatisfiedAsync(cond, op.TargetResources))
                                 continue;
                             appliedCond = cond;
                         }
@@ -490,18 +472,31 @@ public class ReviewService(
                 .Select(d => d.Name)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
-            results.Add(new ReviewOperation(op, filteredPerms, targets, details));
+
+            var reviewedTargets = op
+                .TargetResources.Select(tr => new ReviewTarget(
+                    tr.Id,
+                    tr.DisplayName,
+                    tr.Type,
+                    "(no label)",
+                    tr.ModifiedProperties,
+                    "(no upn)"
+                ))
+                .ToList();
+            results.Add(
+                new ReviewOperation(op.ActivityName, filteredPerms, reviewedTargets, details)
+            );
         }
         return results;
     }
 
-    private HashSet<string> BuildRequiredPermissions(HashSet<string> usedOperations)
+    private HashSet<string> BuildRequiredPermissions(List<AuditActivity> usedOperations)
     {
         // Operation map cache already initialized earlier in flow when building operations list
         // Use a fresh reference for safety (no await; in-memory)
         var opMap = operationMapCache.GetAll();
         return usedOperations
-            .SelectMany(op => opMap.TryGetValue(op, out var p) ? p : [])
+            .SelectMany(op => opMap.TryGetValue(op.ActivityName, out var p) ? p : [])
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
