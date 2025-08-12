@@ -1,20 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { formatISO, subHours, subDays } from "date-fns";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "../components/ui/sheet";
 import { Button } from "../components/ui/button";
-import {
-  Download,
-  Minus,
-  LogsIcon,
-  Info,
-  Link2,
-  PlusCircle,
-} from "lucide-react";
+import { Download, Minus, LogsIcon, Info } from "lucide-react";
 import { RoleDetailsSheet } from "./review/RoleDetailsSheet";
 import { OperationsSheet } from "./review/OperationsSheet";
 import { OperationMappingSheet } from "./review/OperationMappingSheet";
@@ -167,10 +154,10 @@ export function ReviewPanel({
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) return;
-  const json = await res.json();
-  const details = normalizeRoleDetails(json) as RoleDetails;
-  setRoleDetails(details);
-  if (id) roleDetailsCache.current.set(id, details);
+      const json = await res.json();
+      const details = normalizeRoleDetails(json) as RoleDetails;
+      setRoleDetails(details);
+      if (id) roleDetailsCache.current.set(id, details);
     } finally {
       setLoadingRole(false);
     }
@@ -654,7 +641,6 @@ export function ReviewPanel({
             openMapping={(op) => setOpenMappingForOp(op)}
             hasMapping={(op) => !!operationHasMapping[op]}
             mappingCount={(op) => operationMappingCount[op]}
-            accessToken={accessToken}
             apiBase={import.meta.env.VITE_API_URL}
           />
           <OperationMappingSheet
