@@ -1,9 +1,11 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 using RoleReaper.Data;
+using RoleReaper.Endpoints;
 using RoleReaper.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,7 +48,11 @@ if (string.IsNullOrWhiteSpace(sqliteConn))
     );
     sqliteConn = $"Data Source={sqlitePath}";
 }
-builder.Services.AddDbContext<CacheDbContext>(opt => opt.UseSqlite(sqliteConn));
+builder.Services.AddDbContext<CacheDbContext>(opt =>
+{
+    opt.UseLazyLoadingProxies();
+    opt.UseSqlite(sqliteConn);
+});
 builder.Services.AddSingleton<IGraphServiceFactory, GraphServiceFactory>();
 builder.Services.AddScoped<IRoleCache, RoleCache>();
 builder.Services.AddScoped<IUserSearchService, UserSearchService>();
@@ -65,6 +71,141 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CacheDbContext>();
     db.Database.EnsureCreated();
+    try
+    {
+        // Verify required table 'operation_map' exists; if not, recreate DB (cache reset)
+        bool hasOperationMap = false;
+        var conn = db.Database.GetDbConnection();
+        await conn.OpenAsync();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText =
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='operation_map' LIMIT 1";
+            var result = await cmd.ExecuteScalarAsync();
+            hasOperationMap = result != null;
+        }
+        if (!hasOperationMap)
+        {
+            Console.WriteLine(
+                "[Startup] Detected legacy cache schema (missing operation_map); recreating cache DB."
+            );
+            await conn.CloseAsync();
+            var cs = conn.ConnectionString;
+            var pathPart = cs.Split('=', 2).LastOrDefault();
+            if (!string.IsNullOrWhiteSpace(pathPart) && File.Exists(pathPart))
+            {
+                try
+                {
+                    File.Delete(pathPart);
+                    Console.WriteLine($"[Startup] Deleted old cache file {pathPart}.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Startup] Failed deleting old cache file: {ex.Message}");
+                }
+            }
+            // Recreate
+            db.Database.EnsureCreated();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Startup] Schema verification failed: {ex.Message}");
+    }
+    // Seed OperationMap from permissions-map.json if empty (robust against missing table)
+    try
+    {
+        bool needSeed = false;
+        try
+        {
+            needSeed = !db.OperationMaps.Any();
+        }
+        catch (Exception ex)
+            when (ex.Message.Contains("no such table", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine(
+                "[Startup] operation_map table missing during seed check; recreating cache DB."
+            );
+            try
+            {
+                var conn = db.Database.GetDbConnection();
+                await conn.CloseAsync();
+                var cs = conn.ConnectionString;
+                var pathPart = cs.Split('=', 2).LastOrDefault();
+                if (!string.IsNullOrWhiteSpace(pathPart) && File.Exists(pathPart))
+                {
+                    File.Delete(pathPart);
+                    Console.WriteLine($"[Startup] Deleted old cache file {pathPart}.");
+                }
+            }
+            catch (Exception delEx)
+            {
+                Console.WriteLine($"[Startup] Failed deleting cache DB: {delEx.Message}");
+            }
+            db.Database.EnsureCreated();
+            needSeed = true; // new DB
+        }
+
+        if (needSeed)
+        {
+            var cfgPath = Path.Combine(
+                AppContext.BaseDirectory,
+                "Configuration",
+                "permissions-map.json"
+            );
+            if (File.Exists(cfgPath))
+            {
+                try
+                {
+                    var json = await File.ReadAllTextAsync(cfgPath);
+                    var dict =
+                        JsonSerializer.Deserialize<Dictionary<string, string[]>>(json) ?? new();
+                    var actionLookup = db.ResourceActions.ToDictionary(
+                        a => a.Action,
+                        a => a,
+                        StringComparer.OrdinalIgnoreCase
+                    );
+                    foreach (var kvp in dict)
+                    {
+                        var op = new OperationMapEntity { OperationName = kvp.Key };
+                        foreach (var action in kvp.Value.Distinct(StringComparer.OrdinalIgnoreCase))
+                        {
+                            if (!actionLookup.TryGetValue(action, out var ra))
+                            {
+                                ra = new ResourceActionEntity
+                                {
+                                    Action = action,
+                                    IsPrivileged = false,
+                                };
+                                db.ResourceActions.Add(ra);
+                                actionLookup[action] = ra;
+                            }
+                            op.ResourceActions.Add(ra);
+                        }
+                        db.OperationMaps.Add(op);
+                    }
+                    await db.SaveChangesAsync();
+                    Console.WriteLine(
+                        $"[Startup] Seeded {dict.Count} operations into operation_map."
+                    );
+                }
+                catch (Exception seedEx)
+                {
+                    Console.WriteLine($"Failed seeding operation map: {seedEx.Message}");
+                }
+            }
+            else
+            {
+                Console.WriteLine(
+                    "[Startup] permissions-map.json not found; skipping operation map seed."
+                );
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Startup] Unexpected error during operation map seeding: {ex.Message}");
+    }
 }
 
 app.UseCors(policy =>
@@ -77,155 +218,14 @@ app.UseSwaggerUI();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Minimal API endpoints
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
-// Cache status endpoint
-app.MapGet(
-        "/api/cache/status",
-        async (IRoleCache cache) =>
-        {
-            await cache.InitializeAsync();
-            var ts = await cache.GetLastUpdatedAsync();
-            var count = cache.GetAll().Count;
-            return Results.Ok(new { lastUpdatedUtc = ts, roleCount = count });
-        }
-    )
-    .RequireAuthorization();
-
-// Force refresh endpoint
-app.MapPost(
-        "/api/cache/refresh",
-        async (IRoleCache cache) =>
-        {
-            await cache.RefreshAsync();
-            var ts = await cache.GetLastUpdatedAsync();
-            return Results.Ok(new { lastUpdatedUtc = ts });
-        }
-    )
-    .RequireAuthorization();
-
-app.MapGet(
-        "/api/search",
-        async (string q, bool includeGroups, IUserSearchService svc) =>
-        {
-            var results = await svc.SearchAsync(q, includeGroups);
-            return Results.Ok(results);
-        }
-    )
-    .RequireAuthorization();
-
-app.MapPost(
-        "/api/review",
-        async (ReviewRequest request, IReviewService svc) =>
-        {
-            var result = await svc.ReviewAsync(request);
-            return Results.Ok(result);
-        }
-    )
-    .RequireAuthorization();
-
-// Role details: fetch by id or by display name
-app.MapGet(
-        "/api/role",
-        async (string? id, string? name, IRoleCache cache) =>
-        {
-            await cache.InitializeAsync();
-            var roles = cache.GetAll();
-            var actionPriv = cache.GetActionPrivilegeMap();
-
-            Microsoft.Graph.Models.UnifiedRoleDefinition? match = null;
-            if (!string.IsNullOrWhiteSpace(id))
-            {
-                roles.TryGetValue(id!, out match);
-            }
-            else if (!string.IsNullOrWhiteSpace(name))
-            {
-                match = roles.Values.FirstOrDefault(r =>
-                    !string.IsNullOrWhiteSpace(r.DisplayName)
-                    && string.Equals(r.DisplayName, name, StringComparison.OrdinalIgnoreCase)
-                );
-            }
-
-            if (match == null)
-            {
-                return Results.NotFound(new { message = "Role not found" });
-            }
-
-            static string DescribeScope(string s)
-            {
-                if (string.IsNullOrWhiteSpace(s))
-                    return "Unknown";
-                if (s == "/")
-                    return "Tenant-wide";
-                string norm = s.Trim();
-                if (norm.StartsWith("/administrativeUnits/", StringComparison.OrdinalIgnoreCase))
-                    return "Administrative Unit scope";
-                if (norm.StartsWith("/groups/", StringComparison.OrdinalIgnoreCase))
-                    return "Group scope";
-                if (norm.StartsWith("/users/", StringComparison.OrdinalIgnoreCase))
-                    return "User scope";
-                if (norm.StartsWith("/devices/", StringComparison.OrdinalIgnoreCase))
-                    return "Device scope";
-                if (norm.StartsWith("/applications/", StringComparison.OrdinalIgnoreCase))
-                    return "Application scope";
-                if (norm.StartsWith("/servicePrincipals/", StringComparison.OrdinalIgnoreCase))
-                    return "Service principal scope";
-                if (norm.StartsWith("/directoryObjects/", StringComparison.OrdinalIgnoreCase))
-                    return "Directory object scope";
-                return $"Resource scope ({s})";
-            }
-
-            var allowed = (match.RolePermissions ?? [])
-                .SelectMany(rp => rp.AllowedResourceActions ?? [])
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(a => a, StringComparer.OrdinalIgnoreCase)
-                .Select(a => new
-                {
-                    action = a,
-                    privileged = actionPriv.TryGetValue(a, out var p) && p,
-                })
-                .ToList();
-
-            var scopes = match.ResourceScopes ?? new List<string>();
-            var scopeDetails = scopes
-                .Select(s => new { value = s, description = DescribeScope(s) })
-                .ToList();
-
-            return Results.Ok(
-                new
-                {
-                    id = match.Id,
-                    name = match.DisplayName,
-                    description = match.Description,
-                    resourceScopes = scopes,
-                    resourceScopesDetailed = scopeDetails,
-                    permissions = allowed,
-                }
-            );
-        }
-    )
-    .RequireAuthorization();
-
-// Batch resolve role ids to display names
-app.MapPost(
-        "/api/roles/names",
-        async (string[] ids, IRoleCache cache) =>
-        {
-            await cache.InitializeAsync();
-            var roles = cache.GetAll();
-            var unique = ids.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-            var result = unique
-                .Select(id => new
-                {
-                    id,
-                    name = roles.TryGetValue(id, out var def)
-                        ? def.DisplayName ?? string.Empty
-                        : string.Empty,
-                })
-                .ToList();
-            return Results.Ok(result);
-        }
-    )
-    .RequireAuthorization();
+// Minimal API endpoints composed via extension methods (explicit static call for Health to avoid resolution issues)
+app.MapHealth()
+    .MapCache()
+    .MapRolesSummary()
+    .MapOperationMap()
+    .MapActions()
+    .MapSearch()
+    .MapReview()
+    .MapRolesLookup();
 
 app.Run();

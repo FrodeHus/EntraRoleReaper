@@ -80,7 +80,8 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
             var display = user?.DisplayName ?? user?.UserPrincipalName ?? uid;
 
             // Get current directory roles for the user via memberOf (DirectoryRole)
-            var currentRoleIds = new List<string>();
+            // NOTE: Currently only first page is retrieved. TODO: implement paging using PageIterator to ensure >1 page of directory roles are captured.
+            var activeRoleIds = new List<string>();
             var memberships = await graphClient.Users[uid].MemberOf.GetAsync();
             if (memberships?.Value != null)
             {
@@ -98,19 +99,20 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                             )
                         );
                         if (match?.Id != null)
-                            currentRoleIds.Add(match.Id);
+                            activeRoleIds.Add(match.Id);
                     }
                 }
             }
 
-            // Include eligible PIM roles (do not use these to grant permissions, just report)
+            // Retrieve PIM roles (eligible + currently activated). Only activated (pimActiveRoleIds) are part of active roles; eligible are reported separately.
             (List<string> eligibleRoleIds, HashSet<string> pimActiveRoleIds) = await GetPIMRoles(
                 graphClient,
                 uid
             );
+            activeRoleIds.AddRange(pimActiveRoleIds); // merge activated PIM roles
 
-            currentRoleIds.AddRange(pimActiveRoleIds);
-            currentRoleIds.AddRange(eligibleRoleIds);
+            // De-duplicate active role ids
+            activeRoleIds = activeRoleIds.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
             // Audit logs: directory audits filtered by user and time
             var usedOperations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -173,7 +175,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                         : new List<ReviewTarget>();
 
                     // For each permission, determine which of the user's current roles grants it
-                    var currentRoleDefs = currentRoleIds
+                    var currentRoleDefs = activeRoleIds
                         .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
                         .Where(rd => rd != null)
                         .ToList()!;
@@ -363,7 +365,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
             }
 
             // Build role metadata for UI labels (PIM badge on active PIM roles)
-            var roleMeta = currentRoleIds
+            var roleMeta = activeRoleIds
                 .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
                 .Where(rd => rd != null && !string.IsNullOrWhiteSpace(rd!.DisplayName))
                 .Select(rd => new RoleMeta(
@@ -384,7 +386,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                         .ToList();
                     // For each permission detail we now map to role IDs (active + eligible) that grant it
                     var currentAndEligible = new HashSet<string>(
-                        currentRoleIds.Concat(eligibleRoleIds),
+                        activeRoleIds.Concat(eligibleRoleIds),
                         StringComparer.OrdinalIgnoreCase
                     );
                     var nameToId = roles
@@ -408,7 +410,10 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                                     .Where(id => id != null && currentAndEligible.Contains(id))
                                     .Distinct()!
                                     .ToList() as IReadOnlyList<string>;
-                            return new OperationPermission(pd.Name, grantingIds);
+                            // Determine privilege via actionPrivilege map
+                            var isPrivileged =
+                                actionPrivilege.TryGetValue(pd.Name, out var ip) && ip;
+                            return new OperationPermission(pd.Name, isPrivileged, grantingIds);
                         })
                         .ToList();
                     return new OperationReview(op.Operation, targets, permissions);
@@ -416,7 +421,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                 .ToList();
 
             // Determine added / removed roles (suggested vs current) using IDs where possible
-            var currentSet = new HashSet<string>(currentRoleIds, StringComparer.OrdinalIgnoreCase);
+            var currentSet = new HashSet<string>(activeRoleIds, StringComparer.OrdinalIgnoreCase);
             var suggestedRoleIds = suggestedDetails
                 .Where(sr => !string.IsNullOrWhiteSpace(sr.Id))
                 .Select(sr => sr.Id)
@@ -449,7 +454,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
             var added = suggestedRoleIds.Where(id => !currentSet.Contains(id)).ToList();
             var removed =
                 suggestedSet.Count > 0
-                    ? currentRoleIds.Where(id => !suggestedSet.Contains(id)).ToList()
+                    ? activeRoleIds.Where(id => !suggestedSet.Contains(id)).ToList()
                     : new List<string>();
             var simpleAdded = added
                 .Select(id =>
@@ -466,7 +471,7 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                 )
                 .ToList();
 
-            var distinctCurrent = currentRoleIds
+            var distinctCurrent = activeRoleIds
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var simpleActive = distinctCurrent

@@ -1,7 +1,8 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/ui/sheet";
 import { Button } from "../../components/ui/button";
 import type { UserReview } from "./types";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { Link2, PlusCircle } from "lucide-react";
 
 // New OperationsSheet adapted to simplified contract
 export function OperationsSheet({
@@ -9,15 +10,41 @@ export function OperationsSheet({
   onOpenChange,
   review,
   roleNameLookup,
+  openMapping,
+  hasMapping,
+  mappingCount,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   review: UserReview | null;
   roleNameLookup: (id: string) => string;
+  openMapping: (operation: string) => void;
+  hasMapping: (operation: string) => boolean;
+  mappingCount: (operation: string) => number | undefined;
 }) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [opFilter, setOpFilter] = useState("");
   const [permFilter, setPermFilter] = useState("");
+  const prevCountsRef = useRef<Record<string, number>>({});
+  const [animateOps, setAnimateOps] = useState<Set<string>>(new Set());
+  // Track mapping counts to trigger animation
+  useEffect(() => {
+    if (!review) return;
+    const nextAnimate = new Set<string>();
+    for (const o of review.operations) {
+      const current = mappingCount(o.operation) ?? 0;
+      const prev = prevCountsRef.current[o.operation];
+      if (prev !== undefined && prev !== current) {
+        nextAnimate.add(o.operation);
+      }
+      prevCountsRef.current[o.operation] = current;
+    }
+    if (nextAnimate.size > 0) {
+      setAnimateOps(nextAnimate);
+      const id = setTimeout(() => setAnimateOps(new Set()), 650);
+      return () => clearTimeout(id);
+    }
+  }, [review, mappingCount]);
   const toggleExpanded = (idx: number) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -33,6 +60,7 @@ export function OperationsSheet({
         targets: string[];
         permGroups: { roleId: string; permissions: string[] }[];
         uncovered: string[];
+        grantedMapped: { name: string; isPrivileged: boolean }[];
       }[];
     const opLower = opFilter.trim().toLowerCase();
     const permLower = permFilter.trim().toLowerCase();
@@ -42,6 +70,7 @@ export function OperationsSheet({
         // Group permissions by granting role id(s)
         const groups = new Map<string, Set<string>>();
         const uncovered: string[] = [];
+        const currentRoleIds = new Set(review.activeRoles.map((r) => r.id));
         for (const p of o.permissions) {
           if (!p.grantedByRoleIds || p.grantedByRoleIds.length === 0) {
             uncovered.push(p.name);
@@ -52,6 +81,18 @@ export function OperationsSheet({
             }
           }
         }
+        // Compute mapped permissions subset the user actually has with privilege flag
+        const grantedMapped = Array.from(
+          new Map(
+            o.permissions
+              .filter((p) =>
+                p.grantedByRoleIds?.some((rid) => currentRoleIds.has(rid))
+              )
+              .map((p) => [p.name, p]) // use Map to de-dupe preserving privilege
+          ).values()
+        ).sort((a, b) =>
+          a.name.localeCompare(b.name, "en", { sensitivity: "base" })
+        );
         const initialGroups = Array.from(groups.entries()).map(
           ([roleId, set]) => ({
             roleId,
@@ -81,6 +122,10 @@ export function OperationsSheet({
           targets,
           permGroups,
           uncovered: filteredUncovered,
+          grantedMapped: grantedMapped.map((p) => ({
+            name: p.name,
+            isPrivileged: p.isPrivileged,
+          })),
         };
       });
   }, [review, opFilter, permFilter]);
@@ -141,7 +186,45 @@ export function OperationsSheet({
                   className="border rounded p-3 bg-card text-card-foreground text-xs space-y-2"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="font-semibold text-sm">{op.op}</div>
+                    <div className="font-semibold text-sm">
+                      <div className="flex items-center gap-2">
+                        <span>{op.op}</span>
+                        {(() => {
+                          const count =
+                            mappingCount(op.op) ?? op.grantedMapped.length ?? 0;
+                          const animate = animateOps.has(op.op) && count > 0;
+                          return (
+                            <span
+                              className={
+                                `text-[10px] px-1 py-0.5 rounded border transition-transform ` +
+                                (count === 0
+                                  ? "bg-transparent text-muted-foreground border-muted-foreground/30"
+                                  : "bg-muted text-muted-foreground") +
+                                (animate ? " animate-badge-pulse" : "")
+                              }
+                              title={
+                                count === 0
+                                  ? "No mapped permissions yet"
+                                  : `${count} mapped permissions`
+                              }
+                            >
+                              {count} mapped
+                            </span>
+                          );
+                        })()}
+                      </div>
+                      <div className="mt-1">
+                        <button
+                          type="button"
+                          onClick={() => openMapping(op.op)}
+                          className="text-[11px] text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {hasMapping(op.op)
+                            ? "Edit mapping"
+                            : "Create mapping"}
+                        </button>
+                      </div>
+                    </div>
                     {op.targets.length > 0 && (
                       <Button
                         variant="link"
@@ -152,6 +235,23 @@ export function OperationsSheet({
                       </Button>
                     )}
                   </div>
+                  {hasMapping(op.op) && op.grantedMapped.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {op.grantedMapped.map((p) => (
+                        <span
+                          key={p.name}
+                          className={
+                            `inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11px] ` +
+                            (p.isPrivileged
+                              ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/10 dark:border-red-700 dark:text-red-300"
+                              : "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/10 dark:border-emerald-700 dark:text-emerald-300")
+                          }
+                        >
+                          {p.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="space-y-2">
                     {op.permGroups.map((g) => (
                       <div key={g.roleId}>

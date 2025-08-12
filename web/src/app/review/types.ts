@@ -12,7 +12,11 @@ export type UserReview = {
   operations: {
     operation: string;
     targets: { id?: string; displayName?: string }[];
-    permissions: { name: string; grantedByRoleIds: string[] }[];
+    permissions: {
+      name: string;
+      isPrivileged: boolean;
+      grantedByRoleIds: string[];
+    }[];
   }[];
   addedRoles: SimpleRole[];
   removedRoles: SimpleRole[];

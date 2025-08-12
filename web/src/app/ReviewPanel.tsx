@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { formatISO, subHours, subDays } from "date-fns";
 import {
   Sheet,
@@ -7,9 +7,17 @@ import {
   SheetTitle,
 } from "../components/ui/sheet";
 import { Button } from "../components/ui/button";
-import { Download, Minus, LogsIcon, Info } from "lucide-react";
+import {
+  Download,
+  Minus,
+  LogsIcon,
+  Info,
+  Link2,
+  PlusCircle,
+} from "lucide-react";
 import { RoleDetailsSheet } from "./review/RoleDetailsSheet";
 import { OperationsSheet } from "./review/OperationsSheet";
+import { OperationMappingSheet } from "./review/OperationMappingSheet";
 import { RoleChangeDetailsSheet } from "./review/RoleChangeDetailsSheet";
 import type {
   ReviewRequest,
@@ -67,6 +75,13 @@ export function ReviewPanel({
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [openSheetFor, setOpenSheetFor] = useState<UserReview | null>(null);
+  const [openMappingForOp, setOpenMappingForOp] = useState<string | null>(null);
+  const [operationHasMapping, setOperationHasMapping] = useState<
+    Record<string, boolean>
+  >({});
+  const [operationMappingCount, setOperationMappingCount] = useState<
+    Record<string, number>
+  >({});
   const [openRoleChangeFor, setOpenRoleChangeFor] = useState<UserReview | null>(
     null
   );
@@ -83,9 +98,13 @@ export function ReviewPanel({
   } | null>(null);
   const [roleDetails, setRoleDetails] = useState<RoleDetails>(null);
   const [loadingRole, setLoadingRole] = useState<boolean>(false);
+  // Role details cache (id -> details); name-only lookups deprecated now that id always provided
+  const roleDetailsCache = useRef<Map<string, RoleDetails>>(new Map());
   // Role changes sheet removed (added/removed shown inline)
 
   // no-op
+
+  // (moved below after paged definition)
 
   const isGuid = (s: string) =>
     /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
@@ -131,19 +150,36 @@ export function ReviewPanel({
     });
     setRoleDetails(null);
     setLoadingRole(true);
+    const id = opts.id;
+    if (id && roleDetailsCache.current.has(id)) {
+      setRoleDetails(roleDetailsCache.current.get(id)!);
+      setLoadingRole(false);
+      return;
+    }
     try {
-      const url = new URL("/api/role", import.meta.env.VITE_API_URL);
-      if (opts.id && opts.id.length > 0) {
-        url.searchParams.set("id", opts.id);
-      } else {
-        url.searchParams.set("name", opts.name);
-      }
+      if (!id) return; // name-only lookups no longer supported
+      const url = new URL(
+        `/api/roles/${encodeURIComponent(id)}`,
+        import.meta.env.VITE_API_URL
+      );
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) return;
       const json = await res.json();
-      setRoleDetails(json as RoleDetails);
+      const details: RoleDetails = {
+        id: json.id,
+        name: json.displayName || json.name,
+        description: json.description,
+        resourceScopes: json.resourceScopes || [],
+        resourceScopesDetailed: json.resourceScopesDetailed || [],
+        permissions: (json.permissions || []).map((p: any) => ({
+          action: p.action || p,
+          privileged: !!p.privileged,
+        })),
+      };
+      setRoleDetails(details);
+      roleDetailsCache.current.set(id, details);
     } finally {
       setLoadingRole(false);
     }
@@ -172,6 +208,58 @@ export function ReviewPanel({
       setLoading(false);
     }
   };
+
+  // Fetch mapping existence & counts for all operations globally once report loads
+  useEffect(() => {
+    if (!accessToken || !report || report.length === 0) return;
+    const ops = new Set<string>();
+    for (const r of report)
+      for (const o of r.operations) if (o.operation) ops.add(o.operation);
+    if (ops.size === 0) return;
+    const controller = new AbortController();
+    const refresh = async () => {
+      try {
+        const res = await fetch(
+          new URL(
+            "/api/operations/map/existence",
+            import.meta.env.VITE_API_URL
+          ),
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(Array.from(ops)),
+            signal: controller.signal,
+          }
+        );
+        if (!res.ok) return;
+        const arr: Array<{
+          operationName: string;
+          exists: boolean;
+          mappedCount: number;
+        }> = await res.json();
+        const existsMap: Record<string, boolean> = {};
+        const countMap: Record<string, number> = {};
+        for (const { operationName, exists, mappedCount } of arr) {
+          existsMap[operationName] = exists;
+          if (exists) countMap[operationName] = mappedCount ?? 0;
+        }
+        setOperationHasMapping(existsMap);
+        setOperationMappingCount(countMap);
+      } catch {
+        // ignore
+      }
+    };
+    void refresh();
+    const listener = () => void refresh();
+    window.addEventListener("operation-mappings-updated", listener);
+    return () => {
+      controller.abort();
+      window.removeEventListener("operation-mappings-updated", listener);
+    };
+  }, [accessToken, report]);
 
   // Compute required permissions from new contract
   const getRequiredPerms = (r: UserReview): string[] => {
@@ -465,6 +553,7 @@ export function ReviewPanel({
                               <LogsIcon />
                             </Button>
                           )}
+                          {/* Mapping icon now shown per operation inside OperationsSheet */}
                         </div>
                       </td>
                       <td className="p-2">
@@ -553,6 +642,18 @@ export function ReviewPanel({
             }}
             review={openSheetFor}
             roleNameLookup={(id) => roleNameCache[id] ?? id}
+            openMapping={(op) => setOpenMappingForOp(op)}
+            hasMapping={(op) => !!operationHasMapping[op]}
+            mappingCount={(op) => operationMappingCount[op]}
+          />
+          <OperationMappingSheet
+            operationName={openMappingForOp}
+            open={openMappingForOp !== null}
+            onOpenChange={(o) => {
+              if (!o) setOpenMappingForOp(null);
+            }}
+            accessToken={accessToken}
+            apiBase={import.meta.env.VITE_API_URL}
           />
           <RoleChangeDetailsSheet
             open={openRoleChangeFor !== null}

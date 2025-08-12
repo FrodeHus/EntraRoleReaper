@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes drawerItem {
+  0% { opacity: 0; transform: translateX(-8px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes badgePulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 hsla(var(--accent),0.6); }
+  70% { transform: scale(1.08); box-shadow: 0 0 0 6px hsla(var(--accent),0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 hsla(var(--accent),0); }
+}
+
+.animate-badge-pulse {
+  animation: badgePulse 0.6s ease-out;
+}
+
+
 :root {
   --background: 0 0% 100%;
   --foreground: 222.2 47.4% 11.2%;

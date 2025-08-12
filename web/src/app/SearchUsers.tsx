@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from "react";
 import { Input } from "../components/ui/input";
 import { Checkbox } from "../components/ui/checkbox";
 import { Button } from "../components/ui/button";
@@ -69,6 +69,23 @@ export function SearchUsers({
   const remove = (id: string, type: "user" | "group") =>
     onChange(selected.filter((s) => !(s.id === id && s.type === type)));
 
+  const isSelected = (item: DirectoryItem) =>
+    selected.some((s) => s.id === item.id && s.type === item.type);
+
+  const addAll = () => {
+    const existingKeys = new Set(selected.map((s) => s.id + "|" + s.type));
+    const merged = [
+      ...selected,
+      ...results.filter((r) => !existingKeys.has(r.id + "|" + r.type)),
+    ];
+    onChange(merged);
+  };
+
+  const hasAddable = useMemo(
+    () => results.some((r) => !isSelected(r)),
+    [results, selected]
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 items-Left">
@@ -105,6 +122,19 @@ export function SearchUsers({
               <span>Searching…</span>
             </div>
           )}
+          {!loading && results.length > 0 && hasAddable && (
+            <div className="flex justify-end mb-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={addAll}
+                disabled={loading}
+              >
+                Add all
+              </Button>
+            </div>
+          )}
           {results.map((r) => (
             <div key={r.id} className="flex justify-between items-center py-1">
               <div>
@@ -113,15 +143,27 @@ export function SearchUsers({
                   {r.type}
                 </span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => add(r)}
-                disabled={loading}
-              >
-                Add
-              </Button>
+              {isSelected(r) ? (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => remove(r.id, r.type)}
+                  disabled={loading}
+                >
+                  Remove
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => add(r)}
+                  disabled={loading}
+                >
+                  Add
+                </Button>
+              )}
             </div>
           ))}
         </div>

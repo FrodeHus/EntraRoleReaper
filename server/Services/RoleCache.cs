@@ -79,7 +79,7 @@ public class RoleCache(
         cache.Set(ActionMapKey, actionPrivilege, ttl);
         cache.Set(RoleStatsKey, roleStats, ttl);
 
-        // Persist to DB
+        // Persist to DB (normalized schema)
         try
         {
             await SaveToDbAsync(definitions, actionPrivilege);
@@ -232,35 +232,56 @@ public class RoleCache(
         cache.Set(RoleStatsKey, roleStats, ttl);
     }
 
-    private static UnifiedRoleDefinition DeserializeRoleDefinition(string json)
-    {
-        return JsonSerializer.Deserialize<UnifiedRoleDefinition>(json)
-            ?? new UnifiedRoleDefinition();
-    }
-
     private async Task SaveToDbAsync(
         Dictionary<string, UnifiedRoleDefinition> definitions,
         Dictionary<string, bool> actionPrivilege
     )
     {
-        // Clear old rows
+        // Clear existing normalized tables (relationships via join tables cascade on delete)
         await db.RoleDefinitions.ExecuteDeleteAsync();
         await db.ResourceActions.ExecuteDeleteAsync();
 
-        // Insert role definitions
-        foreach (var (id, def) in definitions)
-        {
-            db.RoleDefinitions.Add(
-                new RoleDefinitionEntity { Id = id, Json = JsonSerializer.Serialize(def) }
-            );
-        }
-
-        // Insert resource actions
+        // Recreate resource actions first (for many-to-many assignment)
+        var actionEntities = new Dictionary<string, ResourceActionEntity>(
+            StringComparer.OrdinalIgnoreCase
+        );
         foreach (var (action, privileged) in actionPrivilege)
         {
-            db.ResourceActions.Add(
-                new ResourceActionEntity { Action = action, IsPrivileged = privileged }
-            );
+            var ra = new ResourceActionEntity { Action = action, IsPrivileged = privileged };
+            actionEntities[action] = ra;
+            db.ResourceActions.Add(ra);
+        }
+
+        // Insert role definitions with relationships
+        foreach (var (id, def) in definitions)
+        {
+            var rd = new RoleDefinitionEntity
+            {
+                Id = id,
+                DisplayName = def.DisplayName ?? string.Empty,
+                Description = def.Description,
+                IsBuiltIn = def.IsBuiltIn ?? false,
+                IsEnabled = def.IsEnabled ?? true,
+                ResourceScope =
+                    def.ResourceScopes != null && def.ResourceScopes.Count > 0
+                        ? string.Join(";", def.ResourceScopes)
+                        : null,
+            };
+
+            if (def.RolePermissions != null)
+            {
+                foreach (var perm in def.RolePermissions)
+                {
+                    foreach (var ar in perm.AllowedResourceActions ?? [])
+                    {
+                        if (actionEntities.TryGetValue(ar.ToLowerInvariant(), out var ra))
+                        {
+                            rd.ResourceActions.Add(ra);
+                        }
+                    }
+                }
+            }
+            db.RoleDefinitions.Add(rd);
         }
 
         // Upsert meta
@@ -294,21 +315,46 @@ public class RoleCache(
         if (lastUpdated == null && meta?.StringValue is string s && long.TryParse(s, out var ticks))
             lastUpdated = new DateTimeOffset(ticks, TimeSpan.Zero);
 
-        var roleRows = await db.RoleDefinitions.AsNoTracking().ToListAsync();
-        foreach (var row in roleRows)
+        var actionRows = await db.ResourceActions.AsNoTracking().ToListAsync();
+        foreach (var ar in actionRows)
         {
-            if (!string.IsNullOrWhiteSpace(row.Id))
-            {
-                var def = JsonSerializer.Deserialize<UnifiedRoleDefinition>(row.Json);
-                if (def != null)
-                    defs[row.Id] = def;
-            }
+            actions[ar.Action] = ar.IsPrivileged;
         }
 
-        var actionRows = await db.ResourceActions.AsNoTracking().ToListAsync();
-        foreach (var row in actionRows)
+        var roleRows = await db
+            .RoleDefinitions.Include(r => r.ResourceActions)
+            .AsNoTracking()
+            .ToListAsync();
+        foreach (var row in roleRows)
         {
-            actions[row.Action] = row.IsPrivileged;
+            var def = new UnifiedRoleDefinition
+            {
+                Id = row.Id,
+                DisplayName = row.DisplayName,
+                Description = row.Description,
+                IsBuiltIn = row.IsBuiltIn,
+                IsEnabled = row.IsEnabled,
+                ResourceScopes =
+                    row.ResourceScope != null
+                        ? row
+                            .ResourceScope.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                            .ToList()
+                        : new List<string>(),
+            };
+            if (row.ResourceActions.Count > 0)
+            {
+                def.RolePermissions =
+                [
+                    new UnifiedRolePermission
+                    {
+                        AllowedResourceActions = row
+                            .ResourceActions.Select(a => a.Action)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToList(),
+                    },
+                ];
+            }
+            defs[row.Id] = def;
         }
 
         return (defs, actions, lastUpdated);

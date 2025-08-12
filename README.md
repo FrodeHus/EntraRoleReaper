@@ -11,7 +11,7 @@ Full-stack app to perform access reviews of Entra ID users.
 - Choose a time period for review
 - Backend processing per user:
   - Aggregates directory audit logs within the selected window
-  - Maps operation names (ActivityDisplayName) to required Graph permissions via `server/Data/permissions-map.json`
+  - Maps operation names (ActivityDisplayName) to required Graph permissions via `server/Configuration/permissions-map.json`
   - Determines which permissions are actually granted today via the user’s current directory roles and surfaces the granting role names
   - Flags privileged permissions and includes Entra PIM data: eligible roles and currently active PIM assignments (if API permissions allow)
   - Suggests least-privilege roles using a minimal set-cover of required permissions derived from the user’s operations, preferring roles with fewer privileged actions and smaller overall scope
@@ -81,7 +81,6 @@ AZUREAD_CLIENT_SECRET=
 AZUREAD_AUDIENCE=
 AZUREAD_DOMAIN=
 
-VITE_AAD_TENANT_ID=
 VITE_AAD_CLIENT_ID=
 VITE_API_SCOPE=
 ```

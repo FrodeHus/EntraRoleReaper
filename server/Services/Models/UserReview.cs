@@ -4,7 +4,11 @@ public record SimpleUser(string Id, string DisplayName);
 
 public record OperationTarget(string? Id, string? DisplayName);
 
-public record OperationPermission(string Name, IReadOnlyList<string> GrantedByRoleIds);
+public record OperationPermission(
+    string Name,
+    bool IsPrivileged,
+    IReadOnlyList<string> GrantedByRoleIds
+);
 
 public record OperationReview(
     string Operation,

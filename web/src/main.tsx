@@ -4,6 +4,7 @@ import { PublicClientApplication, EventType, AccountInfo } from '@azure/msal-bro
 import { MsalProvider } from '@azure/msal-react'
 import { Toaster } from "sonner";
 import App from "./app/App";
+import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 
 const pca = new PublicClientApplication({
@@ -41,7 +42,9 @@ pca.addEventCallback((e) => {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <MsalProvider instance={pca}>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
       <Toaster
         position="top-right"
         richColors
