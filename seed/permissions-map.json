@@ -1,0 +1,54 @@
+[
+  {
+    "Operation": "Add application",
+    "ResourceActions": [
+      "microsoft.directory/applications/allproperties/alltasks",
+      "microsoft.directory/applications/create",
+      "microsoft.directory/applications/createasowner"
+    ],
+    "Properties":[]
+  },
+  {
+    "Operation": "Add member to group",
+    "ResourceActions": [
+      "microsoft.directory/accessreviews/definitions.groups/allproperties/update",
+      "microsoft.directory/groups/members/update",
+      "microsoft.directory/groups/members/update.add"
+    ]
+  },
+  {
+    "Operation": "Update application",
+    "ResourceActions": [
+      "microsoft.directory/applications/allproperties/alltasks",
+      "microsoft.directory/applications/allproperties/update",
+      "microsoft.directory/applications/approles/update",
+      "microsoft.directory/applications/audience/update",
+      "microsoft.directory/applications/basic/update",
+      "microsoft.directory/applications/notes/update",
+      "microsoft.directory/applications/owners/update",
+      "microsoft.directory/applications/permissions/update",
+      "microsoft.directory/applications/tag/update"
+    ]
+  },
+  {
+    "Operation": "Update application – Certificates and secrets management ",
+    "ResourceActions": [
+      "microsoft.directory/applications/allproperties/alltasks",
+      "microsoft.directory/applications/credentials/update"
+    ]
+  },
+  {
+    "Operation": "Update user",
+    "ResourceActions": [
+      "microsoft.directory/users/allproperties/alltasks"
+    ],
+    "Properties": [
+      {
+        "ResourceAction": "microsoft.directory/users/basicprofile/update",
+        "Properties": [
+          "DisplayName"
+        ]
+      }
+    ]
+  }
+]

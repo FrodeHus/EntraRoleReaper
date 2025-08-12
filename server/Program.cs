@@ -132,23 +132,21 @@ using (var scope = app.Services.CreateScope())
         bool needSeed = reset || !db.OperationMaps.Any();
         if (needSeed)
         {
-            var cfgPath = Path.Combine(
-                AppContext.BaseDirectory,
-                "Configuration",
-                "permissions-map.json"
-            );
-            if (File.Exists(cfgPath))
+            var seedPath = builder.Configuration.GetValue<string>("Cache:SeedFolder", string.Empty);
+            var permMaps = Path.Combine(seedPath, "permissions-map.json");
+            if (File.Exists(permMaps))
             {
                 try
                 {
-                    var json = await File.ReadAllTextAsync(cfgPath);
+                    var json = await File.ReadAllTextAsync(seedPath);
+
                     var maps =
-                        System.Text.Json.JsonSerializer.Deserialize<
+                        JsonSerializer.Deserialize<
                             List<EntraRoleReaper.Api.Configuration.PermissionMapping.Models.OperationMap>
-                        >(json) ?? new();
+                        >(json) ?? [];
                     var mappingSvc =
                         scope.ServiceProvider.GetRequiredService<IOperationMappingService>();
-                    await mappingSvc.ImportAsync(maps, "new");
+                    await mappingSvc.ImportAsync(maps);
                     Console.WriteLine(
                         "[Startup] Seeded operation & property maps from permissions-map.json (new format)."
                     );
@@ -156,7 +154,7 @@ using (var scope = app.Services.CreateScope())
                 catch (Exception ex)
                 {
                     Console.WriteLine(
-                        $"[Startup] Failed parsing permissions-map.json as new format: {ex.Message}"
+                        $"[Startup] Failed parsing permissions-map.json: {ex.Message}"
                     );
                 }
             }
