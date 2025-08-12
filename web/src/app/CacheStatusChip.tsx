@@ -7,6 +7,7 @@ interface Props {
 
 export function CacheStatusChip({ accessToken, apiBase }: Props) {
   const [count, setCount] = useState<number | null>(null);
+  const [actionCount, setActionCount] = useState<number | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -35,7 +36,10 @@ export function CacheStatusChip({ accessToken, apiBase }: Props) {
         if (!res.ok) throw new Error('bad');
         const json = await res.json();
         if (cancelled) return;
-        setCount(typeof json.roleCount === 'number' ? json.roleCount : null);
+  setCount(typeof json.roleCount === "number" ? json.roleCount : null);
+  setActionCount(
+    typeof json.actionCount === "number" ? json.actionCount : null
+  );
         setLastUpdated(json.lastUpdatedUtc ? new Date(json.lastUpdatedUtc) : null);
       } catch {
         if (!cancelled) setError(true);
@@ -85,8 +89,12 @@ export function CacheStatusChip({ accessToken, apiBase }: Props) {
         ? 'bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-400'
         : 'bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-400';
   const title = error
-    ? 'Failed to load cache status'
-    : `Role cache: ${count ?? '-'} role definitions. Last update: ${displayTime}${rel ? ` (${rel} ago)` : ''}${stale ? ' (stale)' : ''}`;
+    ? "Failed to load cache status"
+    : `Role cache: ${count ?? "-"} role definitions, ${
+        actionCount ?? "-"
+      } actions. Last update: ${displayTime}${rel ? ` (${rel} ago)` : ""}${
+        stale ? " (stale)" : ""
+      }`;
 
   return (
     <span
@@ -108,6 +116,7 @@ export function CacheStatusChip({ accessToken, apiBase }: Props) {
       )}
       Cache: {count ?? "-"}
       {typeof count === "number" ? " roles" : ""}
+      {typeof actionCount === "number" ? ` · ${actionCount} actions` : ""}
       {rel && !loading && !error ? ` · ${rel}` : ""}
       {(stale || (count ?? 0) === 0) && !loading && !error ? "!" : ""}
     </span>

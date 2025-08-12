@@ -130,24 +130,24 @@ public class RoleCache(
             if (string.IsNullOrWhiteSpace(ns?.Name))
                 continue;
 
-            // Page through all resource actions for the namespace
-            var resourceActions = await graph
+            var firstPage = await graph
                 .RoleManagement.Directory.ResourceNamespaces[ns.Name]
                 .ResourceActions.GetAsync();
+            if (firstPage == null)
+                continue;
 
-            foreach (var resourceAction in resourceActions?.Value ?? [])
+            // Local processor
+            bool Process(Microsoft.Graph.Models.UnifiedRbacResourceAction? resourceAction)
             {
                 var name = resourceAction?.Name;
                 if (string.IsNullOrWhiteSpace(name))
-                    continue;
-
+                    return true; // continue
                 bool isPrivileged = false;
                 if (
                     resourceAction?.AdditionalData != null
                     && resourceAction.AdditionalData.TryGetValue("isPrivileged", out var raw)
                 )
                 {
-                    // Accept bool, string, or JsonElement
                     if (raw is bool b)
                         isPrivileged = b;
                     else if (raw is string s && bool.TryParse(s, out var pb))
@@ -160,9 +160,21 @@ public class RoleCache(
                             isPrivileged = false;
                     }
                 }
-
-                // Normalize action to lower case for consistent mapping
                 actionPrivilege[name.ToLowerInvariant()] = isPrivileged;
+                return true; // continue iteration
+            }
+
+            try
+            {
+                var iterator = PageIterator<
+                    Microsoft.Graph.Models.UnifiedRbacResourceAction,
+                    Microsoft.Graph.Models.UnifiedRbacResourceActionCollectionResponse
+                >.CreatePageIterator(graph, firstPage, ra => Process(ra));
+                await iterator.IterateAsync();
+            }
+            catch
+            {
+                // skip namespace on error
             }
         }
 

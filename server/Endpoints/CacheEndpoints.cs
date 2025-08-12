@@ -10,8 +10,16 @@ public static class CacheEndpoints
         {
             await cache.InitializeAsync();
             var ts = await cache.GetLastUpdatedAsync();
-            var count = cache.GetAll().Count;
-            return Results.Ok(new { lastUpdatedUtc = ts, roleCount = count });
+                    var roleCount = cache.GetAll().Count;
+                    var actionCount = cache.GetActionPrivilegeMap().Count;
+                    return Results.Ok(
+                        new
+                        {
+                            lastUpdatedUtc = ts,
+                            roleCount,
+                            actionCount,
+                        }
+                    );
         }).RequireAuthorization();
 
         app.MapPost("/api/cache/refresh", async (IRoleCache cache) =>
