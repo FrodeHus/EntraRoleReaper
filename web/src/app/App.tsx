@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "../components/ui/button";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { ReviewPage } from "./pages/ReviewPage";
 import { RolesPage } from "./pages/RolesPage";
@@ -9,16 +8,17 @@ import { SidebarNav } from "./components/SidebarNav";
 import { WelcomeCard } from "./components/WelcomeCard";
 import { useTheme } from "./hooks/useTheme";
 import { useAccessToken } from "./hooks/useAccessToken";
+const apiScopeEnv = import.meta.env.VITE_API_SCOPE as string;
+const apiBase = import.meta.env.VITE_API_URL as string;
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 
-const apiScope = import.meta.env.VITE_API_SCOPE as string;
-const apiBase = import.meta.env.VITE_API_URL as string;
+// apiBase constant retained for passing to components expecting explicit base.
 
 export default function App() {
   const { instance, accounts } = useMsal();
   const authed = useIsAuthenticated();
   const { theme, toggleTheme } = useTheme();
-  const { accessToken } = useAccessToken(apiScope, apiBase);
+  const { accessToken } = useAccessToken();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,7 +34,7 @@ export default function App() {
     return at > -1 ? upn.slice(at + 1) : "";
   })();
 
-  const login = () => instance.loginRedirect({ scopes: [apiScope] });
+  const login = () => instance.loginRedirect({ scopes: [apiScopeEnv] });
   const logout = () => instance.logoutRedirect();
   // toggleTheme provided by useTheme hook
 

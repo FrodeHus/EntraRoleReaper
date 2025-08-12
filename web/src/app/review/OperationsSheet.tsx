@@ -2,7 +2,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/u
 import { Button } from "../../components/ui/button";
 import type { UserReview } from "./types";
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Link2, PlusCircle } from "lucide-react";
+// (Removed unused icons)
+import { useAccessToken } from "../hooks/useAccessToken";
 
 // New OperationsSheet adapted to simplified contract
 export function OperationsSheet({
@@ -13,7 +14,6 @@ export function OperationsSheet({
   openMapping,
   hasMapping,
   mappingCount,
-  accessToken,
   apiBase,
 }: {
   open: boolean;
@@ -23,9 +23,9 @@ export function OperationsSheet({
   openMapping: (operation: string) => void;
   hasMapping: (operation: string) => boolean;
   mappingCount: (operation: string) => number | undefined;
-  accessToken: string | null;
   apiBase: string;
 }) {
+  const { accessToken } = useAccessToken();
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [opFilter, setOpFilter] = useState("");
   const [permFilter, setPermFilter] = useState("");

@@ -2,8 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { InteractionStatus, InteractionRequiredAuthError } from "@azure/msal-browser";
 import { toast } from "sonner";
+// (Scope and base resolved directly from environment to reduce indirection.)
 
-export function useAccessToken(apiScope: string, apiBase: string) {
+// Retrieves and refreshes an API access token. Scope and base URL obtained via hooks.
+export function useAccessToken() {
+  const apiScope = (import.meta.env.VITE_API_SCOPE as string) || "";
+  const apiBase = (import.meta.env.VITE_API_URL as string) || "";
   const { instance, inProgress, accounts } = useMsal();
   const authed = useIsAuthenticated();
   const [accessToken, setAccessToken] = useState<string | null>(null);
