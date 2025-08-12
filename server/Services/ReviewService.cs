@@ -179,8 +179,10 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
             var templateId = mo.RoleTemplateId;
             if (string.IsNullOrEmpty(templateId))
                 continue;
+            // Some Graph responses (v1) may not populate UnifiedRoleDefinition.TemplateId; fall back to Id comparison.
             var match = roles.Values.FirstOrDefault(r =>
                 string.Equals(r.TemplateId, templateId, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(r.Id, templateId, StringComparison.OrdinalIgnoreCase)
             );
             if (match?.Id != null)
                 list.Add(match.Id);
