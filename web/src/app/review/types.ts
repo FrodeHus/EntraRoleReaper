@@ -11,11 +11,20 @@ export type UserReview = {
   eligiblePimRoles: SimpleRole[];
   operations: {
     operation: string;
-    targets: { id?: string; displayName?: string }[];
+    targets: {
+      id?: string;
+      displayName?: string;
+      modifiedProperties?: {
+        displayName?: string;
+        oldValue?: string;
+        newValue?: string;
+      }[];
+    }[];
     permissions: {
       name: string;
       isPrivileged: boolean;
       grantedByRoleIds: string[];
+      grantConditions?: string[] | null;
     }[];
   }[];
   addedRoles: SimpleRole[];

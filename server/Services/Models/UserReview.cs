@@ -2,12 +2,19 @@ namespace RoleReaper.Services;
 
 public record SimpleUser(string Id, string DisplayName);
 
-public record OperationTarget(string? Id, string? DisplayName);
+public record OperationModifiedProperty(string? DisplayName, string? OldValue, string? NewValue);
+
+public record OperationTarget(
+    string? Id,
+    string? DisplayName,
+    IReadOnlyList<OperationModifiedProperty>? ModifiedProperties = null
+);
 
 public record OperationPermission(
     string Name,
     bool IsPrivileged,
-    IReadOnlyList<string> GrantedByRoleIds
+    IReadOnlyList<string> GrantedByRoleIds,
+    IReadOnlyList<string>? GrantConditions
 );
 
 public record OperationReview(

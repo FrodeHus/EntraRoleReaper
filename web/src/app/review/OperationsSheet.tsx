@@ -57,8 +57,18 @@ export function OperationsSheet({
     if (!review)
       return [] as {
         op: string;
-        targets: string[];
-        permGroups: { roleId: string; permissions: string[] }[];
+        targets: {
+          name: string;
+          modified: {
+            displayName: string;
+            oldValue?: string;
+            newValue?: string;
+          }[];
+        }[];
+        permGroups: {
+          roleId: string;
+          permissions: { name: string; conditions: string[] }[];
+        }[];
         uncovered: string[];
         grantedMapped: { name: string; isPrivileged: boolean }[];
       }[];
@@ -67,8 +77,8 @@ export function OperationsSheet({
     return review.operations
       .filter((o) => !opLower || o.operation.toLowerCase().includes(opLower))
       .map((o) => {
-        // Group permissions by granting role id(s)
-        const groups = new Map<string, Set<string>>();
+        // Group permissions by granting role id(s) with conditions
+        const groups = new Map<string, Map<string, Set<string>>>(); // roleId -> permName -> conditions
         const uncovered: string[] = [];
         const currentRoleIds = new Set(review.activeRoles.map((r) => r.id));
         for (const p of o.permissions) {
@@ -76,8 +86,11 @@ export function OperationsSheet({
             uncovered.push(p.name);
           } else {
             for (const rid of p.grantedByRoleIds) {
-              if (!groups.has(rid)) groups.set(rid, new Set());
-              groups.get(rid)!.add(p.name);
+              if (!groups.has(rid)) groups.set(rid, new Map());
+              const permMap = groups.get(rid)!;
+              if (!permMap.has(p.name)) permMap.set(p.name, new Set());
+              const condSet = permMap.get(p.name)!;
+              (p.grantConditions || []).forEach((c) => condSet.add(c));
             }
           }
         }
@@ -88,17 +101,24 @@ export function OperationsSheet({
               .filter((p) =>
                 p.grantedByRoleIds?.some((rid) => currentRoleIds.has(rid))
               )
-              .map((p) => [p.name, p]) // use Map to de-dupe preserving privilege
+              .map((p) => [p.name, p])
           ).values()
         ).sort((a, b) =>
           a.name.localeCompare(b.name, "en", { sensitivity: "base" })
         );
         const initialGroups = Array.from(groups.entries()).map(
-          ([roleId, set]) => ({
+          ([roleId, permMap]) => ({
             roleId,
-            permissions: Array.from(set).sort((a, b) =>
-              a.localeCompare(b, "en", { sensitivity: "base" })
-            ),
+            permissions: Array.from(permMap.entries())
+              .map(([perm, conds]) => ({
+                name: perm,
+                conditions: Array.from(conds).sort((a, b) =>
+                  a.localeCompare(b, "en", { sensitivity: "base" })
+                ),
+              }))
+              .sort((a, b) =>
+                a.name.localeCompare(b.name, "en", { sensitivity: "base" })
+              ),
           })
         );
         const permGroups = permLower
@@ -106,27 +126,34 @@ export function OperationsSheet({
               .map((g) => ({
                 roleId: g.roleId,
                 permissions: g.permissions.filter((p) =>
-                  p.toLowerCase().includes(permLower)
+                  p.name.toLowerCase().includes(permLower)
                 ),
               }))
               .filter((g) => g.permissions.length > 0)
           : initialGroups;
         const targets = o.targets
-          .map((t) => t.displayName || t.id || "")
-          .filter(Boolean);
+          .map((t) => ({
+            name: t.displayName || t.id || "",
+            modified: (t.modifiedProperties || []).map((mp) => ({
+              displayName: mp.displayName || "(property)",
+              oldValue: mp.oldValue,
+              newValue: mp.newValue,
+            })),
+          }))
+          .filter((t) => t.name);
         const filteredUncovered = permLower
           ? uncovered.filter((p) => p.toLowerCase().includes(permLower))
           : uncovered;
         return {
-          op: o.operation,
-          targets,
-          permGroups,
-          uncovered: filteredUncovered,
-          grantedMapped: grantedMapped.map((p) => ({
-            name: p.name,
-            isPrivileged: p.isPrivileged,
-          })),
-        };
+    op: o.operation,
+    targets,
+    permGroups,
+    uncovered: filteredUncovered,
+    grantedMapped: grantedMapped.map((p) => ({
+      name: p.name,
+      isPrivileged: p.isPrivileged,
+    })),
+  };
       });
   }, [review, opFilter, permFilter]);
 
@@ -268,10 +295,19 @@ export function OperationsSheet({
                         <div className="flex flex-wrap gap-2 mt-1">
                           {g.permissions.map((p) => (
                             <span
-                              key={p}
+                              key={p.name}
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded border"
                             >
-                              {p}
+                              <span>{p.name}</span>
+                              {p.conditions.map((c, i) => (
+                                <span
+                                  key={i}
+                                  className="text-[9px] px-1 py-0.5 rounded border bg-muted/60 text-muted-foreground"
+                                  title={`Condition: ${c}`}
+                                >
+                                  {c}
+                                </span>
+                              ))}
                             </span>
                           ))}
                         </div>
@@ -296,9 +332,41 @@ export function OperationsSheet({
                   {expanded.has(idx) && op.targets.length > 0 && (
                     <div className="pt-2 border-t">
                       <div className="font-medium mb-1">Targets</div>
-                      <ul className="list-disc pl-4 space-y-1">
+                      <ul className="list-disc pl-4 space-y-2">
                         {op.targets.map((t, i2) => (
-                          <li key={i2}>{t}</li>
+                          <li key={i2}>
+                            <div>{t.name}</div>
+                            {t.modified && t.modified.length > 0 && (
+                              <div className="mt-1 ml-2 border-l pl-3 space-y-1">
+                                {t.modified.map(
+                                  (
+                                    mp: {
+                                      displayName: string;
+                                      oldValue?: string;
+                                      newValue?: string;
+                                    },
+                                    mIdx: number
+                                  ) => (
+                                    <div
+                                      key={mIdx}
+                                      className="text-[10px] font-mono break-all"
+                                    >
+                                      <span className="font-semibold">
+                                        {mp.displayName}:
+                                      </span>{" "}
+                                      <span className="text-red-600 dark:text-red-400">
+                                        {mp.oldValue ?? ""}
+                                      </span>{" "}
+                                      <span className="mx-1">→</span>
+                                      <span className="text-emerald-600 dark:text-emerald-400">
+                                        {mp.newValue ?? ""}
+                                      </span>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </li>
                         ))}
                       </ul>
                     </div>

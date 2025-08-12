@@ -5,18 +5,13 @@ using Microsoft.Graph.Models;
 
 namespace RoleReaper.Services;
 
-public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) : IReviewService
+public class ReviewService(
+    IGraphServiceFactory factory,
+    IRoleCache roleCache,
+    IOperationMapCache operationMapCache
+) : IReviewService
 {
-    private readonly Lazy<Dictionary<string, string[]>> _permissionMap = new(() =>
-    {
-        var path = Path.Combine(AppContext.BaseDirectory, "Configuration", "permissions-map.json");
-        if (File.Exists(path))
-        {
-            var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<Dictionary<string, string[]>>(json) ?? [];
-        }
-        return [];
-    });
+    // Operation map now resolved via IOperationMapCache (populated from DB, refreshable after edits)
 
     private readonly Lazy<HashSet<string>> _suggestionExcludes = new(() =>
     {
@@ -67,7 +62,9 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
             var opTargets = auditCtx.OpTargets;
 
             // Build operations and permission requirements
-            var operationsList = BuildOperationsList(
+            var operationsList = await BuildOperationsListAsync(
+                graphClient,
+                uid,
                 usedOperations,
                 opTargets,
                 activeRoleIds,
@@ -226,11 +223,34 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                         $"{tr?.Type ?? ""}:{tr?.Id ?? tr?.DisplayName ?? Guid.NewGuid().ToString()}";
                     if (targetsForOp.ContainsKey(key))
                         continue;
+                    // Build modified properties list if present
+                    IReadOnlyList<ModifiedProperty>? mods = null;
+                    try
+                    {
+                        var rawMods = tr?.ModifiedProperties;
+                        if (rawMods != null && rawMods.Any())
+                        {
+                            mods = rawMods
+                                .Select(mp => new ModifiedProperty(
+                                    mp?.DisplayName,
+                                    mp?.OldValue?.ToString(),
+                                    mp?.NewValue?.ToString()
+                                ))
+                                .ToList();
+                        }
+                    }
+                    catch { }
+                    var upn = tr?.UserPrincipalName;
+                    var display = tr?.DisplayName;
+                    if (string.IsNullOrWhiteSpace(display) && !string.IsNullOrWhiteSpace(upn))
+                        display = upn; // fallback to UPN when display name missing
                     targetsForOp[key] = new ReviewTarget(
                         tr?.Id,
-                        tr?.DisplayName,
+                        display,
                         tr?.Type,
-                        FriendlyType(tr?.Type)
+                        FriendlyType(tr?.Type),
+                        mods,
+                        upn
                     );
                 }
             }
@@ -238,7 +258,9 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
         return (usedOperations, opTargets);
     }
 
-    private List<ReviewOperation> BuildOperationsList(
+    private async Task<List<ReviewOperation>> BuildOperationsListAsync(
+        GraphServiceClient client,
+        string userId,
         HashSet<string> usedOperations,
         Dictionary<string, Dictionary<string, ReviewTarget>> opTargets,
         List<string> activeRoleIds,
@@ -246,53 +268,180 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
         IReadOnlyDictionary<string, bool> actionPrivilege
     )
     {
-        return usedOperations
-            .Select(op =>
+        var results = new List<ReviewOperation>();
+        // Ownership cache (resourceId -> isOwner)
+        var ownershipCache = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        async Task<bool> IsOwnerAsync(ReviewTarget t)
+        {
+            if (string.IsNullOrWhiteSpace(t.Id))
+                return false;
+            if (ownershipCache.TryGetValue(t.Id!, out var cached))
+                return cached;
+            bool owned = false;
+            try
             {
-                var perms = _permissionMap.Value.TryGetValue(op, out var p) ? p : [];
-                var targets = opTargets.TryGetValue(op, out var allTargets)
-                    ? [.. allTargets.Values]
-                    : new List<ReviewTarget>();
-                var currentRoleDefs = activeRoleIds
-                    .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
-                    .Where(rd => rd != null)
-                    .ToList()!;
-                var details = perms
-                    .Select(name =>
-                    {
-                        var privileged =
-                            actionPrivilege.TryGetValue(name, out var isPriv) && isPriv;
-                        var grantedBy = new List<string>();
-                        foreach (var roleDefinition in currentRoleDefs)
+                var type = t.Type ?? string.Empty;
+                if (type.Equals("application", StringComparison.OrdinalIgnoreCase))
+                {
+                    var owners = await client
+                        .Applications[t.Id]
+                        .Owners.GetAsync(q =>
                         {
-                            var allows =
-                                roleDefinition!.RolePermissions?.Any(rp =>
-                                    (rp.AllowedResourceActions ?? []).Any(a =>
-                                        string.Equals(a, name, StringComparison.OrdinalIgnoreCase)
-                                    )
-                                ) ?? false;
-                            if (allows && !string.IsNullOrWhiteSpace(roleDefinition.DisplayName))
-                                grantedBy.Add(roleDefinition.DisplayName!);
+                            q.QueryParameters.Top = 20;
+                        });
+                    owned =
+                        owners
+                            ?.Value?.OfType<DirectoryObject>()
+                            .Any(o =>
+                                string.Equals(o.Id, userId, StringComparison.OrdinalIgnoreCase)
+                            ) == true;
+                }
+                else if (type.Equals("serviceprincipal", StringComparison.OrdinalIgnoreCase))
+                {
+                    var owners = await client
+                        .ServicePrincipals[t.Id]
+                        .Owners.GetAsync(q =>
+                        {
+                            q.QueryParameters.Top = 20;
+                        });
+                    owned =
+                        owners
+                            ?.Value?.OfType<DirectoryObject>()
+                            .Any(o =>
+                                string.Equals(o.Id, userId, StringComparison.OrdinalIgnoreCase)
+                            ) == true;
+                }
+                else if (type.Equals("group", StringComparison.OrdinalIgnoreCase))
+                {
+                    var owners = await client
+                        .Groups[t.Id]
+                        .Owners.GetAsync(q =>
+                        {
+                            q.QueryParameters.Top = 20;
+                        });
+                    owned =
+                        owners
+                            ?.Value?.OfType<DirectoryObject>()
+                            .Any(o =>
+                                string.Equals(o.Id, userId, StringComparison.OrdinalIgnoreCase)
+                            ) == true;
+                }
+            }
+            catch
+            { /* ignore ownership lookup failures */
+            }
+            ownershipCache[t.Id!] = owned;
+            return owned;
+        }
+
+        async Task<bool> ConditionSatisfiedAsync(string condition, List<ReviewTarget> targets)
+        {
+            if (targets.Count == 0)
+                return false; // no context
+            if (string.Equals(condition, "$ResourceIsSelf", StringComparison.OrdinalIgnoreCase))
+            {
+                return targets.Any(t =>
+                    !string.IsNullOrWhiteSpace(t.Id)
+                    && string.Equals(t.Id, userId, StringComparison.OrdinalIgnoreCase)
+                );
+            }
+            if (string.Equals(condition, "$SubjectIsOwner", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var t in targets)
+                {
+                    if (!string.IsNullOrWhiteSpace(t.Id) && await IsOwnerAsync(t))
+                        return true;
+                }
+                return false;
+            }
+            // Unknown condition => treat as not satisfied
+            return false;
+        }
+        // Ensure operation map cache is initialized
+        await operationMapCache.InitializeAsync();
+        var opMap = operationMapCache.GetAll();
+        foreach (var op in usedOperations)
+        {
+            var perms = opMap.TryGetValue(op, out var p) ? p : Array.Empty<string>();
+            var targets = opTargets.TryGetValue(op, out var allTargets)
+                ? allTargets.Values.ToList()
+                : new List<ReviewTarget>();
+
+            var currentRoleDefs = activeRoleIds
+                .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
+                .Where(rd => rd != null)
+                .ToList()!;
+
+            var details = new List<PermissionDetail>();
+            foreach (var name in perms)
+            {
+                var privileged = actionPrivilege.TryGetValue(name, out var isPriv) && isPriv;
+                var grantedBy = new List<string>();
+                var grantConds = new List<string>();
+                foreach (var roleDefinition in currentRoleDefs)
+                {
+                    if (roleDefinition?.RolePermissions == null)
+                        continue;
+                    bool allowed = false;
+                    string? appliedCond = null;
+                    foreach (var rp in roleDefinition.RolePermissions)
+                    {
+                        var actions = rp.AllowedResourceActions ?? Enumerable.Empty<string>();
+                        if (
+                            !actions.Any(a =>
+                                string.Equals(a, name, StringComparison.OrdinalIgnoreCase)
+                            )
+                        )
+                            continue;
+                        // Evaluate condition if present
+                        if (!string.IsNullOrWhiteSpace(rp.Condition))
+                        {
+                            var cond = rp.Condition.Trim();
+                            if (!await ConditionSatisfiedAsync(cond, targets))
+                                continue;
+                            appliedCond = cond;
                         }
-                        return new PermissionDetail(name, privileged, grantedBy);
-                    })
-                    .ToList();
-                var filteredDetails = details
-                    .Where(d => d.GrantedByRoles != null && d.GrantedByRoles.Count > 0)
-                    .ToList();
-                var filteredPerms = filteredDetails
-                    .Select(d => d.Name)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-                return new ReviewOperation(op, filteredPerms, targets, filteredDetails);
-            })
-            .ToList();
+                        allowed = true; // one matching permission set satisfied
+                        break;
+                    }
+                    if (allowed && !string.IsNullOrWhiteSpace(roleDefinition.DisplayName))
+                    {
+                        grantedBy.Add(roleDefinition.DisplayName!);
+                        if (appliedCond != null)
+                            grantConds.Add(appliedCond);
+                    }
+                }
+                if (grantedBy.Count > 0)
+                {
+                    details.Add(
+                        new PermissionDetail(
+                            name,
+                            privileged,
+                            grantedBy,
+                            grantConds.Count > 0
+                                ? grantConds.Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+                                : null
+                        )
+                    );
+                }
+            }
+
+            var filteredPerms = details
+                .Select(d => d.Name)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            results.Add(new ReviewOperation(op, filteredPerms, targets, details));
+        }
+        return results;
     }
 
     private HashSet<string> BuildRequiredPermissions(HashSet<string> usedOperations)
     {
+        // Operation map cache already initialized earlier in flow when building operations list
+        // Use a fresh reference for safety (no await; in-memory)
+        var opMap = operationMapCache.GetAll();
         return usedOperations
-            .SelectMany(op => _permissionMap.Value.TryGetValue(op, out var p) ? p : [])
+            .SelectMany(op => opMap.TryGetValue(op, out var p) ? p : [])
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
@@ -437,10 +586,25 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
         return operationsList
             .Select(op =>
             {
-                var targets = op
+                var distinctTargets = op
                     .Targets.DistinctBy(t => (t.Id ?? "") + "|" + (t.DisplayName ?? ""))
-                    .Select(t => new OperationTarget(t.Id, t.DisplayName))
                     .ToList();
+                var targets = new List<OperationTarget>(distinctTargets.Count);
+                foreach (var t in distinctTargets)
+                {
+                    List<OperationModifiedProperty>? mods = null;
+                    if (t.ModifiedProperties != null)
+                    {
+                        mods = t
+                            .ModifiedProperties.Select(mp => new OperationModifiedProperty(
+                                mp.DisplayName,
+                                mp.OldValue,
+                                mp.NewValue
+                            ))
+                            .ToList();
+                    }
+                    targets.Add(new OperationTarget(t.Id, t.DisplayName, mods));
+                }
                 var currentAndEligible = new HashSet<string>(
                     activeRoleIds.Concat(eligibleRoleIds),
                     StringComparer.OrdinalIgnoreCase
@@ -467,7 +631,13 @@ public class ReviewService(IGraphServiceFactory factory, IRoleCache roleCache) :
                                 .Distinct()!
                                 .ToList() as IReadOnlyList<string>;
                         var isPrivileged = actionPrivilege.TryGetValue(pd.Name, out var ip) && ip;
-                        return new OperationPermission(pd.Name, isPrivileged, grantingIds);
+                        return new OperationPermission(
+                            pd.Name,
+                            isPrivileged,
+                            grantingIds,
+                            // pass through conditions if present
+                            (pd as PermissionDetail)?.GrantConditions
+                        );
                     })
                     .ToList();
                 return new OperationReview(op.Operation, targets, permissions);

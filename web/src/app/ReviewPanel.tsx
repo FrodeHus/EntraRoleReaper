@@ -514,6 +514,7 @@ export function ReviewPanel({
                   <th className="text-left p-2">User</th>
                   <th className="text-left p-2">Operations</th>
                   <th className="text-left p-2">Active roles</th>
+                  <th className="text-left p-2">Eligible roles</th>
                   <th className="text-left p-2">Add</th>
                   <th className="text-left p-2">Remove</th>
                   <th className="text-left p-2">Changes</th>
@@ -561,6 +562,21 @@ export function ReviewPanel({
                         ) : (
                           <span className="inline-flex items-center px-2 py-0.5 rounded border text-xs">
                             {counts.current}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-2">
+                        {r.eligiblePimRoles.length === 0 ? (
+                          <span
+                            className="inline-flex items-center justify-center w-5 h-5 text-muted-foreground"
+                            title="None"
+                          >
+                            <Minus className="h-4 w-4" aria-hidden />
+                            <span className="sr-only">None</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded border text-xs bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-700 dark:text-indigo-300">
+                            {r.eligiblePimRoles.length}
                           </span>
                         )}
                       </td>

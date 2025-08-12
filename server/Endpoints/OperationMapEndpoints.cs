@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RoleReaper.Data;
+using RoleReaper.Services;
 
 namespace RoleReaper.Endpoints;
 
@@ -103,7 +104,14 @@ public static class OperationMapEndpoints
         }).RequireAuthorization();
 
         // Upsert (create or update) an operation mapping with a set of resource action IDs
-        app.MapPut("/api/operations/map/{operationName}", async (string operationName, int[] actionIds, CacheDbContext db) =>
+        app.MapPut(
+                "/api/operations/map/{operationName}",
+                async (
+                    string operationName,
+                    int[] actionIds,
+                    CacheDbContext db,
+                    IOperationMapCache opCache
+                ) =>
         {
             if (string.IsNullOrWhiteSpace(operationName)) return Results.BadRequest();
             var distinctIds = actionIds?.Distinct().ToArray() ?? Array.Empty<int>();
@@ -132,6 +140,8 @@ public static class OperationMapEndpoints
                 .OrderBy(a => mappedIds.Contains(a.Id) ? 0 : 1)
                 .ThenBy(a => a.Action)
                 .ToList();
+                    // Refresh in-memory cache so subsequent reviews use updated mapping
+                    await opCache.RefreshAsync();
             return Results.Ok(new
             {
                 operationName = op.OperationName,
@@ -179,7 +189,13 @@ public static class OperationMapEndpoints
         }).RequireAuthorization();
 
         // Import (upsert) operation mappings from seed format { "Operation": ["action", ...], ... }
-        app.MapPost("/api/operations/map/import", async (Dictionary<string, string[]> payload, CacheDbContext db) =>
+        app.MapPost(
+                "/api/operations/map/import",
+                async (
+                    Dictionary<string, string[]> payload,
+                    CacheDbContext db,
+                    IOperationMapCache opCache
+                ) =>
         {
             payload ??= new(StringComparer.OrdinalIgnoreCase);
             if (payload.Count == 0) return Results.BadRequest(new { error = "Empty payload" });
@@ -222,6 +238,7 @@ public static class OperationMapEndpoints
                 created++;
             }
             await db.SaveChangesAsync();
+                    await opCache.RefreshAsync();
             return Results.Ok(new
             {
                 created,
