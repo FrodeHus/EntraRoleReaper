@@ -5,7 +5,7 @@ services:
       dockerfile: server/Dockerfile
     image: entrarolereaper-server:local
     environment:
-      ROLE_REAPER_RESET_DB: "0"
+      ROLE_REAPER_RESET_DB: "1"
       ASPNETCORE_ENVIRONMENT: "Production"
       AzureAd__Instance: "https://login.microsoftonline.com/"
       AzureAd__TenantId: "${AZUREAD_TENANT_ID}"

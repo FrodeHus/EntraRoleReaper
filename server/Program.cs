@@ -64,6 +64,7 @@ builder.Services.AddScoped<IRoleCache, RoleCache>();
 builder.Services.AddScoped<IUserSearchService, UserSearchService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IOperationMapCache, OperationMapCache>();
+builder.Services.AddScoped<IOperationMappingService, OperationMappingService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -125,7 +126,7 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    // Seed operation map if reset OR if operation_map empty
+    // Seed operation map (new format only: JSON array of OperationMap) if reset OR empty
     try
     {
         bool needSeed = reset || !db.OperationMaps.Any();
@@ -138,30 +139,26 @@ using (var scope = app.Services.CreateScope())
             );
             if (File.Exists(cfgPath))
             {
-                var json = await File.ReadAllTextAsync(cfgPath);
-                var dict = JsonSerializer.Deserialize<Dictionary<string, string[]>>(json) ?? new();
-                var actionLookup = db.ResourceActions.ToDictionary(
-                    a => a.Action,
-                    a => a,
-                    StringComparer.OrdinalIgnoreCase
-                );
-                foreach (var kvp in dict)
+                try
                 {
-                    var op = new OperationMapEntity { OperationName = kvp.Key };
-                    foreach (var action in kvp.Value.Distinct(StringComparer.OrdinalIgnoreCase))
-                    {
-                        if (!actionLookup.TryGetValue(action, out var ra))
-                        {
-                            ra = new ResourceActionEntity { Action = action, IsPrivileged = false };
-                            db.ResourceActions.Add(ra);
-                            actionLookup[action] = ra;
-                        }
-                        op.ResourceActions.Add(ra);
-                    }
-                    db.OperationMaps.Add(op);
+                    var json = await File.ReadAllTextAsync(cfgPath);
+                    var maps =
+                        System.Text.Json.JsonSerializer.Deserialize<
+                            List<EntraRoleReaper.Api.Configuration.PermissionMapping.Models.OperationMap>
+                        >(json) ?? new();
+                    var mappingSvc =
+                        scope.ServiceProvider.GetRequiredService<IOperationMappingService>();
+                    await mappingSvc.ImportAsync(maps, "new");
+                    Console.WriteLine(
+                        "[Startup] Seeded operation & property maps from permissions-map.json (new format)."
+                    );
                 }
-                await db.SaveChangesAsync();
-                Console.WriteLine($"[Startup] Seeded {dict.Count} operations into operation_map.");
+                catch (Exception ex)
+                {
+                    Console.WriteLine(
+                        $"[Startup] Failed parsing permissions-map.json as new format: {ex.Message}"
+                    );
+                }
             }
             else
             {

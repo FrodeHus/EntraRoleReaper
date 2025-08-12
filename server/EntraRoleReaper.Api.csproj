@@ -17,4 +17,9 @@
   <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
   <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>EntraRoleReaper.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>
