@@ -654,6 +654,8 @@ export function ReviewPanel({
             openMapping={(op) => setOpenMappingForOp(op)}
             hasMapping={(op) => !!operationHasMapping[op]}
             mappingCount={(op) => operationMappingCount[op]}
+            accessToken={accessToken}
+            apiBase={import.meta.env.VITE_API_URL}
           />
           <OperationMappingSheet
             operationName={openMappingForOp}

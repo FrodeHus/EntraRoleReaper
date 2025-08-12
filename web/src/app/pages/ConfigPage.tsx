@@ -13,6 +13,7 @@ interface TabConfig {
 const tabs: TabConfig[] = [
   { key: "cache", label: "Cache" },
   { key: "mappings", label: "Mappings" },
+  { key: "exclusions", label: "Exclusions" },
   { key: "roles", label: "Roles" },
   { key: "actions", label: "Actions" },
   { key: "future", label: "Upcoming" },
@@ -55,6 +56,54 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
   const [roleDetailsOpen, setRoleDetailsOpen] = useState(false);
   const [roleDetailsLoading, setRoleDetailsLoading] = useState(false);
   const [roleDetails, setRoleDetails] = useState<RoleDetails | null>(null);
+  // Exclusions tab state
+  const [exclusions, setExclusions] = useState<
+    Array<{ id: number; operationName: string; createdUtc: string }>
+  >([]);
+  const [exclusionsLoading, setExclusionsLoading] = useState(false);
+
+  const loadExclusions = useCallback(async () => {
+    if (!accessToken || activeTab !== "exclusions") return;
+    try {
+      setExclusionsLoading(true);
+      const res = await fetch(new URL("/api/operations/exclusions", apiBase), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      setExclusions(json || []);
+    } catch {
+      setExclusions([]);
+    } finally {
+      setExclusionsLoading(false);
+    }
+  }, [accessToken, apiBase, activeTab]);
+
+  useEffect(() => {
+    loadExclusions();
+  }, [loadExclusions]);
+
+  const removeExclusion = async (name: string) => {
+    if (!accessToken) return;
+    try {
+      const res = await fetch(
+        new URL(
+          `/api/operations/exclusions/${encodeURIComponent(name)}`,
+          apiBase
+        ),
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      if (res.ok) {
+        toast.success("Exclusion removed", { description: name });
+        loadExclusions();
+      }
+    } catch {
+      /* ignore */
+    }
+  };
 
   const manualRefresh = async () => {
     if (!accessToken) return;
@@ -113,7 +162,14 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     if (activeTab === "actions") {
       loadActions(1, actionsSearch, actionsSort, actionsDir, actionsPrivFilter);
     }
-  }, [activeTab, actionsSearch, actionsSort, actionsDir, actionsPrivFilter, loadActions]);
+  }, [
+    activeTab,
+    actionsSearch,
+    actionsSort,
+    actionsDir,
+    actionsPrivFilter,
+    loadActions,
+  ]);
 
   // Load roles when roles tab active or filter toggled
   useEffect(() => {
@@ -266,12 +322,17 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                 Export operation mappings
               </Button>
               <p className="text-xs text-muted-foreground mt-1">
-                Download current operation and property-level mappings. Legacy operations without property mappings export as an array; those with properties export an object containing actions and a properties map.
+                Download current operation and property-level mappings. Legacy
+                operations without property mappings export as an array; those
+                with properties export an object containing actions and a
+                properties map.
               </p>
             </div>
             <div>
               <form onSubmit={(e) => e.preventDefault()} className="space-y-2">
-                <label className="text-xs font-medium">Import operation/property mappings</label>
+                <label className="text-xs font-medium">
+                  Import operation/property mappings
+                </label>
                 <input
                   type="file"
                   accept="application/json,.json"
@@ -293,9 +354,128 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                   <span className="mx-1">or</span>
                   <code className="bg-muted px-1 py-0.5 rounded text-[10px] inline-block">{`{"Operation": {"actions": ["action"], "properties": {"Prop": ["action"]}}}`}</code>
                   <br />
-                  <span>All existing mappings (including property mappings) will be replaced.</span>
+                  <span>
+                    All existing mappings (including property mappings) will be
+                    replaced.
+                  </span>
                 </p>
               </form>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "exclusions" && (
+          <div className="space-y-3 text-sm max-w-md">
+            <p className="text-xs text-muted-foreground">
+              Operations in this list are excluded from review output.
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!accessToken}
+                onClick={async () => {
+                  if (!accessToken) return;
+                  try {
+                    const res = await fetch(
+                      new URL("/api/operations/exclusions/export", apiBase),
+                      { headers: { Authorization: `Bearer ${accessToken}` } }
+                    );
+                    if (!res.ok) throw new Error();
+                    const json = await res.json();
+                    const blob = new Blob([JSON.stringify(json, null, 2)], {
+                      type: "application/json",
+                    });
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = "operation-exclusions.json";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    toast.success("Exported exclusions", {
+                      description: `${json.length} operations`,
+                    });
+                  } catch {
+                    toast.error("Export failed");
+                  }
+                }}
+              >
+                Export
+              </Button>
+              <div>
+                <label className="text-[10px] block font-medium mb-0.5">
+                  Import
+                </label>
+                <input
+                  type="file"
+                  className="text-[10px]"
+                  accept="application/json,.json"
+                  disabled={!accessToken}
+                  aria-label="Import exclusion list JSON file"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !accessToken) return;
+                    try {
+                      const text = await file.text();
+                      const arr = JSON.parse(text);
+                      if (!Array.isArray(arr)) throw new Error();
+                      const res = await fetch(
+                        new URL("/api/operations/exclusions/import", apiBase),
+                        {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${accessToken}`,
+                          },
+                          body: JSON.stringify(arr),
+                        }
+                      );
+                      if (!res.ok) throw new Error();
+                      const result = await res.json();
+                      toast.success("Import complete", {
+                        description: `${result.created} created, ${result.removed} removed`,
+                      });
+                      loadExclusions();
+                    } catch {
+                      toast.error("Import failed");
+                    }
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </div>
+            <div className="border rounded bg-card text-card-foreground divide-y">
+              {exclusionsLoading && (
+                <div className="p-2 text-xs text-muted-foreground">
+                  Loading…
+                </div>
+              )}
+              {!exclusionsLoading && exclusions.length === 0 && (
+                <div className="p-2 text-xs text-muted-foreground">
+                  No exclusions.
+                </div>
+              )}
+              {!exclusionsLoading && exclusions.length > 0 && (
+                <ul>
+                  {exclusions.map((e) => (
+                    <li
+                      key={e.id}
+                      className="flex items-center gap-2 p-2 text-xs"
+                    >
+                      <span className="font-mono break-all flex-1">
+                        {e.operationName}
+                      </span>
+                      <button
+                        onClick={() => removeExclusion(e.operationName)}
+                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                        title="Remove exclusion"
+                      >
+                        🗑
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         )}

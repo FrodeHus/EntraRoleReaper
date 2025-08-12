@@ -59,6 +59,13 @@ public class OperationPropertyMapEntity
         new List<ResourceActionEntity>();
 }
 
+public class OperationExclusionEntity
+{
+    public int Id { get; set; }
+    public string OperationName { get; set; } = string.Empty;
+    public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+}
+
 public class RolePermissionEntity
 {
     public int Id { get; set; }

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 
@@ -8,7 +9,8 @@ namespace RoleReaper.Services;
 public class ReviewService(
     IGraphServiceFactory factory,
     IRoleCache roleCache,
-    IOperationMapCache operationMapCache
+    IOperationMapCache operationMapCache,
+    RoleReaper.Data.CacheDbContext db
 ) : IReviewService
 {
     // Operation map now resolved via IOperationMapCache (populated from DB, refreshable after edits)
@@ -61,17 +63,31 @@ public class ReviewService(
             var usedOperations = auditCtx.UsedOperations;
             var opTargets = auditCtx.OpTargets;
 
-            // Build operations and permission requirements
+            // Load exclusions once per review cycle (could be cached, small table)
+            var excludedOps = await db
+                .OperationExclusions.Select(e => e.OperationName)
+                .ToListAsync();
+            var excludedSet = new HashSet<string>(excludedOps, StringComparer.OrdinalIgnoreCase);
+
+            // Build operations and permission requirements (excluding)
+            var filteredUsedOperations = new HashSet<string>(
+                usedOperations.Where(o => !excludedSet.Contains(o)),
+                StringComparer.OrdinalIgnoreCase
+            );
+            var filteredOpTargets = opTargets
+                .Where(kvp => !excludedSet.Contains(kvp.Key))
+                .ToDictionary(k => k.Key, v => v.Value, StringComparer.OrdinalIgnoreCase);
+
             var operationsList = await BuildOperationsListAsync(
                 graphClient,
                 uid,
-                usedOperations,
-                opTargets,
+                filteredUsedOperations,
+                filteredOpTargets,
                 activeRoleIds,
                 roles,
                 actionPrivilege
             );
-            var requiredPermissionsAll = BuildRequiredPermissions(usedOperations);
+            var requiredPermissionsAll = BuildRequiredPermissions(filteredUsedOperations);
 
             // Suggest roles
             var suggestionCtx = ComputeSuggestedRoles(requiredPermissionsAll, roles, roleStats);

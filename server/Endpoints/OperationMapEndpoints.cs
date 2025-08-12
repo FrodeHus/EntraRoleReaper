@@ -381,6 +381,133 @@ public static class OperationMapEndpoints
                 await opCache.RefreshAsync();
                 return Results.NoContent();
             }).RequireAuthorization();
+
+        // Operation exclusions (simple blacklist for review output)
+        // New body-based creation endpoint (preferred)
+        app.MapPost(
+                "/api/operations/exclusions",
+                async (OperationExclusionCreateRequest req, CacheDbContext db) =>
+                {
+                    if (req == null || string.IsNullOrWhiteSpace(req.OperationName))
+                        return Results.BadRequest();
+                    var operationName = req.OperationName.Trim();
+                    var existing = await db.OperationExclusions.SingleOrDefaultAsync(e =>
+                        e.OperationName == operationName
+                    );
+                    if (existing != null)
+                        return Results.Ok(
+                            new
+                            {
+                                existing.Id,
+                                existing.OperationName,
+                                existing.CreatedUtc,
+                            }
+                        );
+                    var entity = new OperationExclusionEntity { OperationName = operationName };
+                    db.OperationExclusions.Add(entity);
+                    await db.SaveChangesAsync();
+                    return Results.Ok(
+                        new
+                        {
+                            entity.Id,
+                            entity.OperationName,
+                            entity.CreatedUtc,
+                        }
+                    );
+                }
+            )
+            .RequireAuthorization();
+
+        app.MapGet(
+                "/api/operations/exclusions",
+                async (CacheDbContext db) =>
+                {
+                    var list = await db
+                        .OperationExclusions.OrderBy(e => e.OperationName)
+                        .Select(e => new
+                        {
+                            e.Id,
+                            e.OperationName,
+                            e.CreatedUtc,
+                        })
+                        .ToListAsync();
+                    return Results.Ok(list);
+                }
+            )
+            .RequireAuthorization();
+
+        // (Removed legacy path-based POST /api/operations/exclusions/{operationName} in favor of body-based endpoint.)
+
+        app.MapDelete(
+                "/api/operations/exclusions/{operationName}",
+                async (string operationName, CacheDbContext db) =>
+                {
+                    var entity = await db.OperationExclusions.SingleOrDefaultAsync(e =>
+                        e.OperationName == operationName
+                    );
+                    if (entity == null)
+                        return Results.NotFound();
+                    db.OperationExclusions.Remove(entity);
+                    await db.SaveChangesAsync();
+                    return Results.NoContent();
+                }
+            )
+            .RequireAuthorization();
+
+        // Export exclusions: returns an array of operation names
+        app.MapGet(
+                "/api/operations/exclusions/export",
+                async (CacheDbContext db) =>
+                {
+                    var list = await db
+                        .OperationExclusions.OrderBy(e => e.OperationName)
+                        .Select(e => e.OperationName)
+                        .ToListAsync();
+                    return Results.Ok(list);
+                }
+            )
+            .RequireAuthorization();
+
+        // Import exclusions: body is array of operation names; replaces entire set
+        app.MapPost(
+                "/api/operations/exclusions/import",
+                async (string[] names, CacheDbContext db) =>
+                {
+                    names ??= Array.Empty<string>();
+                    var distinct = names
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
+                        .Select(n => n.Trim())
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    var existing = await db.OperationExclusions.ToListAsync();
+                    int removed = existing.Count;
+                    if (removed > 0)
+                    {
+                        db.OperationExclusions.RemoveRange(existing);
+                        await db.SaveChangesAsync();
+                    }
+                    foreach (var n in distinct)
+                    {
+                        db.OperationExclusions.Add(
+                            new OperationExclusionEntity { OperationName = n }
+                        );
+                    }
+                    await db.SaveChangesAsync();
+                    return Results.Ok(
+                        new
+                        {
+                            created = distinct.Count,
+                            removed,
+                            total = distinct.Count,
+                        }
+                    );
+                }
+            )
+            .RequireAuthorization();
         return app;
     }
 }
+
+// Request DTO for body-based exclusion creation
+public record OperationExclusionCreateRequest(string? OperationName);

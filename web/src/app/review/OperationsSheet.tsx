@@ -13,6 +13,8 @@ export function OperationsSheet({
   openMapping,
   hasMapping,
   mappingCount,
+  accessToken,
+  apiBase,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -21,12 +23,40 @@ export function OperationsSheet({
   openMapping: (operation: string) => void;
   hasMapping: (operation: string) => boolean;
   mappingCount: (operation: string) => number | undefined;
+  accessToken: string | null;
+  apiBase: string;
 }) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [opFilter, setOpFilter] = useState("");
   const [permFilter, setPermFilter] = useState("");
   const prevCountsRef = useRef<Record<string, number>>({});
   const [animateOps, setAnimateOps] = useState<Set<string>>(new Set());
+  const [localHidden, setLocalHidden] = useState<Set<string>>(new Set());
+  const excludeOp = async (opName: string) => {
+    // Optimistic hide
+    setLocalHidden((prev) => new Set(prev).add(opName));
+    if (!accessToken) return; // cannot persist without token
+    try {
+      const res = await fetch(new URL(`/api/operations/exclusions`, apiBase), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ operationName: opName }),
+      });
+      if (!res.ok) throw new Error();
+      // Notify other components (exclusions tab) to refresh
+      window.dispatchEvent(new CustomEvent("operation-exclusions-updated"));
+    } catch {
+      // Revert on failure
+      setLocalHidden((prev) => {
+        const next = new Set(prev);
+        next.delete(opName);
+        return next;
+      });
+    }
+  };
   // Track mapping counts to trigger animation
   useEffect(() => {
     if (!review) return;
@@ -145,15 +175,15 @@ export function OperationsSheet({
           ? uncovered.filter((p) => p.toLowerCase().includes(permLower))
           : uncovered;
         return {
-    op: o.operation,
-    targets,
-    permGroups,
-    uncovered: filteredUncovered,
-    grantedMapped: grantedMapped.map((p) => ({
-      name: p.name,
-      isPrivileged: p.isPrivileged,
-    })),
-  };
+          op: o.operation,
+          targets,
+          permGroups,
+          uncovered: filteredUncovered,
+          grantedMapped: grantedMapped.map((p) => ({
+            name: p.name,
+            isPrivileged: p.isPrivileged,
+          })),
+        };
       });
   }, [review, opFilter, permFilter]);
 
@@ -207,183 +237,197 @@ export function OperationsSheet({
                   No operations in period.
                 </div>
               )}
-              {opData.map((op, idx) => (
-                <div
-                  key={idx}
-                  className="border rounded p-3 bg-card text-card-foreground text-xs space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="font-semibold text-sm">
-                      <div className="flex items-center gap-2">
-                        <span>{op.op}</span>
-                        {(() => {
-                          const count =
-                            mappingCount(op.op) ?? op.grantedMapped.length ?? 0;
-                          const animate = animateOps.has(op.op) && count > 0;
-                          return (
-                            <span
-                              className={
-                                `text-[10px] px-1 py-0.5 rounded border transition-transform ` +
-                                (count === 0
-                                  ? "bg-transparent text-muted-foreground border-muted-foreground/30"
-                                  : "bg-muted text-muted-foreground") +
-                                (animate ? " animate-badge-pulse" : "")
-                              }
-                              title={
-                                count === 0
-                                  ? "No mapped permissions yet"
-                                  : `${count} mapped permissions`
-                              }
-                            >
-                              {count} mapped
-                            </span>
-                          );
-                        })()}
+              {opData
+                .filter((o) => !localHidden.has(o.op))
+                .map((op, idx) => (
+                  <div
+                    key={idx}
+                    className="border rounded p-3 bg-card text-card-foreground text-xs space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold text-sm">
+                        <div className="flex items-center gap-2">
+                          <span>{op.op}</span>
+                          {(() => {
+                            const count =
+                              mappingCount(op.op) ??
+                              op.grantedMapped.length ??
+                              0;
+                            const animate = animateOps.has(op.op) && count > 0;
+                            return (
+                              <span
+                                className={
+                                  `text-[10px] px-1 py-0.5 rounded border transition-transform ` +
+                                  (count === 0
+                                    ? "bg-transparent text-muted-foreground border-muted-foreground/30"
+                                    : "bg-muted text-muted-foreground") +
+                                  (animate ? " animate-badge-pulse" : "")
+                                }
+                                title={
+                                  count === 0
+                                    ? "No mapped permissions yet"
+                                    : `${count} mapped permissions`
+                                }
+                              >
+                                {count} mapped
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div className="mt-1">
+                          <button
+                            type="button"
+                            onClick={() => openMapping(op.op)}
+                            className="text-[11px] text-blue-600 hover:underline dark:text-blue-400"
+                          >
+                            {hasMapping(op.op)
+                              ? "Edit mapping"
+                              : "Create mapping"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => excludeOp(op.op)}
+                            className="ml-3 text-[11px] text-red-600 hover:underline dark:text-red-400"
+                            title="Exclude this operation from reviews"
+                          >
+                            Exclude
+                          </button>
+                        </div>
                       </div>
-                      <div className="mt-1">
-                        <button
-                          type="button"
-                          onClick={() => openMapping(op.op)}
-                          className="text-[11px] text-blue-600 hover:underline dark:text-blue-400"
+                      {op.targets.length > 0 && (
+                        <Button
+                          variant="link"
+                          className="text-[11px] p-0 h-auto"
+                          onClick={() => toggleExpanded(idx)}
                         >
-                          {hasMapping(op.op)
-                            ? "Edit mapping"
-                            : "Create mapping"}
-                        </button>
-                      </div>
+                          {expanded.has(idx) ? "Hide targets" : "Targets"}
+                        </Button>
+                      )}
                     </div>
-                    {op.targets.length > 0 && (
-                      <Button
-                        variant="link"
-                        className="text-[11px] p-0 h-auto"
-                        onClick={() => toggleExpanded(idx)}
-                      >
-                        {expanded.has(idx) ? "Hide targets" : "Targets"}
-                      </Button>
-                    )}
-                  </div>
-                  {hasMapping(op.op) && op.grantedMapped.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {op.grantedMapped.map((p) => (
-                        <span
-                          key={p.name}
-                          className={
-                            `inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11px] ` +
-                            (p.isPrivileged
-                              ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/10 dark:border-red-700 dark:text-red-300"
-                              : "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/10 dark:border-emerald-700 dark:text-emerald-300")
-                          }
-                        >
-                          {p.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    {op.permGroups.map((g) => (
-                      <div key={g.roleId}>
-                        <div className="font-medium flex items-center gap-2">
-                          <span>{roleNameLookup(g.roleId) ?? g.roleId}</span>
-                          {review.eligiblePimRoles.some(
-                            (r) => r.id === g.roleId
-                          ) && (
-                            <span className="text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1 text-[10px] dark:text-indigo-300 dark:bg-indigo-900/20 dark:border-indigo-700">
-                              PIM
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {g.permissions.map((p) => (
-                            <span
-                              key={p.name}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded border"
-                            >
-                              <span>{p.name}</span>
-                              {p.conditions.map((c, i) => (
-                                <span
-                                  key={i}
-                                  className="text-[9px] px-1 py-0.5 rounded border bg-muted/60 text-muted-foreground"
-                                  title={`Condition: ${c}`}
-                                >
-                                  {c}
-                                </span>
-                              ))}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                    {op.uncovered.length > 0 && (
-                      <div>
-                        <div className="font-medium">Uncovered</div>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {op.uncovered.map((p) => (
-                            <span
-                              key={p}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
-                            >
-                              {p}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {expanded.has(idx) && op.targets.length > 0 && (
-                    <div className="pt-2 border-t">
-                      <div className="font-medium mb-1">Targets</div>
-                      <ul className="list-disc pl-4 space-y-2">
-                        {op.targets.map((t, i2) => (
-                          <li key={i2}>
-                            <div>{t.name}</div>
-                            {t.modified && t.modified.length > 0 && (
-                              <div className="mt-1 ml-2 border-l pl-3 space-y-1">
-                                {t.modified.map(
-                                  (
-                                    mp: {
-                                      displayName: string;
-                                      oldValue?: string;
-                                      newValue?: string;
-                                    },
-                                    mIdx: number
-                                  ) => {
-                                    const propToken = `${op.op}::${mp.displayName}`;
-                                    return (
-                                      <div
-                                        key={mIdx}
-                                        className="text-[10px] font-mono break-all group relative pr-16"
-                                      >
-                                        <span className="font-semibold">
-                                          {mp.displayName}:
-                                        </span>{" "}
-                                        <span className="text-red-600 dark:text-red-400">
-                                          {mp.oldValue ?? ""}
-                                        </span>{" "}
-                                        <span className="mx-1">→</span>
-                                        <span className="text-emerald-600 dark:text-emerald-400">
-                                          {mp.newValue ?? ""}
-                                        </span>
-                                        <button
-                                          type="button"
-                                          onClick={() => openMapping(propToken)}
-                                          className="absolute top-0 right-0 opacity-70 group-hover:opacity-100 text-[9px] px-1 py-0.5 border rounded bg-muted text-muted-foreground hover:bg-muted/80 transition"
-                                          title="Map actions for this specific property change"
-                                        >
-                                          Map
-                                        </button>
-                                      </div>
-                                    );
-                                  }
-                                )}
-                              </div>
-                            )}
-                          </li>
+                    {hasMapping(op.op) && op.grantedMapped.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {op.grantedMapped.map((p) => (
+                          <span
+                            key={p.name}
+                            className={
+                              `inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11px] ` +
+                              (p.isPrivileged
+                                ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/10 dark:border-red-700 dark:text-red-300"
+                                : "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/10 dark:border-emerald-700 dark:text-emerald-300")
+                            }
+                          >
+                            {p.name}
+                          </span>
                         ))}
-                      </ul>
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      {op.permGroups.map((g) => (
+                        <div key={g.roleId}>
+                          <div className="font-medium flex items-center gap-2">
+                            <span>{roleNameLookup(g.roleId) ?? g.roleId}</span>
+                            {review.eligiblePimRoles.some(
+                              (r) => r.id === g.roleId
+                            ) && (
+                              <span className="text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1 text-[10px] dark:text-indigo-300 dark:bg-indigo-900/20 dark:border-indigo-700">
+                                PIM
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {g.permissions.map((p) => (
+                              <span
+                                key={p.name}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded border"
+                              >
+                                <span>{p.name}</span>
+                                {p.conditions.map((c, i) => (
+                                  <span
+                                    key={i}
+                                    className="text-[9px] px-1 py-0.5 rounded border bg-muted/60 text-muted-foreground"
+                                    title={`Condition: ${c}`}
+                                  >
+                                    {c}
+                                  </span>
+                                ))}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                      {op.uncovered.length > 0 && (
+                        <div>
+                          <div className="font-medium">Uncovered</div>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {op.uncovered.map((p) => (
+                              <span
+                                key={p}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
+                              >
+                                {p}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                    {expanded.has(idx) && op.targets.length > 0 && (
+                      <div className="pt-2 border-t">
+                        <div className="font-medium mb-1">Targets</div>
+                        <ul className="list-disc pl-4 space-y-2">
+                          {op.targets.map((t, i2) => (
+                            <li key={i2}>
+                              <div>{t.name}</div>
+                              {t.modified && t.modified.length > 0 && (
+                                <div className="mt-1 ml-2 border-l pl-3 space-y-1">
+                                  {t.modified.map(
+                                    (
+                                      mp: {
+                                        displayName: string;
+                                        oldValue?: string;
+                                        newValue?: string;
+                                      },
+                                      mIdx: number
+                                    ) => {
+                                      const propToken = `${op.op}::${mp.displayName}`;
+                                      return (
+                                        <div
+                                          key={mIdx}
+                                          className="text-[10px] font-mono break-all group relative pr-16"
+                                        >
+                                          <span className="font-semibold">
+                                            {mp.displayName}:
+                                          </span>{" "}
+                                          <span className="text-red-600 dark:text-red-400">
+                                            {mp.oldValue ?? ""}
+                                          </span>{" "}
+                                          <span className="mx-1">→</span>
+                                          <span className="text-emerald-600 dark:text-emerald-400">
+                                            {mp.newValue ?? ""}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              openMapping(propToken)
+                                            }
+                                            className="absolute top-0 right-0 opacity-70 group-hover:opacity-100 text-[9px] px-1 py-0.5 border rounded bg-muted text-muted-foreground hover:bg-muted/80 transition"
+                                            title="Map actions for this specific property change"
+                                          >
+                                            Map
+                                          </button>
+                                        </div>
+                                      );
+                                    }
+                                  )}
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         </SheetContent>
