@@ -1,4 +1,4 @@
-# RoleReaper
+# ![logo](/web/public/entrarolereaper_logo.png) RoleReaper
 
 Full-stack app to perform access reviews of Entra ID users.
 
