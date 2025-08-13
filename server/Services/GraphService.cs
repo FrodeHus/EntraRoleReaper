@@ -285,4 +285,11 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
             q.QueryParameters.Top = 250;
         });
     }
+
+    public async Task<List<UnifiedRoleDefinition>?> GetAllRoleDefinitions(
+)
+    {
+        var page = await GraphClient.RoleManagement.Directory.RoleDefinitions.GetAsync();
+        return page?.Value;
+    }
 }

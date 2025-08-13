@@ -13,4 +13,5 @@ public interface IRoleRepository
     Task UpdateRoleAsync(RoleDefinition role);
 
     Task AddRoleAsync(RoleDefinition role);
+    Task<int> GetRoleCountAsync();
 }

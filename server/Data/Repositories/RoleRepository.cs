@@ -5,6 +5,11 @@ namespace EntraRoleReaper.Api.Data.Repositories;
 
 public class RoleRepository(ReaperDbContext dbContext) : IRoleRepository
 {
+    public Task<int> GetRoleCountAsync()
+    {
+        return dbContext.RoleDefinitions.CountAsync();
+    }
+
     public Task AddRoleAsync(RoleDefinition role)
     {
         if (role == null)
