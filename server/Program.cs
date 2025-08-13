@@ -64,6 +64,7 @@ builder.Services.AddScoped<IRoleCache, RoleCache>();
 builder.Services.AddScoped<IUserSearchService, UserSearchService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IOperationMapCache, OperationMapCache>();
+builder.Services.AddScoped<GraphService>();
 builder.Services.AddScoped<IOperationMappingService, OperationMappingService>();
 
 builder.Services.AddEndpointsApiExplorer();
