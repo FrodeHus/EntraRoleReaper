@@ -45,13 +45,13 @@ var sqliteConn = builder.Configuration.GetValue<string>("Cache:SqliteConnection"
 if (string.IsNullOrWhiteSpace(sqliteConn))
 {
     var sqlitePath = builder.Configuration.GetValue<string>(
-        "Cache:SqlitePath",
-        "/tmp/rolereaper_cache.sqlite"
+        "Database:SqlitePath",
+        "/tmp/rolereaper.db"
     );
     sqliteConn = $"Data Source={sqlitePath}";
 }
 var enableDiag = Environment.GetEnvironmentVariable("ROLE_REAPER_DIAG") == "1";
-builder.Services.AddDbContext<CacheDbContext>(opt =>
+builder.Services.AddDbContext<ReaperDbContext>(opt =>
 {
     opt.UseLazyLoadingProxies();
     opt.UseSqlite(sqliteConn);
@@ -62,8 +62,11 @@ builder.Services.AddDbContext<CacheDbContext>(opt =>
     }
 });
 builder.Services.AddSingleton<IGraphServiceFactory, GraphServiceFactory>();
-//builder.Services.AddScoped<IRoleRepository, RoleRepository>();
-//builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<IResourceActionRepository, ResourceActionRepository>();
+builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
+
 builder.Services.AddScoped<IRoleCache, RoleCache>();
 builder.Services.AddScoped<IUserSearchService, UserSearchService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
