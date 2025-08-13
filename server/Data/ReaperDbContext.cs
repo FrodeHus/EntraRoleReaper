@@ -8,4 +8,7 @@ public class ReaperDbContext(DbContextOptions<ReaperDbContext> options) : DbCont
     public DbSet<RoleDefinition> RoleDefinitions { get; set; } = null!;
     public DbSet<ResourceAction> ResourceActions { get; set; } = null!;
     public DbSet<PermissionSet> PermissionSets { get; set; } = null!;
+    public DbSet<Activity> Activities { get; set; }
+    public DbSet<ActivityProperty> ActivityProperties { get; set; }
+
 }

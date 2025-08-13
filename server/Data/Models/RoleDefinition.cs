@@ -10,21 +10,3 @@ public class RoleDefinition
     public bool IsBuiltIn { get; set; }
     public List<PermissionSet> PermissionSets { get; set; } = new();
 }
-
-public class PermissionSet
-{
-    public Guid Id { get; set; }
-    public Guid RoleDefinitionId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public List<string> ResourceActions { get; set; } = new();
-    public bool IsPrivileged { get; set; }
-    public string? Condition { get; set; }
-}
-
-public class ResourceAction
-{
-    public Guid Id { get; set; }
-    public Guid PermissionSetId { get; set; }
-    public string Action { get; set; } = string.Empty; // unique
-    public bool IsPrivileged { get; set; }
-}
