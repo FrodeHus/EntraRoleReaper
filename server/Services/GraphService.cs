@@ -56,10 +56,34 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
         var display = user?.DisplayName ?? user?.UserPrincipalName ?? uid;
         var (eligibleRoleIds, pimActiveRoleIds) = await GetPIMRoles(uid);
         var assignedRoles = await GetRoleAssignmentsAsync(uid);
+        if (user?.UserType == "Member")
+        {
+            var userRole = await GetRoleDefinitionBy("User");
+            if (userRole != null)
+            {
+                assignedRoles.Add(userRole.Id);
+            }
+        }
+        else
+        {
+            var guestRole = await GetRoleDefinitionBy("Guest");
+            if (guestRole != null)
+            {
+                assignedRoles.Add(guestRole.Id);
+            }
+        }
         return (display, assignedRoles, eligibleRoleIds, pimActiveRoleIds);
     }
-    
 
+    private async Task<UnifiedRoleDefinition?> GetRoleDefinitionBy(string name)
+    {
+        var result = await GraphClient.RoleManagement.Directory.RoleDefinitions.GetAsync(q =>
+        {
+            q.QueryParameters.Filter = $"displayName eq '{name}'";
+            q.QueryParameters.Top = 20;
+        });
+        return result?.Value?.FirstOrDefault();
+    }
     public async Task<bool> IsOwnerAsync(string userId, AuditTargetResource target)
     {
         if (string.IsNullOrWhiteSpace(target.Id))
