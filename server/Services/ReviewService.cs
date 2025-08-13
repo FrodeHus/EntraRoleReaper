@@ -285,6 +285,8 @@ public class ReviewService(
         if (requiredPermissionsAll.Count == 0)
             return (Array.Empty<string>(), suggestedDetails);
         var excludes = _suggestionExcludes.Value;
+        excludes.Add("User");
+        excludes.Add("Guest");
         var roleAllowed = roles
             .Values.Where(r =>
                 r.RolePermissions != null
