@@ -1,8 +1,9 @@
+using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using RoleReaper.Data;
 
-namespace RoleReaper.Services;
+namespace EntraRoleReaper.Api.Services;
 
 public class OperationMapCache(
     CacheDbContext db,
@@ -40,24 +41,26 @@ public class OperationMapCache(
             var prop = await db
                 .OperationPropertyMaps.Include(p => p.ResourceActions)
                 .AsNoTracking()
+                .ToListAsync();
+            var propertyMapping = prop
                 .GroupBy(p => p.OperationName, StringComparer.OrdinalIgnoreCase)
-                .ToDictionaryAsync(
+                .ToDictionary(
                     g => g.Key,
                     g =>
                         (IReadOnlyDictionary<string, string[]>)
-                            g.ToDictionary(
-                                x => x.PropertyName,
-                                x =>
-                                    x.ResourceActions.Select(a => a.Action)
-                                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                                        .OrderBy(a => a)
-                                        .ToArray(),
-                                StringComparer.OrdinalIgnoreCase
-                            ),
+                        g.ToDictionary(
+                            x => x.PropertyName,
+                            x =>
+                                x.ResourceActions.Select(a => a.Action)
+                                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                                    .OrderBy(a => a)
+                                    .ToArray(),
+                            StringComparer.OrdinalIgnoreCase
+                        ),
                     StringComparer.OrdinalIgnoreCase
                 );
             memoryCache.Set(CacheKey, dict, Ttl);
-            memoryCache.Set(PropCacheKey, prop, Ttl);
+            memoryCache.Set(PropCacheKey, propertyMapping, Ttl);
         }
         catch (Exception ex)
         {

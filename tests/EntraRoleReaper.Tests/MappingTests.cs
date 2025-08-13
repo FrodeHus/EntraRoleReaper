@@ -1,7 +1,8 @@
 ﻿using EntraRoleReaper.Api.Configuration.PermissionMapping.Models;
+using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Services;
+using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using RoleReaper.Data;
-using RoleReaper.Services;
 using Xunit;
 
 namespace EntraRoleReaper.Tests;

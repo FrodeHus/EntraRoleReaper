@@ -1,4 +1,4 @@
-namespace RoleReaper.Services;
+namespace EntraRoleReaper.Api.Services.Models;
 
 public record SimpleUser(string Id, string DisplayName);
 

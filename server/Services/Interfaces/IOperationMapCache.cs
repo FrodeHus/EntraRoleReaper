@@ -1,4 +1,4 @@
-namespace RoleReaper.Services;
+namespace EntraRoleReaper.Api.Services.Interfaces;
 
 public interface IOperationMapCache
 {

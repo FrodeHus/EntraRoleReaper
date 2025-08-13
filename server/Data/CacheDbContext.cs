@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace RoleReaper.Data;
+namespace EntraRoleReaper.Api.Data;
 
 public class CacheDbContext(DbContextOptions<CacheDbContext> options) : DbContext(options)
 {

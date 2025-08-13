@@ -1,8 +1,9 @@
 using EntraRoleReaper.Api.Configuration.PermissionMapping.Models;
+using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using RoleReaper.Data;
 
-namespace RoleReaper.Services;
+namespace EntraRoleReaper.Api.Services;
 
 public interface IOperationMappingService
 {

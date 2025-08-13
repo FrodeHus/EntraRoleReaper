@@ -1,4 +1,4 @@
-namespace RoleReaper.Endpoints;
+namespace EntraRoleReaper.Api.Endpoints;
 
 public static class HealthEndpoints
 {

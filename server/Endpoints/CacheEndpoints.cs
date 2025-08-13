@@ -1,6 +1,6 @@
-using RoleReaper.Services;
+using EntraRoleReaper.Api.Services.Interfaces;
 
-namespace RoleReaper.Endpoints;
+namespace EntraRoleReaper.Api.Endpoints;
 
 public static class CacheEndpoints
 {

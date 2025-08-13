@@ -1,4 +1,7 @@
-namespace RoleReaper.Services;
+using EntraRoleReaper.Api.Services.Interfaces;
+using EntraRoleReaper.Api.Services.Models;
+
+namespace EntraRoleReaper.Api.Services;
 
 public class UserSearchService(IGraphServiceFactory factory) : IUserSearchService
 {

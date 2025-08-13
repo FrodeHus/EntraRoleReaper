@@ -1,11 +1,13 @@
 using System.Text.Json;
+using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Services.Interfaces;
+using EntraRoleReaper.Api.Services.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
-using RoleReaper.Data;
 
-namespace RoleReaper.Services;
+namespace EntraRoleReaper.Api.Services;
 
 public class RoleCache(
     IGraphServiceFactory factory,

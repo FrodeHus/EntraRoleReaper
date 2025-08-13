@@ -1,6 +1,7 @@
+using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph.Models;
 
-namespace RoleReaper.Services;
+namespace EntraRoleReaper.Api.Services.Interfaces;
 
 public interface IRoleCache
 {

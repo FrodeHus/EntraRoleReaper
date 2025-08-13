@@ -1,12 +1,13 @@
 using System.Text.Json;
+using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Endpoints;
+using EntraRoleReaper.Api.Services;
+using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
-using RoleReaper.Data;
-using RoleReaper.Endpoints;
-using RoleReaper.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -1,9 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace RoleReaper.Data;
+namespace EntraRoleReaper.Api.Data;
 
 [Index(nameof(Key), IsUnique = true)]
 public class MetaEntity

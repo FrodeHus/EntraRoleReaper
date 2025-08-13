@@ -1,4 +1,4 @@
-using RoleReaper.Services;
+namespace EntraRoleReaper.Api.Services.Models;
 
 public class AuditActivity
 {

@@ -1,16 +1,18 @@
 using System.Globalization;
 using System.Text.Json;
+using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Services.Interfaces;
+using EntraRoleReaper.Api.Services.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Graph;
 using Microsoft.Graph.Models;
 
-namespace RoleReaper.Services;
+namespace EntraRoleReaper.Api.Services;
 
 public class ReviewService(
     GraphService graphService,
     IRoleCache roleCache,
     IOperationMapCache operationMapCache,
-    RoleReaper.Data.CacheDbContext db
+    CacheDbContext db
 ) : IReviewService
 {
     // Operation map now resolved via IOperationMapCache (populated from DB, refreshable after edits)
@@ -51,13 +53,13 @@ public class ReviewService(
         foreach (var uid in userIds)
         {
             // Fetch core user + role context
-            var userCtx = await graphService.GetUserAndRolesAsync(uid, roles);
+            var userCtx = await graphService.GetUserAndRolesAsync(uid);
             var display = userCtx.DisplayName;
             var activeRoleIds = userCtx.ActiveRoleIds;
             var eligibleRoleIds = userCtx.EligibleRoleIds;
 
             // Audit operations + targets
-            var auditEntries = await graphService.CollectAuditOperationsAsync(request, uid);
+            var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
 
             // Load exclusions once per review cycle (could be cached, small table)
             var excludedOps = await db
@@ -66,18 +68,20 @@ public class ReviewService(
             var excludedSet = new HashSet<string>(excludedOps, StringComparer.OrdinalIgnoreCase);
 
             // Build operations and permission requirements (excluding)
-            var filteredUsedOperations = new List<AuditActivity>(
-                auditEntries.Where(o => !excludedSet.Contains(o.ActivityName))
+            var filteredAuditActivities = new List<AuditActivity>(
+                auditActivities.Where(o => !excludedSet.Contains(o.ActivityName))
             );
-
+            var userRoles = activeRoleIds;
+            userRoles.AddRange(eligibleRoleIds);
+            
             var operationsList = await BuildOperationsListAsync(
                 uid,
-                filteredUsedOperations,
-                activeRoleIds,
+                filteredAuditActivities,
+                userRoles,
                 roles,
                 actionPrivilege
             );
-            var requiredPermissionsAll = BuildRequiredPermissions(filteredUsedOperations);
+            var requiredPermissionsAll = BuildRequiredPermissions(filteredAuditActivities);
 
             // Suggest roles
             var suggestionCtx = ComputeSuggestedRoles(requiredPermissionsAll, roles, roleStats);
@@ -121,154 +125,103 @@ public class ReviewService(
 
     private async Task<List<ReviewOperation>> BuildOperationsListAsync(
         string userId,
-        List<AuditActivity> usedOperations,
+        List<AuditActivity> auditActivities,
         List<string> activeRoleIds,
         IReadOnlyDictionary<string, UnifiedRoleDefinition> roles,
         IReadOnlyDictionary<string, bool> actionPrivilege
     )
     {
         var results = new List<ReviewOperation>();
-        // Ownership cache (resourceId -> isOwner)
-
-        async Task<bool> ConditionSatisfiedAsync(
-            string condition,
-            List<AuditTargetResource> targets
-        )
-        {
-            if (targets.Count == 0)
-                return false; // no context
-            if (string.Equals(condition, "$ResourceIsSelf", StringComparison.OrdinalIgnoreCase))
-            {
-                return targets.Any(t =>
-                    !string.IsNullOrWhiteSpace(t.Id)
-                    && string.Equals(t.Id, userId, StringComparison.OrdinalIgnoreCase)
-                );
-            }
-            if (string.Equals(condition, "$SubjectIsOwner", StringComparison.OrdinalIgnoreCase))
-            {
-                foreach (var t in targets)
-                {
-                    if (
-                        !string.IsNullOrWhiteSpace(t.Id)
-                        && await graphService.IsOwnerAsync(userId, t)
-                    )
-                        return true;
-                }
-                return false;
-            }
-            // Unknown condition => treat as not satisfied
-            return false;
-        }
+        
         // Ensure operation map cache is initialized
         await operationMapCache.InitializeAsync();
-        var opMap = operationMapCache.GetAll();
-        var propMap = operationMapCache.GetPropertyMap();
-        foreach (var op in usedOperations)
+        var operationResourceActions = operationMapCache.GetAll();
+        foreach (var auditActivity in auditActivities)
         {
-            var basePerms = opMap.TryGetValue(op.ActivityName, out var p)
-                ? p
-                : Array.Empty<string>();
-            if (propMap.TryGetValue(op.ActivityName, out var perProp))
-            {
-                var union = new HashSet<string>(basePerms, StringComparer.OrdinalIgnoreCase);
-                foreach (var arr in perProp.Values)
-                foreach (var act in arr)
-                    union.Add(act);
-                basePerms = union.ToArray();
-            }
-            var perms = basePerms;
+            var toplevelResourceActions = operationResourceActions.TryGetValue(auditActivity.ActivityName, out var resourceActions)
+                ? resourceActions
+                : [];
+            
 
-            var currentRoleDefs = activeRoleIds
+            var userRoles = activeRoleIds
                 .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
                 .Where(rd => rd != null)
-                .ToList()!;
+                .ToList();
 
+            
             var details = new List<PermissionDetail>();
-            foreach (var name in perms)
+            foreach (var resourceAction in toplevelResourceActions)
             {
-                var privileged = actionPrivilege.TryGetValue(name, out var isPriv) && isPriv;
-                var grantedBy = new List<string>();
-                var grantConds = new List<string>(); // aggregate distinct later
-                var matchedPerRole = new List<string>(); // aligns with grantedBy (empty string if none)
-                foreach (var roleDefinition in currentRoleDefs)
+                var privileged = actionPrivilege.TryGetValue(resourceAction, out var isPrivileged) && isPrivileged;
+                foreach (var roleDefinition in userRoles)
                 {
                     if (roleDefinition?.RolePermissions == null)
                         continue;
-                    bool allowed = false;
-                    string? appliedCond = null;
                     // Prioritize conditional permission sets so that more specific context-sensitive
                     // grants are evaluated before broader ones:
                     // 1. $ResourceIsSelf
                     // 2. $SubjectIsOwner
                     // 3. All others (including null / empty conditions)
-                    var orderedRolePerms = roleDefinition.RolePermissions.OrderBy(rp =>
+
+                    var permissionsOnSelf =
+                        roleDefinition.GetUnifiedRolePermissionBy(PermissionCondition.ResourceIsSelf);
+                    if (permissionsOnSelf != null)
                     {
-                        var cond = rp.Condition?.Trim();
-                        if (
-                            string.Equals(
-                                cond,
-                                "$ResourceIsSelf",
-                                StringComparison.OrdinalIgnoreCase
-                            )
-                        )
-                            return 0;
-                        if (
-                            string.Equals(
-                                cond,
-                                "$SubjectIsOwner",
-                                StringComparison.OrdinalIgnoreCase
-                            )
-                        )
-                            return 1;
-                        return 2;
-                    });
-                    foreach (var rp in orderedRolePerms)
-                    {
-                        var actions = rp.AllowedResourceActions ?? Enumerable.Empty<string>();
-                        if (
-                            !actions.Any(a =>
-                                string.Equals(a, name, StringComparison.OrdinalIgnoreCase)
-                            )
-                        )
-                            continue;
-                        // Evaluate condition if present
-                        if (!string.IsNullOrWhiteSpace(rp.Condition))
+                        foreach(var targetResource in auditActivity.TargetResources)
                         {
-                            var cond = rp.Condition.Trim();
-                            if (!await ConditionSatisfiedAsync(cond, op.TargetResources))
-                                continue;
-                            appliedCond = cond;
+                            if (userId == targetResource.Id && permissionsOnSelf.HasResourceAction(resourceAction))
+                            {
+                                details.Add(
+                                    new PermissionDetail(
+                                        resourceAction,
+                                        privileged,
+                                        [roleDefinition.DisplayName!],
+                                        ["$ResourceIsSelf"],
+                                        null
+                                    )
+                                );
+                            }
                         }
-                        allowed = true; // one matching permission set satisfied
-                        break;
                     }
-                    if (allowed && !string.IsNullOrWhiteSpace(roleDefinition.DisplayName))
+                    
+                    var permissionsOnOwner =
+                        roleDefinition.GetUnifiedRolePermissionBy(PermissionCondition.SubjectIsOwner);
+
+                    if (permissionsOnOwner != null)
                     {
-                        grantedBy.Add(roleDefinition.DisplayName!);
-                        if (appliedCond != null)
+                        foreach (var targetResource in auditActivity.TargetResources)
                         {
-                            grantConds.Add(appliedCond);
-                            matchedPerRole.Add(appliedCond);
+                            var isOwner = await graphService.IsOwnerAsync(userId, targetResource);
+                            if (isOwner && permissionsOnOwner.HasResourceAction(resourceAction))
+                            {
+                                details.Add(
+                                    new PermissionDetail(
+                                        resourceAction,
+                                        privileged,
+                                        [roleDefinition.DisplayName!],
+                                        ["$SubjectIsOwner"],
+                                        null
+                                    )
+                                );
+                            }
                         }
-                        else
-                        {
-                            matchedPerRole.Add(string.Empty);
-                        }
+                    }
+                    
+                    var permissionsTenantWide =
+                        roleDefinition.GetUnifiedRolePermissionBy(PermissionCondition.None);
+                    if (permissionsTenantWide != null && permissionsTenantWide.HasResourceAction(resourceAction))
+                    {
+                        details.Add(
+                            new PermissionDetail(
+                                resourceAction,
+                                privileged,
+                                [roleDefinition.DisplayName!],
+                                ["(no condition)"],
+                                null
+                            )
+                        );
                     }
                 }
-                // Always include the permission detail (even if not currently granted by any active role)
-                // so the client can surface "uncovered" mapped actions.
-                details.Add(
-                    new PermissionDetail(
-                        name,
-                        privileged,
-                        grantedBy, // empty list if not granted
-                        grantConds.Count > 0
-                            ? grantConds.Distinct(StringComparer.OrdinalIgnoreCase).ToList()
-                            : null,
-                        matchedPerRole.Count > 0 ? matchedPerRole : null
-                    )
-                );
             }
 
             var filteredPerms = details
@@ -276,7 +229,7 @@ public class ReviewService(
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            var reviewedTargets = op
+            var reviewedTargets = auditActivity
                 .TargetResources.Select(tr => new ReviewTarget(
                     tr.Id,
                     tr.DisplayName,
@@ -287,7 +240,7 @@ public class ReviewService(
                 ))
                 .ToList();
             results.Add(
-                new ReviewOperation(op.ActivityName, filteredPerms, reviewedTargets, details)
+                new ReviewOperation(auditActivity.ActivityName, filteredPerms, reviewedTargets, details)
             );
         }
         return results;
@@ -588,5 +541,36 @@ public class ReviewService(
                 // Title-case the original type as a fallback
                 return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(t);
         }
+    }
+    
+    private async Task<bool> ConditionSatisfiedAsync(
+        string userId,
+        string condition,
+        List<AuditTargetResource> targets
+    )
+    {
+        if (targets.Count == 0)
+            return false; // no context
+        if (string.Equals(condition, "$ResourceIsSelf", StringComparison.OrdinalIgnoreCase))
+        {
+            return targets.Any(t =>
+                !string.IsNullOrWhiteSpace(t.Id)
+                && string.Equals(t.Id, userId, StringComparison.OrdinalIgnoreCase)
+            );
+        }
+        if (string.Equals(condition, "$SubjectIsOwner", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var t in targets)
+            {
+                if (
+                    !string.IsNullOrWhiteSpace(t.Id)
+                    && await graphService.IsOwnerAsync(userId, t)
+                )
+                    return true;
+            }
+            return false;
+        }
+        // Unknown condition => treat as not satisfied
+        return false;
     }
 }

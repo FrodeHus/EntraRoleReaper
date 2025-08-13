@@ -1,4 +1,6 @@
-namespace RoleReaper.Services;
+using EntraRoleReaper.Api.Services.Models;
+
+namespace EntraRoleReaper.Api.Services.Interfaces;
 
 public interface IUserSearchService
 {

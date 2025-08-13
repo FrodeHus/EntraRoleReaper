@@ -1,11 +1,14 @@
+using EntraRoleReaper.Api.Services.Interfaces;
+using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
+using ModifiedProperty = EntraRoleReaper.Api.Services.Models.ModifiedProperty;
 
-namespace RoleReaper.Services;
+namespace EntraRoleReaper.Api.Services;
 
 public class GraphService(IGraphServiceFactory graphServiceFactory)
 {
-    public Dictionary<string, bool> _ownershipCache = [];
+    private readonly Dictionary<string, bool> _ownershipCache = [];
 
     private GraphServiceClient? _client;
     private GraphServiceClient GraphClient
@@ -47,42 +50,15 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
         List<string> ActiveRoleIds,
         List<string> EligibleRoleIds,
         HashSet<string> PimActiveRoleIds
-    )> GetUserAndRolesAsync(string uid, IReadOnlyDictionary<string, UnifiedRoleDefinition> roles)
+    )> GetUserAndRolesAsync(string uid)
     {
         var user = await GraphClient.Users[uid].GetAsync();
         var display = user?.DisplayName ?? user?.UserPrincipalName ?? uid;
-        var activeRoleIds = await GetActiveDirectoryRoleIdsAsync(GraphClient, uid, roles);
         var (eligibleRoleIds, pimActiveRoleIds) = await GetPIMRoles(uid);
-        activeRoleIds.AddRange(pimActiveRoleIds);
-        activeRoleIds = activeRoleIds.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        return (display, activeRoleIds, eligibleRoleIds, pimActiveRoleIds);
+        var assignedRoles = await GetRoleAssignmentsAsync(uid);
+        return (display, assignedRoles, eligibleRoleIds, pimActiveRoleIds);
     }
-
-    public static async Task<List<string>> GetActiveDirectoryRoleIdsAsync(
-        GraphServiceClient client,
-        string uid,
-        IReadOnlyDictionary<string, UnifiedRoleDefinition> roles
-    )
-    {
-        var list = new List<string>();
-        var memberships = await client.Users[uid].MemberOf.GetAsync();
-        if (memberships?.Value == null)
-            return list;
-        foreach (var mo in memberships.Value.OfType<DirectoryRole>())
-        {
-            var templateId = mo.RoleTemplateId;
-            if (string.IsNullOrEmpty(templateId))
-                continue;
-            // Some Graph responses (v1) may not populate UnifiedRoleDefinition.TemplateId; fall back to Id comparison.
-            var match = roles.Values.FirstOrDefault(r =>
-                string.Equals(r.TemplateId, templateId, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(r.Id, templateId, StringComparison.OrdinalIgnoreCase)
-            );
-            if (match?.Id != null)
-                list.Add(match.Id);
-        }
-        return list;
-    }
+    
 
     public async Task<bool> IsOwnerAsync(string userId, AuditTargetResource target)
     {
@@ -144,7 +120,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
         return owned;
     }
 
-    public async Task<List<AuditActivity>> CollectAuditOperationsAsync(
+    public async Task<List<AuditActivity>> CollectAuditActivitiesAsync(
         ReviewRequest request,
         string uid
     )
@@ -165,10 +141,6 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
 
                 foreach (var tr in a.TargetResources)
                 {
-                    if (tr is null)
-                    {
-                        continue;
-                    }
                     var upn = tr?.UserPrincipalName;
                     var display = tr?.DisplayName;
                     if (string.IsNullOrWhiteSpace(display) && !string.IsNullOrWhiteSpace(upn))
@@ -206,6 +178,18 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
         return groupedByActivity;
     }
 
+    private async Task<List<string?>> GetRoleAssignmentsAsync(string userId)
+    {
+        var assignments = await GraphClient.RoleManagement.Directory.RoleAssignments.GetAsync(q =>
+        {
+            
+            {
+                q.QueryParameters.Filter = $"principalId eq '{userId}'";
+                q.QueryParameters.Top = 50;
+            };
+        });
+        return assignments?.Value?.Select(a => a.RoleDefinitionId).ToList() ?? [];
+    }
     private async Task<(
         List<string> eligibleRoleIds,
         HashSet<string> pimActiveRoleIds
@@ -215,7 +199,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
         var pimActiveRoleIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            var elig =
+            var eligibleRoles =
                 await GraphClient.RoleManagement.Directory.RoleEligibilityScheduleInstances.GetAsync(
                     q =>
                     {
@@ -223,9 +207,9 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
                         q.QueryParameters.Top = 50;
                     }
                 );
-            if (elig?.Value != null)
+            if (eligibleRoles?.Value != null)
             {
-                foreach (var e in elig.Value)
+                foreach (var e in eligibleRoles.Value)
                 {
                     var roleDefId = e.RoleDefinitionId;
                     if (!string.IsNullOrWhiteSpace(roleDefId))
@@ -274,7 +258,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
         {
             q.QueryParameters.Filter =
                 $"activityDateTime ge {request.From:O} and activityDateTime le {request.To:O} and initiatedBy/user/id eq '{uid}'";
-            q.QueryParameters.Top = 100;
+            q.QueryParameters.Top = 250;
         });
     }
 }

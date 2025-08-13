@@ -1,10 +1,11 @@
 using System.Text.Json;
 using EntraRoleReaper.Api.Configuration.PermissionMapping.Models;
+using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Services;
+using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using RoleReaper.Data;
-using RoleReaper.Services;
 
-namespace RoleReaper.Endpoints;
+namespace EntraRoleReaper.Api.Endpoints;
 
 public static class OperationMapEndpoints
 {

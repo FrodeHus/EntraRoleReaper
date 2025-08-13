@@ -1,7 +1,7 @@
-using RoleReaper.Services;
-using RoleReaper.Data;
+using EntraRoleReaper.Api.Services.Interfaces;
+using EntraRoleReaper.Api.Services.Models;
 
-namespace RoleReaper.Endpoints;
+namespace EntraRoleReaper.Api.Endpoints;
 
 public static class ReviewEndpoints
 {

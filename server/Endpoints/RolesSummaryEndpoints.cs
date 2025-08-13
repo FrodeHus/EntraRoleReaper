@@ -1,7 +1,7 @@
+using EntraRoleReaper.Api.Data;
 using Microsoft.EntityFrameworkCore;
-using RoleReaper.Data;
 
-namespace RoleReaper.Endpoints;
+namespace EntraRoleReaper.Api.Endpoints;
 
 public static class RolesSummaryEndpoints
 {
