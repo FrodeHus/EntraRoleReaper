@@ -37,7 +37,7 @@ export function CurrentRolesCell({
           </button>
           {eligibleSet.has(id) && (
             <span
-              className="text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1 text-[10px] dark:text-indigo-300 dark:bg-indigo-900/20 dark:border-indigo-700"
+              className="text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1 text-[10px] dark:text-indigo-300 dark:bg-indigo-900/20 dark:border-cyan-700"
               title="Eligible via PIM"
             >
               PIM

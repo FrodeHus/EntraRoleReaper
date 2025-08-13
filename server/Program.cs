@@ -1,5 +1,6 @@
 using System.Text.Json;
 using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Endpoints;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
@@ -61,6 +62,8 @@ builder.Services.AddDbContext<CacheDbContext>(opt =>
     }
 });
 builder.Services.AddSingleton<IGraphServiceFactory, GraphServiceFactory>();
+//builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+//builder.Services.AddScoped<RoleService>();
 builder.Services.AddScoped<IRoleCache, RoleCache>();
 builder.Services.AddScoped<IUserSearchService, UserSearchService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();

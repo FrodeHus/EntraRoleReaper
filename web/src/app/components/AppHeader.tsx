@@ -18,7 +18,7 @@ interface AppHeaderProps {
 export function AppHeader({ authed, theme, onToggleTheme, onOpenSidebar, reviewerName, tenantDomain, accessToken, apiBase, onLogout, firstFocusableRef }: AppHeaderProps) {
   if (!authed) return null;
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/70 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b bg-card backdrop-blur">
       <div className="mx-auto max-w-7xl px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button

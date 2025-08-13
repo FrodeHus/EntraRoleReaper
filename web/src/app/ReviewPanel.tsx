@@ -547,7 +547,7 @@ export function ReviewPanel({
                             <span className="sr-only">None</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded border text-xs">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded border border-white-200 text-xs">
                             {counts.current}
                           </span>
                         )}
@@ -562,7 +562,7 @@ export function ReviewPanel({
                             <span className="sr-only">None</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded border text-xs bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/20 dark:border-indigo-700 dark:text-indigo-300">
+                          <span className="inline-flex items-center rounded-md bg-purple-400/10 px-2 py-1 text-xs font-medium text-purple-900 inset-ring-purple-800 dark:text-purple-400 inset-ring dark:inset-ring-purple-400/30">
                             {r.eligiblePimRoles.length}
                           </span>
                         )}
