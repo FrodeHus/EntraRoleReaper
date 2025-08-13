@@ -73,7 +73,7 @@ public class ReviewService(
             );
             var userRoles = activeRoleIds;
             userRoles.AddRange(eligibleRoleIds);
-            
+
             var operationsList = await BuildOperationsListAsync(
                 uid,
                 filteredAuditActivities,
@@ -132,27 +132,30 @@ public class ReviewService(
     )
     {
         var results = new List<ReviewOperation>();
-        
+
         // Ensure operation map cache is initialized
         await operationMapCache.InitializeAsync();
         var operationResourceActions = operationMapCache.GetAll();
         foreach (var auditActivity in auditActivities)
         {
-            var toplevelResourceActions = operationResourceActions.TryGetValue(auditActivity.ActivityName, out var resourceActions)
+            var toplevelResourceActions = operationResourceActions.TryGetValue(
+                auditActivity.ActivityName,
+                out var resourceActions
+            )
                 ? resourceActions
                 : [];
-            
 
             var userRoles = activeRoleIds
                 .Select(id => roles.TryGetValue(id, out var rd) ? rd : null)
                 .Where(rd => rd != null)
                 .ToList();
 
-            
             var details = new List<PermissionDetail>();
             foreach (var resourceAction in toplevelResourceActions)
             {
-                var privileged = actionPrivilege.TryGetValue(resourceAction, out var isPrivileged) && isPrivileged;
+                var privileged =
+                    actionPrivilege.TryGetValue(resourceAction, out var isPrivileged)
+                    && isPrivileged;
                 foreach (var roleDefinition in userRoles)
                 {
                     if (roleDefinition?.RolePermissions == null)
@@ -163,13 +166,17 @@ public class ReviewService(
                     // 2. $SubjectIsOwner
                     // 3. All others (including null / empty conditions)
 
-                    var permissionsOnSelf =
-                        roleDefinition.GetUnifiedRolePermissionBy(PermissionCondition.ResourceIsSelf);
+                    var permissionsOnSelf = roleDefinition.GetUnifiedRolePermissionBy(
+                        PermissionCondition.ResourceIsSelf
+                    );
                     if (permissionsOnSelf != null)
                     {
-                        foreach(var targetResource in auditActivity.TargetResources)
+                        foreach (var targetResource in auditActivity.TargetResources)
                         {
-                            if (userId == targetResource.Id && permissionsOnSelf.HasResourceAction(resourceAction))
+                            if (
+                                userId == targetResource.Id
+                                && permissionsOnSelf.HasResourceAction(resourceAction)
+                            )
                             {
                                 details.Add(
                                     new PermissionDetail(
@@ -183,9 +190,10 @@ public class ReviewService(
                             }
                         }
                     }
-                    
-                    var permissionsOnOwner =
-                        roleDefinition.GetUnifiedRolePermissionBy(PermissionCondition.SubjectIsOwner);
+
+                    var permissionsOnOwner = roleDefinition.GetUnifiedRolePermissionBy(
+                        PermissionCondition.SubjectIsOwner
+                    );
 
                     if (permissionsOnOwner != null)
                     {
@@ -206,10 +214,14 @@ public class ReviewService(
                             }
                         }
                     }
-                    
-                    var permissionsTenantWide =
-                        roleDefinition.GetUnifiedRolePermissionBy(PermissionCondition.None);
-                    if (permissionsTenantWide != null && permissionsTenantWide.HasResourceAction(resourceAction))
+
+                    var permissionsTenantWide = roleDefinition.GetUnifiedRolePermissionBy(
+                        PermissionCondition.None
+                    );
+                    if (
+                        permissionsTenantWide != null
+                        && permissionsTenantWide.HasResourceAction(resourceAction)
+                    )
                     {
                         details.Add(
                             new PermissionDetail(
@@ -240,7 +252,12 @@ public class ReviewService(
                 ))
                 .ToList();
             results.Add(
-                new ReviewOperation(auditActivity.ActivityName, filteredPerms, reviewedTargets, details)
+                new ReviewOperation(
+                    auditActivity.ActivityName,
+                    filteredPerms,
+                    reviewedTargets,
+                    details
+                )
             );
         }
         return results;
@@ -542,7 +559,7 @@ public class ReviewService(
                 return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(t);
         }
     }
-    
+
     private async Task<bool> ConditionSatisfiedAsync(
         string userId,
         string condition,
@@ -562,10 +579,7 @@ public class ReviewService(
         {
             foreach (var t in targets)
             {
-                if (
-                    !string.IsNullOrWhiteSpace(t.Id)
-                    && await graphService.IsOwnerAsync(userId, t)
-                )
+                if (!string.IsNullOrWhiteSpace(t.Id) && await graphService.IsOwnerAsync(userId, t))
                     return true;
             }
             return false;
