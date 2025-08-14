@@ -117,4 +117,18 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
     {
         return await dbContext.Activities.Where(x => x.IsExcluded).ToListAsync();
     }
+
+    public async Task<IEnumerable<Activity>> GetActivitiesByNamesAsync(IEnumerable<string> activityNames)
+    {
+        if (activityNames is null || !activityNames.Any())
+        {
+            throw new ArgumentException("Activity names cannot be null or empty.", nameof(activityNames));
+        }
+        return await dbContext.Activities
+            .Where(x => activityNames.Contains(x.Name))
+            .Include(x => x.Properties)
+            .Include(x => x.MappedResourceActions)
+            .ToListAsync();
+
+    }
 }

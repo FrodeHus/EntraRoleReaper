@@ -1,3 +1,5 @@
+using EntraRoleReaper.Api.Review;
+using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 using System.Text.Json;
@@ -6,9 +8,8 @@ namespace EntraRoleReaper.Api.Services;
 
 public class ReviewService(
     IGraphService graphService,
-    IRoleService roleService,
-    IActivityService activityService,
-    ICacheService cacheService
+    RoleAdvisor roleAdvisor,
+    IActivityService activityService
 ) : IReviewService
 {
     // Operation map now resolved via IOperationMapCache (populated from DB, refreshable after edits)
@@ -46,73 +47,38 @@ public class ReviewService(
         // var actionPrivilege = roleCache.GetActionPrivilegeMap();
         // var roleStats = roleCache.GetRolePrivilegeStats();
         //
-        // foreach (var uid in userIds)
-        // {
-        //     // Fetch core user + role context
-        //     var userCtx = await graphService.GetUserAndRolesAsync(uid);
-        //     var display = userCtx.DisplayName;
-        //     var activeRoleIds = userCtx.ActiveRoleIds;
-        //     var eligibleRoleIds = userCtx.EligibleRoleIds;
-        //
-        //     // Audit operations + targets
-        //     var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
-        //
-        //     // Load exclusions once per review cycle (could be cached, small table)
-        //     var excludedOps = await db
-        //         .OperationExclusions.Select(e => e.OperationName)
-        //         .ToListAsync();
-        //     var excludedSet = new HashSet<string>(excludedOps, StringComparer.OrdinalIgnoreCase);
-        //
-        //     // Build operations and permission requirements (excluding)
-        //     var filteredAuditActivities = new List<AuditActivity>(
-        //         auditActivities.Where(o => !excludedSet.Contains(o.ActivityName))
-        //     );
-        //     var userRoles = activeRoleIds;
-        //     userRoles.AddRange(eligibleRoleIds);
-        //
-        //     var operationsList = await BuildOperationsListAsync(
-        //         uid,
-        //         filteredAuditActivities,
-        //         userRoles,
-        //         roles,
-        //         actionPrivilege
-        //     );
-        //     var requiredPermissionsAll = BuildRequiredPermissions(filteredAuditActivities);
-        //
-        //     // Suggest roles
-        //     var suggestionCtx = ComputeSuggestedRoles(requiredPermissionsAll, roles, roleStats);
-        //     var suggested = suggestionCtx.Suggested;
-        //     var suggestedDetails = suggestionCtx.Details;
-        //
-        //     // Build operation permission reviews
-        //     var opReviews = BuildOperationReviews(
-        //         operationsList,
-        //         activeRoleIds,
-        //         eligibleRoleIds,
-        //         roles,
-        //         actionPrivilege
-        //     );
-        //
-        //     // Compute delta (added / removed)
-        //     var delta = DetermineRoleChanges(
-        //         activeRoleIds,
-        //         eligibleRoleIds,
-        //         suggested,
-        //         suggestedDetails,
-        //         roles
-        //     );
-        //
-        //     results.Add(
-        //         new UserReview(
-        //             new SimpleUser(uid, display),
-        //             delta.Active,
-        //             delta.Eligible,
-        //             opReviews,
-        //             delta.Added,
-        //             delta.Removed
-        //         )
-        //     );
-        // }
+        foreach (var uid in userIds)
+        {
+            // Fetch core user + role context
+            var userCtx = await graphService.GetUserAndRolesAsync(uid);
+
+            // Audit operations + targets
+            var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
+            var mappedActivities = await activityService.GetActivitesAsync(auditActivities.Select(a => a.ActivityName));
+            foreach(var activity in mappedActivities)
+            {
+                if (activity.IsExcluded)
+                {
+                    // Skip excluded activities
+                    continue;
+                }
+
+                var auditActivity = auditActivities.FirstOrDefault(a => a.ActivityName.Equals(activity.Name, StringComparison.InvariantCultureIgnoreCase);
+                var targets = auditActivity?.TargetResources.ConvertAll(t => new ReviewTargetResource
+                {
+                    Id = t.Id,
+                    DisplayName = t.DisplayName,
+                    Type = t.Type,
+                    ModifiedProperties = t.ModifiedProperties
+                })?? [];
+
+                var suggestedRoles = await roleAdvisor.GetSuggestedRoles(
+                    activity,
+                    targets,
+                    uid
+                );
+            }
+        }
         var results = new List<UserReview>();
         return new ReviewResponse(results);
     }
