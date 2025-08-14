@@ -7,4 +7,12 @@ public interface IActivityRepository
     Task<Activity> AddAsync(Activity activity);
     Task<Activity?> GetByIdAsync(Guid id);
     Task<Activity?> GetByNameAsync(string name);
+    Task<IEnumerable<Activity>> GetAllActivitiesAsync();
+    Task ClearAsync();
+
+    Task AddPropertyMapToActivityAsync(string activityName, string propertyName,
+        IEnumerable<Guid> resourceActionIds);
+    Task DeletePropertyMapAsync(string activityName, string propertyName);
+    Task SetExclusionAsync(string activityName, bool isExcluded);
+    Task<IEnumerable<Activity>> GetExcludedActivitiesAsync();
 }

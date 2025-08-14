@@ -23,5 +23,44 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
     {
         return await dbContext.ResourceActions.FirstOrDefaultAsync(x => x.Id == id);
     }
+    
+    public async Task<IEnumerable<ResourceAction>> SearchResourceActionsAsync(string searchTerm, int limit = 100)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return await dbContext.ResourceActions.Take(limit).ToListAsync();
+        }
+        searchTerm = searchTerm.Contains('*') ? searchTerm.Replace('*', '%').ToLowerInvariant() : $"%{searchTerm}%";
+        return await dbContext.ResourceActions
+            .Where(x => EF.Functions.Like(x.Action, searchTerm))
+            .OrderBy(x => x.Action)
+            .Take(limit)
+            .ToListAsync();
+    }
 
+    public async Task<ICollection<ResourceAction>> GetResourceActionsByIdsAsync(Guid[] resourceActionIds)
+    {
+        if (resourceActionIds.Length == 0)
+        {
+            return [];
+        }
+
+        return await dbContext.ResourceActions
+            .Where(x => resourceActionIds.Contains(x.Id))
+            .ToListAsync();
+    }
+
+    public async Task<ICollection<ResourceAction>> GetResourceActionsByNamesAsync(
+        IEnumerable<string> resourceActionNames)
+    {
+        var actionNames = resourceActionNames.ToList();
+        if (actionNames.Count == 0)
+        {
+            return [];
+        }
+
+        return await dbContext.ResourceActions
+            .Where(x => actionNames.Contains(x.Action))
+            .ToListAsync();
+    }
 }

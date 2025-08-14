@@ -6,6 +6,7 @@
     <UserSecretsId>RoleReaper-Local</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2025.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
   <PackageReference Include="Microsoft.Identity.Client" Version="4.74.1" />
   <PackageReference Include="Microsoft.Identity.Web" Version="3.13.0" />

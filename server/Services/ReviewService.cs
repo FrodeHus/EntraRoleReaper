@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.EntityFrameworkCore;
@@ -10,9 +11,9 @@ namespace EntraRoleReaper.Api.Services;
 
 public class ReviewService(
     GraphService graphService,
-    IRoleCache roleCache,
-    IOperationMapCache operationMapCache,
-    CacheDbContext db
+    IRoleService roleService,
+    IActivityService activityService,
+    ICacheService cacheService,
 ) : IReviewService
 {
     // Operation map now resolved via IOperationMapCache (populated from DB, refreshable after edits)
@@ -45,8 +46,8 @@ public class ReviewService(
         var userIds = await graphService.ExpandUsersOrGroupsAsync(request.UsersOrGroups);
 
         var results = new List<UserReview>();
-        await roleCache.InitializeAsync();
-        var roles = roleCache.GetAll();
+        await roleService.InitializeAsync();
+        var roles = cacheService.GetAll();
         var actionPrivilege = roleCache.GetActionPrivilegeMap();
         var roleStats = roleCache.GetRolePrivilegeStats();
 

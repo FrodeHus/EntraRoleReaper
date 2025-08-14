@@ -10,6 +10,13 @@ public class RoleRepository(ReaperDbContext dbContext) : IRoleRepository
         return dbContext.RoleDefinitions.CountAsync();
     }
 
+    public Task ClearAsync()
+    {
+        dbContext.RoleDefinitions.RemoveRange(dbContext.RoleDefinitions);
+        return dbContext.SaveChangesAsync();
+    }
+    
+
     public Task AddRoleAsync(RoleDefinition role)
     {
         if (role == null)
@@ -64,5 +71,24 @@ public class RoleRepository(ReaperDbContext dbContext) : IRoleRepository
 
         dbContext.RoleDefinitions.Update(role);
         return dbContext.SaveChangesAsync();
+    }
+    
+    public async Task<IEnumerable<RoleDefinition>> SearchRolesAsync(string searchTerm, bool privilegedOnly = false, int limit = 100)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return await dbContext.RoleDefinitions
+                .Where(x => (privilegedOnly && x.PermissionSets.Any(p =>
+                    p.ResourceActions != null && p.ResourceActions.Any(ra => ra.IsPrivileged))))
+                .OrderBy(x => x.DisplayName).Take(limit).ToListAsync();
+        }
+        searchTerm = searchTerm.Contains('*') ? searchTerm.Replace('*', '%').ToLowerInvariant() : $"%{searchTerm}%";
+        return await dbContext.RoleDefinitions
+            .Where(x => (privilegedOnly && x.PermissionSets.Any(p =>
+                p.ResourceActions != null && p.ResourceActions.Any(ra => ra.IsPrivileged))))
+            .Where(x => EF.Functions.Like(x.DisplayName, searchTerm))
+            .OrderBy(x => x.DisplayName)
+            .Take(limit)
+            .ToListAsync();
     }
 }

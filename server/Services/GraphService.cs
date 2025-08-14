@@ -1,3 +1,4 @@
+using System.Text.Json;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph;
@@ -271,6 +272,38 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
         }
 
         return (eligibleRoleIds, pimActiveRoleIds);
+    }
+
+    public async Task<Dictionary<string,bool>> GetResourceActionMetadataAsync()
+    {
+        var resourceActionsData = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        var resourceNamespaces = await GraphClient.RoleManagement.Directory.ResourceNamespaces.GetAsync();
+        foreach (var ns in resourceNamespaces?.Value ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(ns?.Name)) continue;
+            var resourceActions = await GraphClient.RoleManagement.Directory.ResourceNamespaces[ns.Name].ResourceActions
+                .GetAsync();
+            foreach (var ra in resourceActions?.Value ?? [])
+            {
+                var name = ra?.Name;
+                if (string.IsNullOrWhiteSpace(name)) continue;
+                var isPrivileged = false;
+                if (ra?.AdditionalData != null && ra.AdditionalData.TryGetValue("isPrivileged", out var raw))
+                {
+                    isPrivileged = raw switch
+                    {
+                        bool b => b,
+                        string s when bool.TryParse(s, out var pb) => pb,
+                        JsonElement je => je.ValueKind == JsonValueKind.True,
+                        _ => isPrivileged
+                    };
+                }
+
+                resourceActionsData.TryAdd(name, isPrivileged);
+            }
+        }
+
+        return resourceActionsData;
     }
 
     private async Task<DirectoryAuditCollectionResponse?> GetAuditEntriesInitiatedBy(

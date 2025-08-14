@@ -1,4 +1,5 @@
 using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,22 +34,19 @@ public static class RolesLookupEndpoints
         // Normalized role detail endpoint
         app.MapGet(
                 "/api/roles/{id}",
-                async (string id, CacheDbContext db) =>
+                async (string id, IRoleService roleService) =>
                 {
                     if (string.IsNullOrWhiteSpace(id))
                         return Results.BadRequest(new { message = "Missing id" });
-                    var role = await db
-                        .RoleDefinitions.Include(r => r.RolePermissions)
-                        .ThenInclude(rp => rp.ResourceActions)
-                        .FirstOrDefaultAsync(r => r.Id == id);
+                    var role = await roleService.GetRoleByIdAsync(id);
                     if (role == null)
                         return Results.NotFound(new { message = "Role not found" });
                     var grouped = role
-                        .RolePermissions.Select(rp => new
+                        .PermissionSets.Select(rp => new
                         {
                             condition = rp.Condition,
-                            actions = rp
-                                .ResourceActions.OrderBy(
+                            actions = (rp
+                                    .ResourceActions ?? []).OrderBy(
                                     a => a.Action,
                                     StringComparer.OrdinalIgnoreCase
                                 )
@@ -56,50 +54,7 @@ public static class RolesLookupEndpoints
                                 .ToList(),
                         })
                         .ToList();
-                    var scopes = new List<string>();
-                    if (!string.IsNullOrWhiteSpace(role.ResourceScope))
-                        scopes.Add(role.ResourceScope!);
-                    static string DescribeScope(string s)
-                    {
-                        if (string.IsNullOrWhiteSpace(s))
-                            return "Unknown";
-                        if (s == "/")
-                            return "Tenant-wide";
-                        string norm = s.Trim();
-                        if (
-                            norm.StartsWith(
-                                "/administrativeUnits/",
-                                StringComparison.OrdinalIgnoreCase
-                            )
-                        )
-                            return "Administrative Unit scope";
-                        if (norm.StartsWith("/groups/", StringComparison.OrdinalIgnoreCase))
-                            return "Group scope";
-                        if (norm.StartsWith("/users/", StringComparison.OrdinalIgnoreCase))
-                            return "User scope";
-                        if (norm.StartsWith("/devices/", StringComparison.OrdinalIgnoreCase))
-                            return "Device scope";
-                        if (norm.StartsWith("/applications/", StringComparison.OrdinalIgnoreCase))
-                            return "Application scope";
-                        if (
-                            norm.StartsWith(
-                                "/servicePrincipals/",
-                                StringComparison.OrdinalIgnoreCase
-                            )
-                        )
-                            return "Service principal scope";
-                        if (
-                            norm.StartsWith(
-                                "/directoryObjects/",
-                                StringComparison.OrdinalIgnoreCase
-                            )
-                        )
-                            return "Directory object scope";
-                        return $"Resource scope ({s})";
-                    }
-                    var scopeDetails = scopes
-                        .Select(s => new { value = s, description = DescribeScope(s) })
-                        .ToList();
+                    
                     return Results.Ok(
                         new
                         {
@@ -107,8 +62,6 @@ public static class RolesLookupEndpoints
                             displayName = role.DisplayName,
                             name = role.DisplayName,
                             description = role.Description,
-                            resourceScopes = scopes,
-                            resourceScopesDetailed = scopeDetails,
                             rolePermissions = grouped,
                         }
                     );

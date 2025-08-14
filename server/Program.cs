@@ -26,10 +26,7 @@ builder
             builder.Configuration.Bind("AzureAd", options);
             options.Events ??= new JwtBearerEvents();
         },
-        options =>
-        {
-            builder.Configuration.Bind("AzureAd", options);
-        }
+        options => { builder.Configuration.Bind("AzureAd", options); }
     );
 
 builder.Services.AddAuthorization();
@@ -50,6 +47,7 @@ if (string.IsNullOrWhiteSpace(sqliteConn))
     );
     sqliteConn = $"Data Source={sqlitePath}";
 }
+
 var enableDiag = Environment.GetEnvironmentVariable("ROLE_REAPER_DIAG") == "1";
 builder.Services.AddDbContext<ReaperDbContext>(opt =>
 {
@@ -63,16 +61,14 @@ builder.Services.AddDbContext<ReaperDbContext>(opt =>
 });
 builder.Services.AddSingleton<IGraphServiceFactory, GraphServiceFactory>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
-builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IResourceActionRepository, ResourceActionRepository>();
 builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
 
-builder.Services.AddScoped<IRoleCache, RoleCache>();
 builder.Services.AddScoped<IUserSearchService, UserSearchService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
-builder.Services.AddScoped<IOperationMapCache, OperationMapCache>();
 builder.Services.AddScoped<GraphService>();
-builder.Services.AddScoped<IOperationMappingService, OperationMappingService>();
+builder.Services.AddScoped<ICacheService, CacheService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -91,7 +87,9 @@ if (enableDiag)
         {
             Console.WriteLine($"[FATAL] UnhandledException: {e.ExceptionObject}");
         }
-        catch { }
+        catch
+        {
+        }
     };
     TaskScheduler.UnobservedTaskException += (s, e) =>
     {
@@ -99,86 +97,42 @@ if (enableDiag)
         {
             Console.WriteLine($"[WARN] UnobservedTaskException: {e.Exception}");
         }
-        catch { }
+        catch
+        {
+        }
     };
 }
 
 // Database (cache) initialization with optional recreation toggle
-using (var scope = app.Services.CreateScope())
+using var scope = app.Services.CreateScope();
+var db = scope.ServiceProvider.GetRequiredService<ReaperDbContext>();
+var reset = Environment.GetEnvironmentVariable("ROLE_REAPER_RESET_DB") == "1";
+if (reset)
 {
-    var db = scope.ServiceProvider.GetRequiredService<CacheDbContext>();
-    var reset = Environment.GetEnvironmentVariable("ROLE_REAPER_RESET_DB") == "1";
-    if (reset)
-    {
-        try
-        {
-            await db.Database.EnsureDeletedAsync();
-            await db.Database.EnsureCreatedAsync();
-            Console.WriteLine("[Startup] Cache database recreated (ROLE_REAPER_RESET_DB=1).");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Startup] Failed recreating database: {ex.Message}");
-        }
-    }
-    else
-    {
-        try
-        {
-            await db.Database.EnsureCreatedAsync();
-            Console.WriteLine("[Startup] Cache database ensured (no reset).");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Startup] Failed ensuring database: {ex.Message}");
-        }
-    }
-
-    // Seed operation map (new format only: JSON array of OperationMap) if reset OR empty
     try
     {
-        bool needSeed = reset || !db.OperationMaps.Any();
-        if (needSeed)
-        {
-            var seedPath = builder.Configuration.GetValue<string>("Cache:SeedFolder", string.Empty);
-            var permMaps = Path.Combine(seedPath, "permissions-map.json");
-            if (File.Exists(permMaps))
-            {
-                try
-                {
-                    var json = await File.ReadAllTextAsync(seedPath);
-
-                    var maps =
-                        JsonSerializer.Deserialize<
-                            List<EntraRoleReaper.Api.Configuration.PermissionMapping.Models.OperationMap>
-                        >(json) ?? [];
-                    var mappingSvc =
-                        scope.ServiceProvider.GetRequiredService<IOperationMappingService>();
-                    await mappingSvc.ImportAsync(maps);
-                    Console.WriteLine(
-                        "[Startup] Seeded operation & property maps from permissions-map.json (new format)."
-                    );
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(
-                        $"[Startup] Failed parsing permissions-map.json: {ex.Message}"
-                    );
-                }
-            }
-            else
-            {
-                Console.WriteLine(
-                    "[Startup] permissions-map.json not found; skipping operation map seed."
-                );
-            }
-        }
+        await db.Database.EnsureDeletedAsync();
+        await db.Database.EnsureCreatedAsync();
+        Console.WriteLine("[Startup] Cache database recreated (ROLE_REAPER_RESET_DB=1).");
     }
-    catch (Exception seedEx)
+    catch (Exception ex)
     {
-        Console.WriteLine($"[Startup] Failed seeding operation map: {seedEx.Message}");
+        Console.WriteLine($"[Startup] Failed recreating database: {ex.Message}");
     }
 }
+else
+{
+    try
+    {
+        await db.Database.EnsureCreatedAsync();
+        Console.WriteLine("[Startup] Cache database ensured (no reset).");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Startup] Failed ensuring database: {ex.Message}");
+    }
+}
+
 
 app.UseCors(policy =>
     policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()
@@ -191,8 +145,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Simple exception logging middleware (before endpoints)
-app.Use(
-    async (ctx, next) =>
+app.Use(async (ctx, next) =>
     {
         try
         {
