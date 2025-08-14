@@ -197,6 +197,6 @@ public partial class ActivityPermissionAnalyzerTests
         var result = await analyzer.FindLeastPrivilegedRoles("currentUser", activity, target, _roles);
         // Assert
         Assert.Equal(2, result.Count());
-        Assert.True(result.First().DisplayName == "Groups Administrator");
+        Assert.Equal("Groups Administrator", result.First().DisplayName);
     }
 }
