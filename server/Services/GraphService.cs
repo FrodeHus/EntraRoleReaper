@@ -1,3 +1,4 @@
+using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph;
@@ -85,7 +86,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory) : IGraphServ
         });
         return result?.Value?.FirstOrDefault();
     }
-    public async Task<bool> IsOwnerAsync(string userId, AuditTargetResource target)
+    public async Task<bool> IsOwnerAsync(string userId, ReviewTargetResource target)
     {
         if (string.IsNullOrWhiteSpace(target.Id))
             return false;
@@ -170,7 +171,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory) : IGraphServ
                     var display = tr?.DisplayName;
                     if (string.IsNullOrWhiteSpace(display) && !string.IsNullOrWhiteSpace(upn))
                         display = upn;
-                    var target = new AuditTargetResource
+                    var target = new ReviewTargetResource
                     {
                         Id = tr!.Id ?? "(no id)",
                         Type = tr.Type ?? "(no type)",

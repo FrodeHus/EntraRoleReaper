@@ -1,6 +1,6 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review;
-using EntraRoleReaper.Api.Services.Models;
+using EntraRoleReaper.Api.Review.Models;
 
 namespace EntraRoleReaper.Tests;
 public partial class ActivityPermissionAnalyzerTests
@@ -63,46 +63,16 @@ public partial class ActivityPermissionAnalyzerTests
             }
 
         };
+
     [Fact]
-    public void FindRelevantRoles_Should_Return_Only_Relevant_Roles()
+    public async Task Resource_Is_Self_Should_Return_Least_Privileged_Roles()
     {
         // Arrange
         var analyzer = new ActivityPermissionAnalyzer(new SimpleGraphService([]));
-
         var activity = new Activity
         {
             Id = Guid.NewGuid(),
             Name = "Update user",
-            MappedResourceActions =
-            [
-                new() {
-                    Action = "/users/allProperties/allTasks",
-                    IsPrivileged = true
-                },
-                new() {
-                    Action = "/users/basicprofile/update",
-                    IsPrivileged = false
-                }
-            ],
-        };
-        // Act
-        var result = analyzer.FindRelevantRoles(activity, _roles);
-        // Assert
-        Assert.Equal(2, result.Count()); // Expecting two roles to match the activity permissions
-        Assert.Contains(result, r => r.DisplayName == "Global Administrator");
-        Assert.Contains(result, r => r.DisplayName == "User");
-    }
-
-    [Fact]
-    public async Task EnsureConditions_Resource_Is_Self()
-    {
-        // Arrange
-        var analyzer = new ActivityPermissionAnalyzer(new SimpleGraphService(new Dictionary<string, bool> { { "currentUser", true } }));
-        var activity = new Activity
-        {
-            Id = Guid.NewGuid(),
-            Name = "Update user",
-
             MappedResourceActions =
             [
                 new() {
@@ -115,30 +85,28 @@ public partial class ActivityPermissionAnalyzerTests
                 }
             ],
         };
-        var target = new AuditTargetResource
+        var target = new ReviewTargetResource
         {
             Id = "currentUser",
             DisplayName = "User A",
-            Type = "User"
+            Type = "user"
         };
         // Act
-        var result = await analyzer.EnsureConditionsAreMet("currentUser", activity, target, _roles);
+        var result = await analyzer.FindLeastPrivilegedRoles("currentUser", activity, target, _roles);
         // Assert
-        Assert.Equal(2, result.Count()); // Expecting two roles to match the activity permissions
-        Assert.Contains(result, r => r.DisplayName == "Global Administrator");
+        Assert.Single(result); // Expecting only the User role to be returned as it has the least privilege for the actions
         Assert.Contains(result, r => r.DisplayName == "User");
     }
 
     [Fact]
-    public async Task EnsureConditions_Resource_Is_Not_Self()
+    public async Task Resource_Is_Not_Self_Should_Return_Least_Privileged_Roles()
     {
         // Arrange
-        var analyzer = new ActivityPermissionAnalyzer(new SimpleGraphService(new Dictionary<string, bool> { { "currentUser", true } }));
+        var analyzer = new ActivityPermissionAnalyzer(new SimpleGraphService([]));
         var activity = new Activity
         {
             Id = Guid.NewGuid(),
             Name = "Update user",
-
             MappedResourceActions =
             [
                 new() {
@@ -151,29 +119,28 @@ public partial class ActivityPermissionAnalyzerTests
                 }
             ],
         };
-        var target = new AuditTargetResource
+        var target = new ReviewTargetResource
         {
             Id = "userA",
             DisplayName = "User A",
-            Type = "User"
+            Type = "user"
         };
         // Act
-        var result = await analyzer.EnsureConditionsAreMet("currentUser", activity, target, _roles);
+        var result = await analyzer.FindLeastPrivilegedRoles("currentUser", activity, target, _roles);
         // Assert
-        Assert.Single(result);
+        Assert.Single(result); // Expecting only the User role to be returned as it has the least privilege for the actions
         Assert.Contains(result, r => r.DisplayName == "Global Administrator");
     }
 
     [Fact]
-    public async Task EnsureConditions_Subject_Is_Owner()
+    public async Task Subject_Is_Owner_Should_Return_Least_Privileged_Roles()
     {
         // Arrange
-        var analyzer = new ActivityPermissionAnalyzer(new SimpleGraphService(new Dictionary<string, bool> { { "groupA", true } }));
+        ActivityPermissionAnalyzer analyzer = new(new SimpleGraphService(new Dictionary<string, bool> { { "groupA", true } }));
         var activity = new Activity
         {
             Id = Guid.NewGuid(),
-            Name = "Add member to group",
-
+            Name = "Add user to group",
             MappedResourceActions =
             [
                 new() {
@@ -186,31 +153,28 @@ public partial class ActivityPermissionAnalyzerTests
                 }
             ],
         };
-        var target = new AuditTargetResource
+        var target = new ReviewTargetResource
         {
             Id = "groupA",
             DisplayName = "User A",
             Type = "group"
         };
         // Act
-        var result = await analyzer.EnsureConditionsAreMet("currentUser", activity, target, _roles);
+        var result = await analyzer.FindLeastPrivilegedRoles("currentUser", activity, target, _roles);
         // Assert
-        Assert.Equal(3, result.Count());
-        Assert.Contains(result, r => r.DisplayName == "Global Administrator");
-        Assert.Contains(result, r => r.DisplayName == "Groups Administrator");
+        Assert.Single(result); // Expecting only the User role to be returned as it has the least privilege for the actions
         Assert.Contains(result, r => r.DisplayName == "User");
     }
 
     [Fact]
-    public async Task EnsureConditions_Subject_Is_Not_Owner()
+    public async Task Subject_Is_Not_Owner_Should_Return_Least_Privileged_Roles()
     {
         // Arrange
-        var analyzer = new ActivityPermissionAnalyzer(new SimpleGraphService(new Dictionary<string, bool> { { "groupA", false } }));
+        ActivityPermissionAnalyzer analyzer = new(new SimpleGraphService(new Dictionary<string, bool> { { "groupA", false } }));
         var activity = new Activity
         {
             Id = Guid.NewGuid(),
-            Name = "Add member to group",
-
+            Name = "Add user to group",
             MappedResourceActions =
             [
                 new() {
@@ -223,17 +187,16 @@ public partial class ActivityPermissionAnalyzerTests
                 }
             ],
         };
-        var target = new AuditTargetResource
+        var target = new ReviewTargetResource
         {
             Id = "groupA",
             DisplayName = "User A",
             Type = "group"
         };
         // Act
-        var result = await analyzer.EnsureConditionsAreMet("currentUser", activity, target, _roles);
+        var result = await analyzer.FindLeastPrivilegedRoles("currentUser", activity, target, _roles);
         // Assert
         Assert.Equal(2, result.Count());
-        Assert.Contains(result, r => r.DisplayName == "Global Administrator");
-        Assert.Contains(result, r => r.DisplayName == "Groups Administrator");
+        Assert.True(result.First().DisplayName == "Groups Administrator");
     }
 }

@@ -1,4 +1,5 @@
-﻿using EntraRoleReaper.Api.Services;
+﻿using EntraRoleReaper.Api.Review.Models;
+using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Models;
 
 namespace EntraRoleReaper.Tests;
@@ -31,7 +32,7 @@ public partial class ActivityPermissionAnalyzerTests
             throw new NotImplementedException();
         }
 
-        public Task<bool> IsOwnerAsync(string userId, AuditTargetResource target)
+        public Task<bool> IsOwnerAsync(string userId, ReviewTargetResource target)
         {
             return Task.FromResult(targetOwners[target.Id]);
         }
