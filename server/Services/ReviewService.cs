@@ -1,11 +1,11 @@
-using System.Text.Json;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
+using System.Text.Json;
 
 namespace EntraRoleReaper.Api.Services;
 
 public class ReviewService(
-    GraphService graphService,
+    IGraphService graphService,
     IRoleService roleService,
     IActivityService activityService,
     ICacheService cacheService

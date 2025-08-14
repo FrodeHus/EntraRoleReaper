@@ -1,4 +1,3 @@
-using System.Text.Json;
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Endpoints;
@@ -67,7 +66,7 @@ builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
 builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<IUserSearchService, UserSearchService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
-builder.Services.AddScoped<GraphService>();
+builder.Services.AddScoped<IGraphService, GraphService>();
 builder.Services.AddScoped<ICacheService, CacheService>();
 
 builder.Services.AddEndpointsApiExplorer();

@@ -1,13 +1,13 @@
-using System.Text.Json;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
+using System.Text.Json;
 using ModifiedProperty = EntraRoleReaper.Api.Services.Models.ModifiedProperty;
 
 namespace EntraRoleReaper.Api.Services;
 
-public class GraphService(IGraphServiceFactory graphServiceFactory)
+public class GraphService(IGraphServiceFactory graphServiceFactory) : IGraphService
 {
     private readonly Dictionary<string, bool> _ownershipCache = [];
 
@@ -207,11 +207,12 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
     {
         var assignments = await GraphClient.RoleManagement.Directory.RoleAssignments.GetAsync(q =>
         {
-            
+
             {
                 q.QueryParameters.Filter = $"principalId eq '{userId}'";
                 q.QueryParameters.Top = 50;
-            };
+            }
+            ;
         });
         return assignments?.Value?.Select(a => a.RoleDefinitionId).ToList() ?? [];
     }
@@ -274,7 +275,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory)
         return (eligibleRoleIds, pimActiveRoleIds);
     }
 
-    public async Task<Dictionary<string,bool>> GetResourceActionMetadataAsync()
+    public async Task<Dictionary<string, bool>> GetResourceActionMetadataAsync()
     {
         var resourceActionsData = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         var resourceNamespaces = await GraphClient.RoleManagement.Directory.ResourceNamespaces.GetAsync();

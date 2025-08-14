@@ -19,7 +19,7 @@ public interface IRoleService
 public class RoleService(
     IRoleRepository roleRepository,
     IResourceActionRepository resourceActionRepository,
-    GraphService graphService,
+    IGraphService graphService,
     ILogger<RoleService> logger) : IRoleService
 {
     public async Task InitializeAsync(bool forceRefresh = false)
