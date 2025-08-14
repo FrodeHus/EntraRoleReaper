@@ -6,28 +6,28 @@ namespace EntraRoleReaper.Api.Review;
 
 public sealed class ActivityPermissionAnalyzer(IGraphService graphService)
 {
-    public async Task<IEnumerable<RoleDefinition>> FindLeastPrivilegedRoles(string userId, Activity activity, ReviewTargetResource target, IEnumerable<RoleDefinition> availableRoles)
+    public async Task<IEnumerable<RoleGrant>> FindLeastPrivilegedRoles(string userId, Activity activity, ReviewTargetResource target, IEnumerable<RoleDefinition> availableRoles)
     {
         var relevantRoles = FindRelevantRoles(activity, availableRoles);
-        var conditionsMetRoles = await GetRoleDefinitionsAsync(userId, activity, target, relevantRoles);
+        var conditionsMetRoles = await GetRolesMatchingCondition(userId, activity, target, relevantRoles);
         var filteredRoles = FilterOnCondition(conditionsMetRoles);
         return ArrangeByLeastPrivilegedResourceActions(filteredRoles);
     }
 
-    private static IEnumerable<RoleDefinition> ArrangeByLeastPrivilegedResourceActions(IEnumerable<RoleDefinition> roles)
+    private static IEnumerable<RoleGrant> ArrangeByLeastPrivilegedResourceActions(IEnumerable<RoleGrant> roleGrants)
     {
-        return roles.OrderBy(role => role.PermissionSets
+        return roleGrants.OrderBy(grant => grant.Role.PermissionSets
             .SelectMany(ps => ps.ResourceActions ?? [])
             .Count(ra => ra.IsPrivileged));
     }
 
-    private static IEnumerable<RoleDefinition> FilterOnCondition(IEnumerable<RoleDefinition> conditionsMetRoles)
+    private static IEnumerable<RoleGrant> FilterOnCondition(IEnumerable<RoleGrant> conditionsMetRoles)
     {
-        var preferredRoles = conditionsMetRoles.Where(role => role.PermissionSets.Any(ps => ps.Condition == "$ResourceIsSelf" || ps.Condition == "$SubjectIsOwner")).ToList();
+        var preferredRoles = conditionsMetRoles.Where(grant => grant.Role.PermissionSets.Any(ps => ps.Condition == "$ResourceIsSelf" || ps.Condition == "$SubjectIsOwner")).ToList();
 
         if (!preferredRoles.Any())
         {
-            preferredRoles = conditionsMetRoles.Where(role => role.PermissionSets.Any(ps => ps.Condition == null)).ToList();
+            preferredRoles = conditionsMetRoles.Where(grant => grant.Role.PermissionSets.Any(ps => ps.Condition == null)).ToList();
         }
         return preferredRoles;
     }
@@ -39,17 +39,18 @@ public sealed class ActivityPermissionAnalyzer(IGraphService graphService)
             (ps.ResourceActions ?? []).Any(ra => flattenedActions.Any(fa => fa == ra.Action))));
     }
 
-    private async Task<IEnumerable<RoleDefinition>> GetRoleDefinitionsAsync(string userId, Activity activity, ReviewTargetResource targetResource, IEnumerable<RoleDefinition> roles)
+    private async Task<IEnumerable<RoleGrant>> GetRolesMatchingCondition(string userId, Activity activity, ReviewTargetResource targetResource, IEnumerable<RoleDefinition> roles)
     {
-        var rolesWithConditionsMet = new List<RoleDefinition>();
+        var rolesWithConditionsMet = new List<RoleGrant>();
         var resourceActions = activity.MappedResourceActions.Select(a => a.Action);
         foreach (var role in roles)
         {
             foreach (var permissionSet in role.PermissionSets)
             {
-                if (await PermissionSetFulfillsRequiredActions(userId, permissionSet, resourceActions, targetResource))
+                var (granted, condition) = await PermissionSetFulfillsRequiredActions(userId, permissionSet, resourceActions, targetResource);
+                if (granted)
                 {
-                    rolesWithConditionsMet.Add(role);
+                    rolesWithConditionsMet.Add(new RoleGrant { Role = role, Condition = condition });
                     break;
                 }
             }
@@ -57,14 +58,20 @@ public sealed class ActivityPermissionAnalyzer(IGraphService graphService)
         return rolesWithConditionsMet;
     }
 
-    private async Task<bool> PermissionSetFulfillsRequiredActions(string userId, PermissionSet set, IEnumerable<string> resourceActions, ReviewTargetResource target)
+    private async Task<(bool granted, string condition)> PermissionSetFulfillsRequiredActions(string userId, PermissionSet set, IEnumerable<string> resourceActions, ReviewTargetResource target)
     {
         var hasRequiredActions = set.ResourceActions?.Any(ra => resourceActions.Any(raAction => raAction.Equals(ra.Action, StringComparison.OrdinalIgnoreCase))) ?? false;
         return set.Condition switch
         {
-            "$SubjectIsOwner" => hasRequiredActions && await graphService.IsOwnerAsync(userId, target),
-            "$ResourceIsSelf" => hasRequiredActions && userId.Equals(target.Id, StringComparison.InvariantCultureIgnoreCase),
-            _ => hasRequiredActions
+            "$SubjectIsOwner" => (hasRequiredActions && await graphService.IsOwnerAsync(userId, target), "$SubjectIsOwner"),
+            "$ResourceIsSelf" => (hasRequiredActions && userId.Equals(target.Id, StringComparison.InvariantCultureIgnoreCase), "$ResourceIsSelf"),
+            _ => (hasRequiredActions, "$Tenant")
         };
     }
+}
+
+public class RoleGrant
+{
+    public required RoleDefinition Role { get; set; }
+    public string? Condition { get; set; }
 }

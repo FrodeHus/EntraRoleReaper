@@ -95,7 +95,7 @@ public partial class ActivityPermissionAnalyzerTests
         var result = await analyzer.FindLeastPrivilegedRoles("currentUser", activity, target, _roles);
         // Assert
         Assert.Single(result); // Expecting only the User role to be returned as it has the least privilege for the actions
-        Assert.Contains(result, r => r.DisplayName == "User");
+        Assert.Contains(result, r => r.Role.DisplayName == "User");
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public partial class ActivityPermissionAnalyzerTests
         var result = await analyzer.FindLeastPrivilegedRoles("currentUser", activity, target, _roles);
         // Assert
         Assert.Single(result); // Expecting only the User role to be returned as it has the least privilege for the actions
-        Assert.Contains(result, r => r.DisplayName == "Global Administrator");
+        Assert.Contains(result, r => r.Role.DisplayName == "Global Administrator");
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public partial class ActivityPermissionAnalyzerTests
         var result = await analyzer.FindLeastPrivilegedRoles("currentUser", activity, target, _roles);
         // Assert
         Assert.Single(result); // Expecting only the User role to be returned as it has the least privilege for the actions
-        Assert.Contains(result, r => r.DisplayName == "User");
+        Assert.Contains(result, r => r.Role.DisplayName == "User");
     }
 
     [Fact]
@@ -197,6 +197,6 @@ public partial class ActivityPermissionAnalyzerTests
         var result = await analyzer.FindLeastPrivilegedRoles("currentUser", activity, target, _roles);
         // Assert
         Assert.Equal(2, result.Count());
-        Assert.Equal("Groups Administrator", result.First().DisplayName);
+        Assert.Equal("Groups Administrator", result.First().Role.DisplayName);
     }
 }

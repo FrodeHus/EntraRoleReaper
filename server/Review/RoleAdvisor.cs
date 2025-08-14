@@ -9,27 +9,37 @@ public class RoleAdvisor(ActivityPermissionAnalyzer permissionAnalyzer, IRoleSer
     public async Task<List<RoleDefinition>> GetSuggestedRoles(Activity activity, IEnumerable<ReviewTargetResource> targets, string userId)
     {
         var allRoles = await roleService.GetAllRolesAsync();
-        var suggestedRoles = new List<RoleDefinition>();
+        var allSuggestedRoles = new List<RoleGrant>();
         foreach (var target in targets)
         {
             var eligibleRoles = await permissionAnalyzer.FindLeastPrivilegedRoles(userId, activity, target, allRoles);
-            suggestedRoles.AddRange(eligibleRoles);
+            allSuggestedRoles.AddRange(eligibleRoles);
         }
 
-        return [.. suggestedRoles.Distinct()];
+        if (allSuggestedRoles.Any(grant => grant.Condition == "$Tenant"))
+        {
+            //assume we have a tenant-wide role because the others didn't match all targets
+            return [.. allSuggestedRoles
+                .Where(grant => grant.Condition == "$Tenant")
+                .Select(grant => grant.Role)
+                .Distinct()];
+        }
+
+        var suggestedRoles = allSuggestedRoles.Select(grant => grant.Role).Distinct();
+        return [.. suggestedRoles];
     }
 
-    public async Task<SuggestedRoleChanges> GetSuggestedRoleChanges(Activity activity, IEnumerable<ReviewTargetResource> targets, string userId)
-    {
-        var suggestedRoles = await GetSuggestedRoles(activity, targets, userId);
-        var currentUserRoles = await roleService.GetUserRolesAsync(userId);
-        
-        var rolesToAdd = suggestedRoles.Where(r => !currentUserRoles.Any(cr => cr.Id == r.Id)).ToList();
-        var rolesToRemove = currentUserRoles.Where(cr => !suggestedRoles.Any(sr => sr.Id == cr.Id)).ToList();
-        return new SuggestedRoleChanges
-        {
-            RolesToAdd = rolesToAdd,
-            RolesToRemove = rolesToRemove
-        };
-    }
+    //public async Task<SuggestedRoleChanges> GetSuggestedRoleChanges(Activity activity, IEnumerable<ReviewTargetResource> targets, string userId)
+    //{
+    //    var suggestedRoles = await GetSuggestedRoles(activity, targets, userId);
+    //    var currentUserRoles = await roleService.GetUserRolesAsync(userId);
+
+    //    var rolesToAdd = suggestedRoles.Where(r => !currentUserRoles.Any(cr => cr.Id == r.Id)).ToList();
+    //    var rolesToRemove = currentUserRoles.Where(cr => !suggestedRoles.Any(sr => sr.Id == cr.Id)).ToList();
+    //    return new SuggestedRoleChanges
+    //    {
+    //        RolesToAdd = rolesToAdd,
+    //        RolesToRemove = rolesToRemove
+    //    };
+    //}
 }
