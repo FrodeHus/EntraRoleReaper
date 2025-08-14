@@ -43,10 +43,20 @@ public class RoleRepository(ReaperDbContext dbContext) : IRoleRepository
             throw new ArgumentException("Role ID cannot be null or empty.", nameof(roleId));
         }
 
+        // Parse to Guid and compare strongly to avoid case-sensitive string mismatches
+        if (!Guid.TryParse(roleId, out var roleGuid))
+        {
+            // Fallback to string compare if parsing fails (shouldn't happen for valid requests)
+            return dbContext
+                .RoleDefinitions.Include(r => r.PermissionSets)
+                .ThenInclude(ps => ps.ResourceActions)
+                .FirstOrDefaultAsync(r => r.Id.ToString() == roleId);
+        }
+
         return dbContext
             .RoleDefinitions.Include(r => r.PermissionSets)
             .ThenInclude(ps => ps.ResourceActions)
-            .FirstOrDefaultAsync(r => r.Id.ToString() == roleId);
+            .FirstOrDefaultAsync(r => r.Id == roleGuid);
     }
 
     public Task<RoleDefinition?> GetRoleByNameAsync(string roleName)
@@ -75,18 +85,21 @@ public class RoleRepository(ReaperDbContext dbContext) : IRoleRepository
     
     public async Task<IEnumerable<RoleDefinition>> SearchRolesAsync(string searchTerm, bool privilegedOnly = false, int limit = 100)
     {
-        if (string.IsNullOrWhiteSpace(searchTerm))
+        IQueryable<RoleDefinition> query = dbContext.RoleDefinitions;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            return await dbContext.RoleDefinitions
-                .Where(x => (privilegedOnly && x.PermissionSets.Any(p =>
-                    p.ResourceActions != null && p.ResourceActions.Any(ra => ra.IsPrivileged))))
-                .OrderBy(x => x.DisplayName).Take(limit).ToListAsync();
+            var pattern = searchTerm.Contains('*') ? searchTerm.Replace('*', '%').ToLowerInvariant() : $"%{searchTerm}%";
+            query = query.Where(x => EF.Functions.Like(x.DisplayName, pattern));
         }
-        searchTerm = searchTerm.Contains('*') ? searchTerm.Replace('*', '%').ToLowerInvariant() : $"%{searchTerm}%";
-        return await dbContext.RoleDefinitions
-            .Where(x => (privilegedOnly && x.PermissionSets.Any(p =>
-                p.ResourceActions != null && p.ResourceActions.Any(ra => ra.IsPrivileged))))
-            .Where(x => EF.Functions.Like(x.DisplayName, searchTerm))
+
+        if (privilegedOnly)
+        {
+            query = query.Where(x => x.PermissionSets.Any(p =>
+                p.ResourceActions != null && p.ResourceActions.Any(ra => ra.IsPrivileged)));
+        }
+
+        return await query
             .OrderBy(x => x.DisplayName)
             .Take(limit)
             .ToListAsync();

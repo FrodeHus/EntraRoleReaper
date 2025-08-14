@@ -48,7 +48,10 @@ export function RoleDetailsSheet({
         <SheetContent side="right">
           <SheetHeader>
             <div className="flex items-center justify-between">
-              <SheetTitle>Role: {details?.name || role.name}</SheetTitle>
+              <SheetTitle>
+                Role:{" "}
+                {details?.name || (details as any)?.displayName || role.name}
+              </SheetTitle>
               <Button
                 variant="ghost"
                 size="sm"
@@ -66,7 +69,11 @@ export function RoleDetailsSheet({
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-semibold">Name</div>
-                    <div>{details.name || role.name}</div>
+                    <div>
+                      {details.name ||
+                        (details as any)?.displayName ||
+                        role.name}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button

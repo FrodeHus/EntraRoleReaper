@@ -202,7 +202,20 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         });
         if (!res.ok) throw new Error();
         const json = await res.json();
-        setRolesItems(json.items || []);
+        // API returns { total, roles }
+        const list = (json?.roles ?? json?.items ?? []) as any[];
+        // Apply client-side privileged filter as backend may ignore it without a search term
+        const filtered = rolesPrivOnly
+          ? list.filter((r) =>
+              ((r.permissionSets || r.PermissionSets) ?? []).some((ps: any) =>
+                ((ps.resourceActions || ps.ResourceActions) ?? []).some(
+                  (ra: any) =>
+                    ra.isPrivileged === true || ra.IsPrivileged === true
+                )
+              )
+            )
+          : list;
+        setRolesItems(filtered);
       } catch {
         setRolesItems([]);
       } finally {
