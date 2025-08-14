@@ -3,7 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace EntraRoleReaper.Api.Services;
 
-public class CacheService(IMemoryCache memoryCache, ILogger<CacheService> logger, RoleService roleService) : ICacheService
+public class CacheService(IMemoryCache memoryCache, ILogger<CacheService> logger, IRoleService roleService) : ICacheService
 {
     public async Task InitializeAsync(bool forceRefresh = false)
     {

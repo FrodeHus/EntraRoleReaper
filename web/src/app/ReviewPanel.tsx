@@ -187,7 +187,7 @@ export function ReviewPanel({
     }
   };
 
-  // Fetch mapping existence & counts for all operations globally once report loads
+  // Fetch mapping counts for all operations once report loads (align with current API)
   useEffect(() => {
     if (!accessToken || !report || report.length === 0) return;
     const ops = new Set<string>();
@@ -197,32 +197,28 @@ export function ReviewPanel({
     const controller = new AbortController();
     const refresh = async () => {
       try {
-        const res = await fetch(
-          new URL(
-            "/api/operations/map/existence",
-            import.meta.env.VITE_API_URL
-          ),
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify(Array.from(ops)),
-            signal: controller.signal,
-          }
-        );
-        if (!res.ok) return;
-        const arr: Array<{
-          operationName: string;
-          exists: boolean;
-          mappedCount: number;
-        }> = await res.json();
         const existsMap: Record<string, boolean> = {};
         const countMap: Record<string, number> = {};
-        for (const { operationName, exists, mappedCount } of arr) {
-          existsMap[operationName] = exists;
-          if (exists) countMap[operationName] = mappedCount ?? 0;
+        // Fetch per operation mapping (current API exposes only this)
+        for (const op of ops) {
+          try {
+            const url = new URL(
+              `/api/operations/map/${encodeURIComponent(op)}`,
+              import.meta.env.VITE_API_URL
+            );
+            const res = await fetch(url, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+              signal: controller.signal,
+            });
+            if (!res.ok) continue;
+            const json = await res.json();
+            const mappedArr: unknown = (json && (json.mapped ?? [])) || [];
+            const mappedCount = Array.isArray(mappedArr) ? mappedArr.length : 0;
+            existsMap[op] = mappedCount > 0;
+            if (mappedCount > 0) countMap[op] = mappedCount;
+          } catch {
+            // skip per-op errors
+          }
         }
         setOperationHasMapping(existsMap);
         setOperationMappingCount(countMap);

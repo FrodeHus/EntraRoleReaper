@@ -271,42 +271,10 @@ export function OperationsSheet({
             if (!res.ok) continue;
             const json = await res.json();
             const mapped = Array.isArray(json.mapped)
-              ? (json.mapped as any[]).map(
-                  (a) => a.Action || a.action || a.Name || a.name
-                )
+              ? (json.mapped as any[]).map((a) => String(a))
               : [];
-            // Also fetch property-level actions and union
-            let propActs: string[] = [];
-            try {
-              const propRes = await fetch(
-                new URL(
-                  `/api/operations/map/${encodeURIComponent(op)}/properties`,
-                  apiBase
-                ),
-                {
-                  headers: { Authorization: `Bearer ${accessToken}` },
-                }
-              );
-              if (propRes.ok) {
-                const propJson = await propRes.json();
-                if (Array.isArray(propJson)) {
-                  for (const row of propJson) {
-                    if (Array.isArray(row.actions)) {
-                      for (const act of row.actions) {
-                        const val =
-                          act.Action || act.action || act.Name || act.name;
-                        if (val) propActs.push(val);
-                      }
-                    }
-                  }
-                }
-              }
-            } catch {
-              /* ignore property fetch errors */
-            }
             const unionSet = new Set<string>();
             for (const a of mapped) if (a) unionSet.add(a);
-            for (const a of propActs) if (a) unionSet.add(a);
             entries.push([op, unionSet]);
           } catch {
             // ignore per-op failure

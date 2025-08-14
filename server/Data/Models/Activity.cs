@@ -9,6 +9,6 @@ public class Activity
     public required string Name { get; init; }
     public bool IsExcluded { get; set; } 
 
-    public ICollection<ActivityProperty> Properties { get; init; } = [];
-    public ICollection<ResourceAction> MappedResourceActions { get; init; } = [];
+    public virtual ICollection<ActivityProperty> Properties { get; init; } = [];
+    public virtual ICollection<ResourceAction> MappedResourceActions { get; init; } = [];
 }

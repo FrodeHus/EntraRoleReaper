@@ -121,36 +121,54 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
   };
 
   const loadActions = useCallback(
-    async (
-      page: number,
-      search: string,
-      sort = actionsSort,
-      dir = actionsDir,
-      priv = actionsPrivFilter
-    ) => {
+    async (page: number, search: string) => {
       if (!accessToken) {
         setActionsItems([]);
+        setActionsTotalPages(1);
         return;
       }
       try {
         setActionsLoading(true);
-        const url = new URL("/api/actions/usage", apiBase);
-        url.searchParams.set("page", page.toString());
-        url.searchParams.set("pageSize", pageSize.toString());
-        url.searchParams.set("sort", sort);
-        url.searchParams.set("dir", dir);
-        if (priv === "priv") url.searchParams.set("privileged", "yes");
-        else if (priv === "nonpriv") url.searchParams.set("privileged", "no");
-        if (search.trim()) url.searchParams.set("search", search.trim());
+        const term = search.trim();
+        if (!term) {
+          setActionsItems([]);
+          setActionsTotalPages(1);
+          return;
+        }
+        const url = new URL("/api/actions/search", apiBase);
+        url.searchParams.set("q", term);
+        url.searchParams.set("limit", "100");
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         if (!res.ok) throw new Error();
-        const json = await res.json();
-        setActionsItems(json.items || []);
-        setActionsTotalPages(json.totalPages || 1);
+        const arr = (await res.json()) as Array<{
+          id: string;
+          action: string;
+          isPrivileged: boolean;
+        }>;
+        let items = arr;
+        if (actionsPrivFilter === "priv")
+          items = items.filter((a) => a.isPrivileged);
+        if (actionsPrivFilter === "nonpriv")
+          items = items.filter((a) => !a.isPrivileged);
+        // Sort client-side
+        items.sort((a, b) => {
+          if (actionsSort === "privileged") {
+            const av = a.isPrivileged ? 1 : 0;
+            const bv = b.isPrivileged ? 1 : 0;
+            return actionsDir === "asc" ? av - bv : bv - av;
+          }
+          // action or roles (roles not available; fall back to action)
+          return actionsDir === "asc"
+            ? a.action.localeCompare(b.action)
+            : b.action.localeCompare(a.action);
+        });
+        setActionsItems(items);
+        setActionsTotalPages(1);
       } catch {
         setActionsItems([]);
+        setActionsTotalPages(1);
       } finally {
         setActionsLoading(false);
       }
@@ -160,16 +178,9 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
 
   useEffect(() => {
     if (activeTab === "actions") {
-      loadActions(1, actionsSearch, actionsSort, actionsDir, actionsPrivFilter);
+      loadActions(1, actionsSearch);
     }
-  }, [
-    activeTab,
-    actionsSearch,
-    actionsSort,
-    actionsDir,
-    actionsPrivFilter,
-    loadActions,
-  ]);
+  }, [activeTab, actionsSearch, loadActions]);
 
   // Load roles when roles tab active or filter toggled
   useEffect(() => {
@@ -375,15 +386,9 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                 size="sm"
                 disabled={!accessToken}
                 onClick={async () => {
-                  if (!accessToken) return;
                   try {
-                    const res = await fetch(
-                      new URL("/api/operations/exclusions/export", apiBase),
-                      { headers: { Authorization: `Bearer ${accessToken}` } }
-                    );
-                    if (!res.ok) throw new Error();
-                    const json = await res.json();
-                    const blob = new Blob([JSON.stringify(json, null, 2)], {
+                    const names = exclusions.map((e) => e.operationName);
+                    const blob = new Blob([JSON.stringify(names, null, 2)], {
                       type: "application/json",
                     });
                     const a = document.createElement("a");
@@ -393,7 +398,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                     a.click();
                     a.remove();
                     toast.success("Exported exclusions", {
-                      description: `${json.length} operations`,
+                      description: `${names.length} operations`,
                     });
                   } catch {
                     toast.error("Export failed");
@@ -419,21 +424,54 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                       const text = await file.text();
                       const arr = JSON.parse(text);
                       if (!Array.isArray(arr)) throw new Error();
-                      const res = await fetch(
-                        new URL("/api/operations/exclusions/import", apiBase),
-                        {
-                          method: "POST",
-                          headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${accessToken}`,
-                          },
-                          body: JSON.stringify(arr),
-                        }
+                      // Replace current exclusions with imported list client-side
+                      const current = new Set(
+                        exclusions.map((e) => e.operationName.toLowerCase())
                       );
-                      if (!res.ok) throw new Error();
-                      const result = await res.json();
+                      const desired = new Set(
+                        (arr as string[]).map((s) => s.toLowerCase())
+                      );
+                      let created = 0;
+                      let removed = 0;
+                      // Remove not desired
+                      for (const name of current) {
+                        if (!desired.has(name)) {
+                          await fetch(
+                            new URL(
+                              `/api/operations/exclusions/${encodeURIComponent(
+                                name
+                              )}`,
+                              apiBase
+                            ),
+                            {
+                              method: "DELETE",
+                              headers: {
+                                Authorization: `Bearer ${accessToken}`,
+                              },
+                            }
+                          );
+                          removed++;
+                        }
+                      }
+                      // Add new ones
+                      for (const name of desired) {
+                        if (!current.has(name)) {
+                          await fetch(
+                            new URL("/api/operations/exclusions", apiBase),
+                            {
+                              method: "POST",
+                              headers: {
+                                Authorization: `Bearer ${accessToken}`,
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify({ operationName: name }),
+                            }
+                          );
+                          created++;
+                        }
+                      }
                       toast.success("Import complete", {
-                        description: `${result.created} created, ${result.removed} removed`,
+                        description: `${created} created, ${removed} removed`,
                       });
                       loadExclusions();
                     } catch {
@@ -486,7 +524,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
               <div className="relative flex-1">
                 <input
                   type="text"
-                  placeholder="Search actions or roles"
+                  placeholder="Search actions"
                   value={actionsSearchInput}
                   onChange={(e) => setActionsSearchInput(e.target.value)}
                   className="border rounded px-2 py-1 pr-6 text-xs w-full bg-background"
@@ -561,46 +599,21 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                             priv
                           </span>
                         )}
-                        <span className="ml-auto text-[10px] text-muted-foreground">
-                          {a.roleCount ?? (a.roles?.length || 0)} roles
-                        </span>
+                        {/* roles count not available in search endpoint */}
                       </div>
-                      {a.roles && a.roles.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {a.roles.map((r: any) => (
-                            <span
-                              key={r.id}
-                              className="text-[10px] px-1 py-0.5 rounded bg-muted/50 border border-muted-foreground/20"
-                            >
-                              {r.displayName || r.DisplayName}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      {/* roles list not provided by search endpoint */}
                     </li>
                   ))}
                 </ul>
               )}
             </div>
             <div className="flex items-center gap-2 justify-end text-[10px]">
-              <span>
-                Page {actionsPage} / {actionsTotalPages}
-              </span>
+              <span>Page 1 / 1</span>
               <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={actionsPage <= 1 || actionsLoading}
-                  onClick={() => loadActions(actionsPage - 1, actionsSearch)}
-                >
+                <Button size="sm" variant="outline" disabled onClick={() => {}}>
                   Prev
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={actionsPage >= actionsTotalPages || actionsLoading}
-                  onClick={() => loadActions(actionsPage + 1, actionsSearch)}
-                >
+                <Button size="sm" variant="outline" disabled onClick={() => {}}>
                   Next
                 </Button>
               </div>

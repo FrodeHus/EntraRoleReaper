@@ -6,7 +6,7 @@ import { Checkbox } from "../../components/ui/checkbox";
 import { RefreshCw } from "lucide-react";
 
 interface MappingAction {
-  id: number;
+  id: string; // Guid
   action: string;
   isPrivileged: boolean;
 }
@@ -14,7 +14,7 @@ interface MappingData {
   operationName: string;
   exists: boolean;
   mapped: MappingAction[];
-  all: MappingAction[];
+  all: MappingAction[]; // built progressively from mapped + remote search (since backend doesn't return 'all')
 }
 
 export function OperationMappingSheet({
@@ -33,8 +33,10 @@ export function OperationMappingSheet({
   const [data, setData] = useState<MappingData | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [originalSelected, setOriginalSelected] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [originalSelected, setOriginalSelected] = useState<Set<string>>(
+    new Set()
+  );
   const [filter, setFilter] = useState("");
   const [debouncedFilter, setDebouncedFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -50,35 +52,89 @@ export function OperationMappingSheet({
 
   const load = useCallback(async () => {
     if (!parsed.op || !accessToken) return;
+    const resolveByNames = async (
+      names: string[]
+    ): Promise<MappingAction[]> => {
+      const results: MappingAction[] = [];
+      for (const n of names) {
+        try {
+          const url = new URL(`/api/actions/search`, apiBase);
+          url.searchParams.set("q", n);
+          url.searchParams.set("limit", "5");
+          const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (!res.ok) continue;
+          const arr = (await res.json()) as Array<{
+            id: number;
+            action: string;
+            isPrivileged: boolean;
+          }>;
+          const exact = arr.find(
+            (a) => a.action.toLowerCase() === n.toLowerCase()
+          );
+          if (exact)
+            results.push({
+              id: String(exact.id),
+              action: exact.action,
+              isPrivileged: exact.isPrivileged,
+            });
+        } catch {
+          /* ignore */
+        }
+      }
+      return results;
+    };
     try {
       setLoading(true);
       setError(null);
       if (parsed.prop) {
-        // Property-level: need union of all actions + property specific mapped
-        const baseUrl = new URL(`/api/operations/map/${encodeURIComponent(parsed.op)}`, apiBase);
-        const propUrl = new URL(`/api/operations/map/${encodeURIComponent(parsed.op)}/properties`, apiBase);
-        const [baseRes, propRes] = await Promise.all([
-          fetch(baseUrl, { headers: { Authorization: `Bearer ${accessToken}` } }),
-          fetch(propUrl, { headers: { Authorization: `Bearer ${accessToken}` } })
-        ]);
+        // Property-level: backend lacks GET for property mappings. Initialize with no mapped actions.
+        // We'll still fetch base mapping for context (not strictly necessary for property edit).
+        const baseUrl = new URL(
+          `/api/operations/map/${encodeURIComponent(parsed.op)}`,
+          apiBase
+        );
+        const baseRes = await fetch(baseUrl, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
         if (!baseRes.ok) throw new Error("Failed to load base mapping");
-        if (!propRes.ok) throw new Error("Failed to load property mapping list");
-        const baseJson = (await baseRes.json()) as MappingData; // has all actions
-        const propsJson = (await propRes.json()) as Array<{ id: number; propertyName: string; actions: { id: number; action: string; isPrivileged: boolean }[] }>;
-        const match = propsJson.find(p => p.propertyName === parsed.prop);
-        const mapped = match ? match.actions.map(a => ({ id: a.id, action: a.action, isPrivileged: a.isPrivileged })) : [];
-        const merged: MappingData = { operationName: `${parsed.op}::${parsed.prop}`, exists: true, mapped, all: baseJson.all };
+        const baseJson = await baseRes.json();
+        const baseNames = Array.isArray(baseJson?.mapped)
+          ? (baseJson.mapped as any[]).map((x) => String(x))
+          : [];
+        const baseResolved = await resolveByNames(baseNames);
+        const merged: MappingData = {
+          operationName: `${parsed.op}::${parsed.prop}`,
+          exists: true,
+          mapped: [],
+          all: baseResolved,
+        };
         setData(merged);
-        const sel = new Set(mapped.map(m => m.id));
-        setSelected(sel);
-        setOriginalSelected(new Set(sel));
+        setSelected(new Set());
+        setOriginalSelected(new Set());
       } else {
-        const url = new URL(`/api/operations/map/${encodeURIComponent(parsed.op)}`, apiBase);
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+        const url = new URL(
+          `/api/operations/map/${encodeURIComponent(parsed.op)}`,
+          apiBase
+        );
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
         if (!res.ok) throw new Error("Failed to load mapping");
-        const json = (await res.json()) as MappingData;
-        setData(json);
-        const sel = new Set(json.mapped.map(m => m.id));
+        const json = await res.json();
+        const names = Array.isArray(json?.mapped)
+          ? (json.mapped as any[]).map((x) => String(x))
+          : [];
+        const mapped = await resolveByNames(names);
+        const dataObj: MappingData = {
+          operationName: parsed.op,
+          exists: mapped.length > 0,
+          mapped,
+          all: mapped.slice(),
+        };
+        setData(dataObj);
+        const sel = new Set(mapped.map((m) => m.id));
         setSelected(sel);
         setOriginalSelected(new Set(sel));
       }
@@ -114,7 +170,7 @@ export function OperationMappingSheet({
         });
         if (!res.ok) return [];
         const json = (await res.json()) as {
-          id: number;
+          id: string;
           action: string;
           isPrivileged: boolean;
         }[];
@@ -131,8 +187,8 @@ export function OperationMappingSheet({
   );
 
   const allFiltered = useMemo(() => {
-    // existing implementation replaced below
-    return [] as MappingAction[]; // placeholder, will be overridden just after
+    // not used directly anymore; kept for compatibility
+    return [] as MappingAction[];
   }, []);
 
   const [remoteResults, setRemoteResults] = useState<MappingAction[] | null>(
@@ -160,19 +216,30 @@ export function OperationMappingSheet({
       const localHit = data.all.some((a) =>
         a.action.toLowerCase().includes(term)
       );
-      if (localHit) {
-        setRemoteResults(null);
-        return;
-      }
+      // Even if localHit, we still fetch to expand 'all' with more remote results
       const fetched = await incrementalSearch(term);
       if (!active) return;
       if (fetched.length === 0) {
         setRemoteResults([]);
         return;
       }
-      setRemoteResults(
-        fetched.filter((f) => !data.all.some((a) => a.id === f.id))
+      const uniqueFetched = fetched.filter(
+        (f) => !data.all.some((a) => a.id === f.id)
       );
+      setRemoteResults(uniqueFetched);
+      if (uniqueFetched.length > 0) {
+        // Enrich local 'all' set so user can map actions outside initially mapped list
+        setData((prev) =>
+          prev
+            ? {
+                ...prev,
+                all: [...prev.all, ...uniqueFetched].sort((a, b) =>
+                  a.action.localeCompare(b.action)
+                ),
+              }
+            : prev
+        );
+      }
     })();
     return () => {
       active = false;
@@ -184,15 +251,15 @@ export function OperationMappingSheet({
     let list = data.all.slice();
     if (remoteResults && remoteResults.length > 0) {
       list = list.concat(remoteResults);
-      // keep deterministic order: mapped first (id present in mappedIds), then action name
-      const sel = selected;
-      list.sort((a, b) => {
-        const aMapped = sel.has(a.id) ? 0 : 1;
-        const bMapped = sel.has(b.id) ? 0 : 1;
-        if (aMapped !== bMapped) return aMapped - bMapped;
-        return a.action.localeCompare(b.action);
-      });
     }
+    // Keep deterministic order: mapped first, then action name
+    const sel = selected;
+    list.sort((a, b) => {
+      const aMapped = sel.has(a.id) ? 0 : 1;
+      const bMapped = sel.has(b.id) ? 0 : 1;
+      if (aMapped !== bMapped) return aMapped - bMapped;
+      return a.action.localeCompare(b.action);
+    });
     const term = debouncedFilter.trim().toLowerCase();
     if (showMappedOnly) {
       const sel = selected;
@@ -230,54 +297,77 @@ export function OperationMappingSheet({
     [debouncedFilter]
   );
 
-  const mappedIds = useMemo(() => new Set(data?.mapped.map(m => m.id) ?? []), [data]);
+  const mappedIds = useMemo(
+    () => new Set(data?.mapped.map((m) => m.id) ?? []),
+    [data]
+  );
 
-  const save = useCallback(async (next: Set<number>) => {
-    if (!parsed.op || !accessToken) return;
-    try {
-      setSaving(true);
-      const bodyArr = Array.from(next);
-      let saved: MappingData | null = null;
-      if (parsed.prop) {
-        const url = new URL(`/api/operations/map/${encodeURIComponent(parsed.op)}/properties/${encodeURIComponent(parsed.prop)}`, apiBase);
-        const res = await fetch(url, {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-          body: JSON.stringify(bodyArr),
+  const save = useCallback(
+    async (next: Set<string>) => {
+      if (!parsed.op || !accessToken) return;
+      try {
+        setSaving(true);
+        const bodyArr = Array.from(next);
+        let saved: MappingData | null = null;
+        if (parsed.prop) {
+          const url = new URL(
+            `/api/operations/map/${encodeURIComponent(
+              parsed.op
+            )}/properties/${encodeURIComponent(parsed.prop)}`,
+            apiBase
+          );
+          const res = await fetch(url, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(bodyArr),
+          });
+          if (!res.ok) throw new Error("Failed to save property mapping");
+          // After save, reload to get authoritative list
+          await load();
+          saved = null; // load handles state
+        } else {
+          const url = new URL(
+            `/api/operations/map/${encodeURIComponent(parsed.op)}`,
+            apiBase
+          );
+          const res = await fetch(url, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(bodyArr),
+          });
+          if (!res.ok) throw new Error("Failed to save mapping");
+          const json = (await res.json()) as MappingData;
+          saved = json;
+          setData(json);
+          const sel = new Set(json.mapped.map((m) => m.id));
+          setSelected(sel);
+          setOriginalSelected(new Set(sel));
+        }
+        const mappedLen = saved ? saved.mapped.length : next.size;
+        toast.success("Mapping saved", {
+          description: `${mappedLen} actions mapped`,
         });
-        if (!res.ok) throw new Error("Failed to save property mapping");
-        // After save, reload to get authoritative list
-        await load();
-        saved = null; // load handles state
-      } else {
-        const url = new URL(`/api/operations/map/${encodeURIComponent(parsed.op)}`, apiBase);
-        const res = await fetch(url, {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-          body: JSON.stringify(bodyArr),
-        });
-        if (!res.ok) throw new Error("Failed to save mapping");
-        const json = (await res.json()) as MappingData;
-        saved = json;
-        setData(json);
-        const sel = new Set(json.mapped.map(m => m.id));
-        setSelected(sel);
-        setOriginalSelected(new Set(sel));
+        window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
+      } catch (e: any) {
+        setError(e.message || "Failed to save");
+      } finally {
+        setSaving(false);
       }
-      const mappedLen = saved ? saved.mapped.length : next.size;
-      toast.success("Mapping saved", { description: `${mappedLen} actions mapped` });
-      window.dispatchEvent(new CustomEvent('operation-mappings-updated'));
-    } catch (e: any) {
-      setError(e.message || "Failed to save");
-    } finally {
-      setSaving(false);
-    }
-  }, [parsed, accessToken, apiBase, load]);
+    },
+    [parsed, accessToken, apiBase, load]
+  );
 
-  const toggle = (id: number) => {
-    setSelected(prev => {
+  const toggle = (id: string) => {
+    setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };

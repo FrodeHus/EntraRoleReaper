@@ -1,5 +1,6 @@
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EntraRoleReaper.Api.Endpoints;
 
@@ -7,7 +8,7 @@ public static class CacheEndpoints
 {
     public static IEndpointRouteBuilder MapCache(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/cache/status", async (ICacheService cache) =>
+        app.MapGet("/api/cache/status", async ([FromServices] ICacheService cache) =>
         {
             await cache.InitializeAsync();
             var metadata = cache.GetCacheMetadata();

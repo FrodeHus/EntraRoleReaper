@@ -12,18 +12,24 @@ public interface IRoleService
     Task UpdateRoleAsync(RoleDefinition role);
     Task AddRoleAsync(RoleDefinition role);
 
-    Task<IEnumerable<RoleDefinition>> SearchRolesAsync(string? searchTerm, bool privilegedOnly = false, int limit = 100);
+    Task<IEnumerable<RoleDefinition>>
+        SearchRolesAsync(string? searchTerm, bool privilegedOnly = false, int limit = 100);
 }
 
-public class RoleService(IRoleRepository roleRepository, IResourceActionRepository resourceActionRepository, GraphService graphService, ILogger<RoleService> logger) : IRoleService
+public class RoleService(
+    IRoleRepository roleRepository,
+    IResourceActionRepository resourceActionRepository,
+    GraphService graphService,
+    ILogger<RoleService> logger) : IRoleService
 {
     public async Task InitializeAsync(bool forceRefresh = false)
     {
-        if(await roleRepository.GetRoleCountAsync() > 0 && !forceRefresh)
+        if (await roleRepository.GetRoleCountAsync() > 0 && !forceRefresh)
         {
             logger.LogInformation("Roles already initialized, skipping initialization.");
             return;
         }
+
         try
         {
             await roleRepository.ClearAsync();
@@ -33,35 +39,28 @@ public class RoleService(IRoleRepository roleRepository, IResourceActionReposito
                 logger.LogInformation("No roles found in Graph API, skipping initialization.");
                 return;
             }
+
             logger.LogInformation("Initializing roles from Graph API, found {RoleCount} roles.", roles.Count);
             var resourceActionMetadata = await graphService.GetResourceActionMetadataAsync();
             foreach (var role in roles)
             {
-                var existingRole = await roleRepository.GetRoleByIdAsync(role.Id);
-                if (existingRole == null)
+                var roleDefinition = new RoleDefinition
                 {
-                    var roleDefinition = new RoleDefinition
+                    Id = Guid.Parse(role.Id),
+                    DisplayName = role.DisplayName ?? role.Id,
+                    Description = role.Description ?? string.Empty,
+                    PermissionSets = role.RolePermissions.Select(p => new PermissionSet
                     {
-                        Id = Guid.Parse(role.Id),
-                        DisplayName = role.DisplayName ?? role.Id,
-                        Description = role.Description ?? string.Empty,
-                        PermissionSets = role.RolePermissions.Select(p => new PermissionSet
+                        Condition = p.Condition,
+                        ResourceActions = p.AllowedResourceActions?.Select(ra => new ResourceAction
                         {
-                            Condition = p.Condition,
-                            ResourceActions = p.AllowedResourceActions?.Select(ra => new ResourceAction
-                            {
-                                Action = ra,
-                                IsPrivileged = resourceActionMetadata[ra]
-                            }).ToList()
+                            Action = ra,
+                            IsPrivileged = resourceActionMetadata.ContainsKey(ra) && resourceActionMetadata[ra]
                         }).ToList()
-                    };
-                    await roleRepository.AddRoleAsync(roleDefinition);
-                    logger.LogInformation("Added new role: {RoleName}", role.DisplayName);
-                }
-                else
-                {
-                    logger.LogInformation("Role already exists: {RoleName}", existingRole.DisplayName);
-                }
+                    }).ToList()
+                };
+                await roleRepository.AddRoleAsync(roleDefinition);
+                logger.LogInformation("Added new role: {RoleName}", role.DisplayName);
             }
         }
         catch (Exception ex)
@@ -70,6 +69,7 @@ public class RoleService(IRoleRepository roleRepository, IResourceActionReposito
             throw;
         }
     }
+
     public async Task<List<RoleDefinition>> GetAllRolesAsync()
     {
         try
@@ -135,12 +135,14 @@ public class RoleService(IRoleRepository roleRepository, IResourceActionReposito
         }
     }
 
-    public async Task<IEnumerable<RoleDefinition>> SearchRolesAsync(string? searchTerm, bool privilegedOnly = false, int limit = 100)
+    public async Task<IEnumerable<RoleDefinition>> SearchRolesAsync(string? searchTerm, bool privilegedOnly = false,
+        int limit = 100)
     {
         if (string.IsNullOrEmpty(searchTerm))
         {
             return await roleRepository.GetAllRolesAsync();
         }
+
         try
         {
             return await roleRepository.SearchRolesAsync(searchTerm, privilegedOnly, limit);

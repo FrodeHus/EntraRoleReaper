@@ -8,5 +8,5 @@ public class RoleDefinition
     public string RoleType { get; set; } = string.Empty;
     public bool IsEnabled { get; set; }
     public bool IsBuiltIn { get; set; }
-    public List<PermissionSet> PermissionSets { get; set; } = new();
+    public virtual List<PermissionSet> PermissionSets { get; set; } = new();
 }

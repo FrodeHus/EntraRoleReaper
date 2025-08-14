@@ -1,4 +1,5 @@
 using EntraRoleReaper.Api.Data.Repositories;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EntraRoleReaper.Api.Endpoints;
 
@@ -11,7 +12,7 @@ public static class ActionsEndpoints
         // Incremental search for resource actions by substring, limited result set
         app.MapGet(
                 "/api/actions/search",
-                async (string q, int? limit, IResourceActionRepository resourceActionRepository) =>
+                async (string q, int? limit, [FromServices] IResourceActionRepository resourceActionRepository) =>
                 {
                     if (string.IsNullOrWhiteSpace(q))
                         return Results.Ok(Array.Empty<object>());

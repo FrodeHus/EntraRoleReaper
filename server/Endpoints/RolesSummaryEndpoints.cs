@@ -1,5 +1,6 @@
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Endpoints;
@@ -15,7 +16,7 @@ public static class RolesSummaryEndpoints
             string? dir,
             string? search,
             bool? privilegedOnly,
-            IRoleService roleService,
+            [FromServices] IRoleService roleService,
             HttpRequest req,
             HttpResponse res) =>
         {

@@ -1,6 +1,7 @@
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Endpoints;
@@ -12,7 +13,7 @@ public static class RolesLookupEndpoints
         // Batch resolve role ids to display names (legacy cache-based)
         app.MapPost(
                 "/api/roles/names",
-                async (string[] ids, IRoleCache cache) =>
+                async (string[] ids,[FromServices] IRoleCache cache) =>
                 {
                     await cache.InitializeAsync();
                     var roles = cache.GetAll();
@@ -34,7 +35,7 @@ public static class RolesLookupEndpoints
         // Normalized role detail endpoint
         app.MapGet(
                 "/api/roles/{id}",
-                async (string id, IRoleService roleService) =>
+                async (string id, [FromServices] IRoleService roleService) =>
                 {
                     if (string.IsNullOrWhiteSpace(id))
                         return Results.BadRequest(new { message = "Missing id" });

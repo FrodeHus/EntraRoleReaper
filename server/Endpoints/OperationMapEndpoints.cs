@@ -6,6 +6,7 @@ using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Endpoints;
@@ -17,7 +18,7 @@ public static class OperationMapEndpoints
         // Single operation details
         app.MapGet(
                 "/api/operations/map/{operationName}",
-                async (string operationName, IActivityRepository activityRepository) =>
+                async (string operationName, [FromServices] IActivityRepository activityRepository) =>
                 {
                     if (string.IsNullOrWhiteSpace(operationName))
                         return Results.BadRequest();
@@ -39,8 +40,8 @@ public static class OperationMapEndpoints
                 async (
                     string operationName,
                     Guid[] actionIds,
-                    IActivityRepository activityRepository,
-                    IResourceActionRepository resourceActionRepository
+                    [FromServices] IActivityRepository activityRepository,
+                    [FromServices] IResourceActionRepository resourceActionRepository
                 ) =>
                 {
                     if (string.IsNullOrWhiteSpace(operationName))
@@ -61,7 +62,7 @@ public static class OperationMapEndpoints
         // Export (new format list)
         app.MapGet(
                 "/api/operations/map/export",
-                async (IActivityService svc) =>
+                async ([FromServices] IActivityService svc) =>
                 {
                     var data = await svc.ExportActivitiesAsync();
                     return Results.Ok(data);
@@ -72,7 +73,7 @@ public static class OperationMapEndpoints
         // Import (new format only)
         app.MapPost(
                 "/api/operations/map/import",
-                async (IEnumerable<ActivityExport> importedData, IActivityService svc) =>
+                async (IEnumerable<ActivityExport> importedData, [FromServices] IActivityService svc) =>
                 {
                     var result = await svc.ImportAsync(importedData);
                     return Results.Ok(
@@ -90,8 +91,7 @@ public static class OperationMapEndpoints
                     string activityName,
                     string propertyName,
                     Guid[] actionIds,
-                    IActivityService activityService,
-                    IOperationMapCache cache
+                    [FromServices] IActivityService activityService
                 ) =>
                 {
                     if (
@@ -111,7 +111,7 @@ public static class OperationMapEndpoints
                 async (
                     string operationName,
                     string propertyName,
-                    IActivityService activityService
+                    [FromServices] IActivityService activityService
                 ) =>
                 {
                     await activityService.DeletePropertyMapAsync(
@@ -126,7 +126,7 @@ public static class OperationMapEndpoints
         // Exclusions create
         app.MapPost(
                 "/api/operations/exclusions",
-                async (OperationExclusionCreateRequest req, IActivityService activityService) =>
+                async (OperationExclusionCreateRequest req, [FromServices] IActivityService activityService) =>
                 {
                     if (string.IsNullOrWhiteSpace(req.OperationName))
                         return Results.BadRequest();
@@ -139,7 +139,7 @@ public static class OperationMapEndpoints
         // Exclusions list
         app.MapGet(
                 "/api/operations/exclusions",
-                async (IActivityService activityService) =>
+                async ([FromServices] IActivityService activityService) =>
                 {
                     var list = await activityService.GetExcludedActivitiesAsync();
                     return Results.Ok(list);
@@ -150,7 +150,7 @@ public static class OperationMapEndpoints
         // Exclusions delete
         app.MapDelete(
                 "/api/operations/exclusions/{operationName}",
-                async (string operationName, IActivityService activityService) =>
+                async (string operationName, [FromServices] IActivityService activityService) =>
                 {
                     await activityService.SetExclusionAsync(operationName, false);
                     return Results.NoContent();
