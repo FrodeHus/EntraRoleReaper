@@ -1,6 +1,7 @@
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Endpoints;
+using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -68,7 +69,8 @@ builder.Services.AddScoped<IUserSearchService, UserSearchService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IGraphService, GraphService>();
 builder.Services.AddScoped<ICacheService, CacheService>();
-
+builder.Services.AddScoped<ActivityPermissionAnalyzer>();
+builder.Services.AddScoped<RoleAdvisor>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

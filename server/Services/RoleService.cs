@@ -14,11 +14,11 @@ public interface IRoleService
 
     Task<IEnumerable<RoleDefinition>>
         SearchRolesAsync(string? searchTerm, bool privilegedOnly = false, int limit = 100);
+    Task<IEnumerable<RoleDefinition>> GetUserRolesAsync(string userId);
 }
 
 public class RoleService(
     IRoleRepository roleRepository,
-    IResourceActionRepository resourceActionRepository,
     IGraphService graphService,
     ILogger<RoleService> logger) : IRoleService
 {
@@ -154,5 +154,24 @@ public class RoleService(
             logger.LogError(ex, "Failed to search roles with term: {SearchTerm}", searchTerm);
             return [];
         }
+    }
+
+    public async Task<IEnumerable<RoleDefinition>> GetUserRolesAsync(string userId)
+    {
+        var ctx = await graphService.GetUserAndRolesAsync(userId);
+        var userRoleIds= ctx.ActiveRoleIds;
+        userRoleIds.AddRange(ctx.EligibleRoleIds);
+        userRoleIds.AddRange(ctx.PimActiveRoleIds);
+        userRoleIds = [.. userRoleIds.Distinct()];
+        var userRoles = new List<RoleDefinition>();
+        foreach(var roleId in userRoleIds)
+        {
+            var role = await GetRoleByIdAsync(roleId);
+            if (role != null)
+            {
+                userRoles.Add(role);
+            }
+        }
+        return userRoles;
     }
 }
