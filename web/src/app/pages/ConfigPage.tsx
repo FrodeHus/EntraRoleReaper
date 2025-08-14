@@ -676,9 +676,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                           </span>
                         ) : null}
                         <span className="ml-auto text-[10px] text-muted-foreground">
-                          {r.isBuiltIn === true || r.IsBuiltIn === true
-                            ? "Built-in"
-                            : "Custom"}
+                          {r.isBuiltIn === true ? "Built-in" : "Custom"}
                         </span>
                       </div>
                     </li>

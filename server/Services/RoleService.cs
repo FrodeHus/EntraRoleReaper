@@ -46,10 +46,12 @@ public class RoleService(
             {
                 var roleDefinition = new RoleDefinition
                 {
-                    Id = Guid.Parse(role.Id),
-                    DisplayName = role.DisplayName ?? role.Id,
+                    Id = Guid.Parse(role.Id!),
+                    DisplayName = role.DisplayName ?? role.Id!,
                     Description = role.Description ?? string.Empty,
-                    PermissionSets = role.RolePermissions.Select(p => new PermissionSet
+                    IsBuiltIn = role.IsBuiltIn ?? false,
+                    IsEnabled = role.IsEnabled ?? false,
+                    PermissionSets = (role.RolePermissions ?? []).Select(p => new PermissionSet
                     {
                         Condition = p.Condition,
                         ResourceActions = p.AllowedResourceActions?.Select(ra => new ResourceAction

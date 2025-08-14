@@ -64,7 +64,7 @@ builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IResourceActionRepository, ResourceActionRepository>();
 builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
-
+builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<IUserSearchService, UserSearchService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<GraphService>();
