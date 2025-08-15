@@ -1,8 +1,5 @@
-using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Services;
-using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Endpoints;
 
@@ -10,28 +7,6 @@ public static class RolesLookupEndpoints
 {
     public static IEndpointRouteBuilder MapRolesLookup(this IEndpointRouteBuilder app)
     {
-        // Batch resolve role ids to display names (legacy cache-based)
-        app.MapPost(
-                "/api/roles/names",
-                async (string[] ids,[FromServices] IRoleCache cache) =>
-                {
-                    await cache.InitializeAsync();
-                    var roles = cache.GetAll();
-                    var unique = ids.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-                    var result = unique
-                        .Select(id => new
-                        {
-                            id,
-                            name = roles.TryGetValue(id, out var def)
-                                ? def.DisplayName ?? string.Empty
-                                : string.Empty,
-                        })
-                        .ToList();
-                    return Results.Ok(result);
-                }
-            )
-            .RequireAuthorization();
-
         // Normalized role detail endpoint
         app.MapGet(
                 "/api/roles/{id}",

@@ -204,17 +204,23 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         const json = await res.json();
         // API returns { total, roles }
         const list = (json?.roles ?? json?.items ?? []) as any[];
-        // Apply client-side privileged filter as backend may ignore it without a search term
-        const filtered = rolesPrivOnly
-          ? list.filter((r) =>
-              ((r.permissionSets || r.PermissionSets) ?? []).some((ps: any) =>
-                ((ps.resourceActions || ps.ResourceActions) ?? []).some(
-                  (ra: any) =>
-                    ra.isPrivileged === true || ra.IsPrivileged === true
-                )
-              )
+        // Helper to determine if a role has any privileged actions
+        const isRolePrivileged = (r: any) =>
+          ((r.permissionSets || r.PermissionSets) ?? []).some((ps: any) =>
+            ((ps.resourceActions || ps.ResourceActions) ?? []).some(
+              (ra: any) => ra.isPrivileged === true || ra.IsPrivileged === true
             )
-          : list;
+          );
+        // Apply client-side privileged filter as backend may ignore it without a search term
+        const filtered = rolesPrivOnly ? list.filter(isRolePrivileged) : list;
+        // Sort alphabetically by display name
+        filtered.sort((a: any, b: any) =>
+          String(a.displayName || a.DisplayName || "")
+            .toLowerCase()
+            .localeCompare(
+              String(b.displayName || b.DisplayName || "").toLowerCase()
+            )
+        );
         setRolesItems(filtered);
       } catch {
         setRolesItems([]);
@@ -670,11 +676,22 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                         >
                           {r.displayName || r.DisplayName}
                         </button>
-                        {r.privileged === true || r.Privileged === true ? (
+                        {/* Show PIM badge when role has any privileged actions */}
+                        {((r.permissionSets || r.PermissionSets) ?? []).some(
+                          (ps: any) =>
+                            (
+                              (ps.resourceActions || ps.ResourceActions) ??
+                              []
+                            ).some(
+                              (ra: any) =>
+                                ra.isPrivileged === true ||
+                                ra.IsPrivileged === true
+                            )
+                        ) && (
                           <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
-                            priv
+                            PIM
                           </span>
-                        ) : null}
+                        )}
                         <span className="ml-auto text-[10px] text-muted-foreground">
                           {r.isBuiltIn === true ? "Built-in" : "Custom"}
                         </span>

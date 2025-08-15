@@ -88,12 +88,16 @@ export function OperationMappingSheet({
         });
         if (!res.ok) throw new Error("Failed to load mapping");
         const json = (await res.json()) as any;
-        const all: MappingAction[] = Array.isArray(json.all) ? json.all : [];
-        // mapped can be an array of strings (action names) or array of objects with id/action
+        // Normalize 'all' items to { id, action, isPrivileged } regardless of casing
+        const rawAll: any[] = Array.isArray(json.all) ? json.all : [];
+        const all: MappingAction[] = rawAll.map((a) => ({
+          id: String(a.id ?? a.Id ?? a.ID),
+          action: String(a.action ?? a.Action),
+          isPrivileged: Boolean(a.isPrivileged ?? a.IsPrivileged),
+        }));
+        // 'mapped' comes back as an array of action names (strings)
         const mappedNames: string[] = Array.isArray(json.mapped)
-          ? typeof json.mapped[0] === "string"
-            ? (json.mapped as string[])
-            : (json.mapped as any[]).map((m) => String(m.action))
+          ? (json.mapped as any[]).map((m) => String(m))
           : [];
         const selectedIds = new Set<string>(
           all
@@ -242,14 +246,14 @@ export function OperationMappingSheet({
             body: JSON.stringify(bodyArr),
           });
           if (!res.ok) throw new Error("Failed to save mapping");
-          const json = (await res.json()) as MappingData;
-          saved = json;
-          setData(json);
-          const sel = new Set<string>(json.mapped.map((m) => String(m.id)));
-          setSelected(sel);
-          setOriginalSelected(new Set(sel));
+          // No body returned; refresh from GET to reflect saved state
+          await load();
+          saved = null;
         }
-        const mappedLen = saved ? saved.mapped.length : next.size;
+        const mappedLen =
+          saved && (saved as any).mapped
+            ? (saved as any).mapped.length
+            : next.size;
         toast.success("Mapping saved", {
           description: `${mappedLen} actions mapped`,
         });

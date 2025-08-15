@@ -23,11 +23,19 @@ public static class CacheEndpoints
             );
         }).RequireAuthorization();
 
-        app.MapPost("/api/cache/refresh", async (IRoleCache cache) =>
+        app.MapPost("/api/cache/refresh", async (ICacheService cache) =>
         {
-            await cache.RefreshAsync();
-            var ts = await cache.GetLastUpdatedAsync();
-            return Results.Ok(new { lastUpdatedUtc = ts });
+            await cache.InitializeAsync(true);
+            var metadata = cache.GetCacheMetadata();
+            
+            return Results.Ok(
+                new
+                {
+                    lastUpdatedUtc = metadata.LastUpdated,
+                    roleCount = metadata.RoleCount,
+                    actionCount = metadata.ResourceActionCount,
+                }
+            );
         }).RequireAuthorization();
 
         return app;

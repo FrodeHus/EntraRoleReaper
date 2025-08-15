@@ -1,6 +1,6 @@
 namespace EntraRoleReaper.Api.Services.Models;
 
-public record SimpleUser(string Id, string DisplayName);
+public record SimpleUser(string Id, string DisplayName, List<SimpleRole>? CurrentActiveRoles, List<SimpleRole>? CurrentEligiblePimRoles);
 
 public record OperationModifiedProperty(string? DisplayName, string? OldValue, string? NewValue);
 
@@ -29,8 +29,6 @@ public record SimpleRole(string Id, string DisplayName);
 // New simplified UserReview per updated contract
 public record UserReview(
     SimpleUser User,
-    IReadOnlyList<SimpleRole> ActiveRoles,
-    IReadOnlyList<SimpleRole> EligiblePimRoles,
     IReadOnlyList<OperationReview> Operations,
     IReadOnlyList<SimpleRole> AddedRoles,
     IReadOnlyList<SimpleRole> RemovedRoles
