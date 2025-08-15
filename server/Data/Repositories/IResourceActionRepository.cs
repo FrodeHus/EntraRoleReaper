@@ -10,4 +10,5 @@ public interface IResourceActionRepository
 
     Task<ICollection<ResourceAction>> GetResourceActionsByIdsAsync(Guid[] resourceActionIds);
     Task<ICollection<ResourceAction>> GetResourceActionsByNamesAsync(IEnumerable<string> allResourceActions);
+    Task<ICollection<ResourceAction>> GetAllAsync();
 }

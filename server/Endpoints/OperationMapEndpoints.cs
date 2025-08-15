@@ -1,13 +1,8 @@
-using System.Text.Json;
-using EntraRoleReaper.Api.Configuration.PermissionMapping.Models;
-using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Services;
-using EntraRoleReaper.Api.Services.Interfaces;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Endpoints;
 
@@ -18,16 +13,18 @@ public static class OperationMapEndpoints
         // Single operation details
         app.MapGet(
                 "/api/operations/map/{operationName}",
-                async (string operationName, [FromServices] IActivityRepository activityRepository) =>
+                async (string operationName, [FromServices] IActivityRepository activityRepository, [FromServices] IResourceActionRepository resourceActionRepository) =>
                 {
                     if (string.IsNullOrWhiteSpace(operationName))
                         return Results.BadRequest();
                     var activities = await activityRepository.GetByNameAsync(operationName);
+                    var allActions = await resourceActionRepository.GetAllAsync();
                     return Results.Ok(
                         new
                         {
                             operationName,
                             mapped = activities?.MappedResourceActions?.Select(a => a.Action) ?? [],
+                            all = allActions
                         }
                     );
                 }
@@ -82,7 +79,7 @@ public static class OperationMapEndpoints
                 }
             )
             .RequireAuthorization();
-        
+
 
         // Upsert property map
         app.MapPut(

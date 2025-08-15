@@ -1,5 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace EntraRoleReaper.Api.Data.Models;
 
+[Index(nameof(DisplayName), IsUnique = true)]
 public class RoleDefinition
 {
     public Guid Id { get; set; }

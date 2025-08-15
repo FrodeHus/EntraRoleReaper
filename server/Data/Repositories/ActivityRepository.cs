@@ -9,7 +9,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
     {
         if (activity is null)
             throw new ArgumentNullException(nameof(activity));
-        
+
         dbContext.Activities.Add(activity);
 
         await dbContext.SaveChangesAsync();
@@ -18,7 +18,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
 
     public async Task<Activity?> GetByNameAsync(string name)
     {
-       return await dbContext.Activities.Include(x => x.Properties).FirstOrDefaultAsync(x => x.Name == name);
+        return await dbContext.Activities.Include(x => x.Properties).FirstOrDefaultAsync(x => x.Name == name);
     }
 
     public async Task<IEnumerable<Activity>> GetAllActivitiesAsync()
@@ -42,7 +42,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
     }
 
     public async Task DeletePropertyMapAsync(string activityName, string propertyName)
-    {   
+    {
         if (string.IsNullOrWhiteSpace(activityName))
         {
             throw new ArgumentException("Activity name cannot be null or empty.", nameof(activityName));
@@ -100,7 +100,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
 
         dbContext.Activities.Update(activity);
         await dbContext.SaveChangesAsync();
-        
+
     }
 
     public async Task SetExclusionAsync(string activityName, bool isExcluded)
@@ -112,7 +112,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
         dbContext.Activities.Update(activity);
         await dbContext.SaveChangesAsync();
     }
-    
+
     public async Task<IEnumerable<Activity>> GetExcludedActivitiesAsync()
     {
         return await dbContext.Activities.Where(x => x.IsExcluded).ToListAsync();
@@ -120,9 +120,9 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
 
     public async Task<IEnumerable<Activity>> GetActivitiesByNamesAsync(IEnumerable<string> activityNames)
     {
-        if (activityNames is null || !activityNames.Any())
+        if (activityNames?.Any() != true)
         {
-            throw new ArgumentException("Activity names cannot be null or empty.", nameof(activityNames));
+            return [];
         }
         return await dbContext.Activities
             .Where(x => activityNames.Contains(x.Name))

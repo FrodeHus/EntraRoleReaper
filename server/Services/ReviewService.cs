@@ -9,6 +9,7 @@ namespace EntraRoleReaper.Api.Services;
 public class ReviewService(
     IGraphService graphService,
     RoleAdvisor roleAdvisor,
+    IRoleService roleService,
     IActivityService activityService
 ) : IReviewService
 {
@@ -47,15 +48,17 @@ public class ReviewService(
         // var actionPrivilege = roleCache.GetActionPrivilegeMap();
         // var roleStats = roleCache.GetRolePrivilegeStats();
         //
+        var results = new List<UserReview>();
         foreach (var uid in userIds)
         {
             // Fetch core user + role context
             var userCtx = await graphService.GetUserAndRolesAsync(uid);
 
+
             // Audit operations + targets
             var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
             var mappedActivities = await activityService.GetActivitesAsync(auditActivities.Select(a => a.ActivityName));
-            foreach(var activity in mappedActivities)
+            foreach (var activity in mappedActivities)
             {
                 if (activity.IsExcluded)
                 {
@@ -63,14 +66,14 @@ public class ReviewService(
                     continue;
                 }
 
-                var auditActivity = auditActivities.FirstOrDefault(a => a.ActivityName.Equals(activity.Name, StringComparison.InvariantCultureIgnoreCase);
+                var auditActivity = auditActivities.FirstOrDefault(a => a.ActivityName.Equals(activity.Name, StringComparison.InvariantCultureIgnoreCase));
                 var targets = auditActivity?.TargetResources.ConvertAll(t => new ReviewTargetResource
                 {
                     Id = t.Id,
                     DisplayName = t.DisplayName,
                     Type = t.Type,
                     ModifiedProperties = t.ModifiedProperties
-                })?? [];
+                }) ?? [];
 
                 var suggestedRoles = await roleAdvisor.GetSuggestedRoles(
                     activity,
@@ -78,8 +81,26 @@ public class ReviewService(
                     uid
                 );
             }
+
+            var reviewedActivities = auditActivities.ConvertAll(a => new OperationReview
+            (
+                a.ActivityName,
+                a.TargetResources.ConvertAll(t => new OperationTarget(
+                    t.Id,
+                    t.DisplayName,
+                    [.. (t.ModifiedProperties ?? []).Select(mp => new OperationModifiedProperty(
+                        mp.DisplayName,
+                        mp.OldValue,
+                        mp.NewValue
+                    ))]
+                )),
+                []
+            ));
+
+
+            var review = new UserReview(new SimpleUser(uid, userCtx.DisplayName ?? uid), [], [], reviewedActivities, [], []);
+            results.Add(review);
         }
-        var results = new List<UserReview>();
         return new ReviewResponse(results);
     }
 

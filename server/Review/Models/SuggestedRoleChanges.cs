@@ -6,4 +6,5 @@ public class SuggestedRoleChanges
 {
     public IEnumerable<RoleDefinition> RolesToAdd { get; set; } = [];
     public IEnumerable<RoleDefinition> RolesToRemove { get; set; } = [];
+    public IEnumerable<RoleDefinition> RolesToKeep { get; set; } = [];
 }

@@ -38,7 +38,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
 
 // SQLite cache path is configurable via Cache:SqliteConnection or Cache:SqlitePath
-var sqliteConn = builder.Configuration.GetValue<string>("Cache:SqliteConnection");
+var sqliteConn = builder.Configuration.GetValue<string>("Database:SqliteConnection");
 if (string.IsNullOrWhiteSpace(sqliteConn))
 {
     var sqlitePath = builder.Configuration.GetValue<string>(

@@ -9,9 +9,23 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
     {
         if (resourceAction == null) throw new ArgumentNullException(nameof(resourceAction));
 
-        dbContext.ResourceActions.Add(resourceAction);
-        await dbContext.SaveChangesAsync();
-        return resourceAction;
+        try
+        {
+            var existingAction = await dbContext.ResourceActions
+                .FirstOrDefaultAsync(x => x.Action == resourceAction.Action);
+            if (existingAction != null)
+            {
+                return existingAction;
+            }
+            dbContext.ResourceActions.Add(resourceAction);
+            await dbContext.SaveChangesAsync();
+            return resourceAction;
+        }
+        catch (DbUpdateException ex)
+        {
+            // Handle specific database update exceptions if needed
+            throw new Exception("An error occurred while adding the resource action.", ex);
+        }
     }
 
     public async Task<ResourceAction?> GetResourceActionByNameAsync(string name)
@@ -23,7 +37,7 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
     {
         return await dbContext.ResourceActions.FirstOrDefaultAsync(x => x.Id == id);
     }
-    
+
     public async Task<IEnumerable<ResourceAction>> SearchResourceActionsAsync(string searchTerm, int limit = 100)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
@@ -61,6 +75,13 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
 
         return await dbContext.ResourceActions
             .Where(x => actionNames.Contains(x.Action))
+            .ToListAsync();
+    }
+
+    public async Task<ICollection<ResourceAction>> GetAllAsync()
+    {
+        return await dbContext.ResourceActions
+            .OrderBy(x => x.Action)
             .ToListAsync();
     }
 }
