@@ -33,7 +33,7 @@ export function AppHeader({ authed, theme, onToggleTheme, onOpenSidebar, reviewe
           </button>
           <Link
             to="/"
-            className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary rounded"
+            className="flex items-center gap-2 rounded outline-none focus:outline-none focus:ring-0 focus:ring-offset-0 active:outline-none active:ring-0 no-underline"
           >
             <img
               src={`${import.meta.env.BASE_URL}entrarolereaper_logo.png`}
@@ -42,7 +42,7 @@ export function AppHeader({ authed, theme, onToggleTheme, onOpenSidebar, reviewe
               className="h-24 w-24 mt-8"
               decoding="async"
             />
-            <span className="text-xl font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <span className="text-xl font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent select-none">
               Entra RoleReaper
             </span>
           </Link>
