@@ -99,6 +99,17 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
     
     public async Task SetExclusionAsync(string activityName, bool isExcluded)
     {
+        var existing = await activityRepository.GetByNameAsync(activityName);
+        if (existing == null)
+        {
+            await activityRepository.AddAsync(new Activity
+            {
+                Name = activityName,
+                IsExcluded = isExcluded
+            });
+            return;
+        }
+
         await activityRepository.SetExclusionAsync(activityName, isExcluded);
     }
 

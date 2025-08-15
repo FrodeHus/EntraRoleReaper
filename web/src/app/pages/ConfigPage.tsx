@@ -59,10 +59,8 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
   const [roleDetailsOpen, setRoleDetailsOpen] = useState(false);
   const [roleDetailsLoading, setRoleDetailsLoading] = useState(false);
   const [roleDetails, setRoleDetails] = useState<RoleDetails | null>(null);
-  // Exclusions tab state
-  const [exclusions, setExclusions] = useState<
-    Array<{ id: number; operationName: string; createdUtc: string }>
-  >([]);
+  // Exclusions tab state (backend returns Activity objects with Name/IsExcluded)
+  const [exclusions, setExclusions] = useState<Array<{ name: string }>>([]);
   const [exclusionsLoading, setExclusionsLoading] = useState(false);
 
   // Mappings tab state
@@ -165,6 +163,23 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
       window.removeEventListener("operation-mappings-updated", handler as any);
   }, [loadMappings]);
 
+  useEffect(() => {
+    const openHandler = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent).detail as { operationName?: string };
+        if (detail?.operationName) {
+          setOpSheetOperationName(detail.operationName);
+          setOpSheetOpen(true);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener("open-op-mapping", openHandler as any);
+    return () =>
+      window.removeEventListener("open-op-mapping", openHandler as any);
+  }, []);
+
   const loadExclusions = useCallback(async () => {
     if (!accessToken || activeTab !== "exclusions") return;
     try {
@@ -174,7 +189,13 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
       });
       if (!res.ok) throw new Error();
       const json = await res.json();
-      setExclusions(json || []);
+      const arr: any[] = Array.isArray(json) ? json : [];
+      const list = arr.map((a) => ({
+        name: String(a.name ?? a.Name ?? ""),
+      })) as Array<{
+        name: string;
+      }>;
+      setExclusions(list.filter((e) => e.name));
     } catch {
       setExclusions([]);
     } finally {
@@ -662,7 +683,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                 disabled={!accessToken}
                 onClick={async () => {
                   try {
-                    const names = exclusions.map((e) => e.operationName);
+                    const names = exclusions.map((e) => e.name);
                     const blob = new Blob([JSON.stringify(names, null, 2)], {
                       type: "application/json",
                     });
@@ -701,7 +722,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                       if (!Array.isArray(arr)) throw new Error();
                       // Replace current exclusions with imported list client-side
                       const current = new Set(
-                        exclusions.map((e) => e.operationName.toLowerCase())
+                        exclusions.map((e) => e.name.toLowerCase())
                       );
                       const desired = new Set(
                         (arr as string[]).map((s) => s.toLowerCase())
@@ -772,14 +793,14 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                 <ul>
                   {exclusions.map((e) => (
                     <li
-                      key={e.id}
+                      key={e.name}
                       className="flex items-center gap-2 p-2 text-xs"
                     >
                       <span className="font-mono break-all flex-1">
-                        {e.operationName}
+                        {e.name}
                       </span>
                       <button
-                        onClick={() => removeExclusion(e.operationName)}
+                        onClick={() => removeExclusion(e.name)}
                         className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                         title="Remove exclusion"
                       >

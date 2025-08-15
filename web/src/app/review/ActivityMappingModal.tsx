@@ -35,6 +35,7 @@ export function ActivityMappingModal({
   const [originalSelected, setOriginalSelected] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState("");
   const [privOnly, setPrivOnly] = useState(false);
+  const [properties, setProperties] = useState<Record<string, number>>({});
 
   // Load list of all actions and existing mapping (if edit)
   const load = useCallback(async () => {
@@ -43,8 +44,13 @@ export function ActivityMappingModal({
       setLoading(true);
       setError(null);
       const opName = name || "__new__"; // any string works for fetching all actions
-      const url = new URL(`/api/operations/map/${encodeURIComponent(opName)}`, apiBase);
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+      const url = new URL(
+        `/api/operations/map/${encodeURIComponent(opName)}`,
+        apiBase
+      );
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
       if (!res.ok) throw new Error("Failed to load actions");
       const json = (await res.json()) as any;
       const rawAll: any[] = Array.isArray(json.all) ? json.all : [];
@@ -62,17 +68,60 @@ export function ActivityMappingModal({
           : [];
         sel = new Set(
           actions
-            .filter((a) => mappedNames.some((n) => n.toLowerCase() === a.action.toLowerCase()))
+            .filter((a) =>
+              mappedNames.some(
+                (n) => n.toLowerCase() === a.action.toLowerCase()
+              )
+            )
             .map((a) => a.id)
         );
       }
       setSelected(sel);
       setOriginalSelected(new Set(sel));
+      // Load properties list (only meaningful when we have a real activity name)
+      const act = (mode === "edit" ? initialActivityName : name)?.trim();
+      if (act) {
+        try {
+          const expRes = await fetch(
+            new URL(`/api/operations/map/export`, apiBase),
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            }
+          );
+          if (expRes.ok) {
+            const expJson = await expRes.json();
+            const arr: any[] = Array.isArray(expJson)
+              ? expJson
+              : typeof expJson === "object" && expJson
+              ? Object.values(expJson as any)
+              : [];
+            const match = arr.find(
+              (x) =>
+                String(x.name ?? x.Name ?? "").toLowerCase() ===
+                act.toLowerCase()
+            );
+            const props = (match?.properties ?? match?.Properties) || {};
+            const mapped: Record<string, number> = {};
+            Object.keys(props).forEach((k) => {
+              const v = props[k] as any[];
+              mapped[k] = Array.isArray(v) ? v.length : 0;
+            });
+            setProperties(mapped);
+          } else {
+            setProperties({});
+          }
+        } catch {
+          setProperties({});
+        }
+      } else {
+        setProperties({});
+      }
     } catch (e: any) {
       setError(e.message || "Failed to load");
       setAll([]);
       setSelected(new Set());
       setOriginalSelected(new Set());
+      setProperties({});
     } finally {
       setLoading(false);
     }
@@ -156,17 +205,30 @@ export function ActivityMappingModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !saving && onOpenChange(false)} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={() => !saving && onOpenChange(false)}
+      />
       <div className="relative bg-card text-card-foreground w-full max-w-2xl rounded-lg shadow-lg border p-5 space-y-4 animate-in fade-in zoom-in">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium tracking-wide">
             {mode === "create" ? "Create activity mapping" : `Edit mapping`}
           </h3>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={load}
+              disabled={loading}
+            >
               {loading ? "Loading" : "Refresh"}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              disabled={saving}
+            >
               Close
             </Button>
           </div>
@@ -174,7 +236,9 @@ export function ActivityMappingModal({
         {error && <div className="text-[10px] text-red-600">{error}</div>}
         <div className="grid gap-3 text-sm">
           <label className="grid gap-1">
-            <span className="text-[11px] text-muted-foreground">Activity name</span>
+            <span className="text-[11px] text-muted-foreground">
+              Activity name
+            </span>
             <input
               className="border rounded px-2 py-1 text-xs bg-background"
               value={name}
@@ -185,9 +249,67 @@ export function ActivityMappingModal({
               placeholder="e.g., Reset user password"
             />
           </label>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const act = (
+                  mode === "edit" ? initialActivityName : name
+                )?.trim();
+                if (!act) {
+                  toast.error("Set an activity name first");
+                  return;
+                }
+                const prop = prompt("New property name");
+                const val = (prop || "").trim();
+                if (!val) return;
+                // Close modal and open property mapping sheet via event
+                onOpenChange(false);
+                window.dispatchEvent(
+                  new CustomEvent("open-op-mapping", {
+                    detail: { operationName: `${act}::${val}` },
+                  })
+                );
+              }}
+            >
+              Add property
+            </Button>
+            {Object.keys(properties).length > 0 && (
+              <div className="text-[11px] text-muted-foreground">
+                {Object.entries(properties).map(([p, count]) => (
+                  <button
+                    key={p}
+                    className="ml-1 px-1.5 py-0.5 border rounded bg-muted hover:bg-muted/70"
+                    title={`Edit ${name}::${p}`}
+                    onClick={() => {
+                      const act = (
+                        mode === "edit" ? initialActivityName : name
+                      )?.trim();
+                      if (!act) return;
+                      onOpenChange(false);
+                      window.dispatchEvent(
+                        new CustomEvent("open-op-mapping", {
+                          detail: { operationName: `${act}::${p}` },
+                        })
+                      );
+                    }}
+                  >
+                    <span className="font-mono">{p}</span>
+                    <span className="ml-1 text-[10px] text-muted-foreground">
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <label className="inline-flex items-center gap-2 text-xs">
-              <Checkbox checked={privOnly} onCheckedChange={() => setPrivOnly((v) => !v)} />
+              <Checkbox
+                checked={privOnly}
+                onCheckedChange={() => setPrivOnly((v) => !v)}
+              />
               Is privileged (filter list)
             </label>
             <input
@@ -198,18 +320,36 @@ export function ActivityMappingModal({
             />
           </div>
           <div className="border rounded h-[50vh] overflow-auto p-2 bg-muted/40">
-            {loading && <div className="text-[11px] text-muted-foreground">Loading actions…</div>}
+            {loading && (
+              <div className="text-[11px] text-muted-foreground">
+                Loading actions…
+              </div>
+            )}
             {!loading && filtered.length === 0 && (
-              <div className="text-[11px] text-muted-foreground">No actions</div>
+              <div className="text-[11px] text-muted-foreground">
+                No actions
+              </div>
             )}
             {!loading && filtered.length > 0 && (
               <ul className="space-y-1 text-xs">
                 {filtered.map((a) => {
                   const checked = selected.has(a.id);
                   return (
-                    <li key={a.id} className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-muted/50">
-                      <Checkbox checked={checked} onCheckedChange={() => toggle(a.id)} />
-                      <span className={`font-mono flex-1 ${checked ? "" : "text-muted-foreground"}`}>{a.action}</span>
+                    <li
+                      key={a.id}
+                      className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-muted/50"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => toggle(a.id)}
+                      />
+                      <span
+                        className={`font-mono flex-1 ${
+                          checked ? "" : "text-muted-foreground"
+                        }`}
+                      >
+                        {a.action}
+                      </span>
                       {a.isPrivileged && (
                         <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
                           priv
@@ -235,7 +375,11 @@ export function ActivityMappingModal({
             size="sm"
             onClick={save}
             disabled={saving || !hasChanges || !name.trim()}
-            className={hasChanges ? "border-emerald-600 text-emerald-700 dark:text-emerald-300" : ""}
+            className={
+              hasChanges
+                ? "border-emerald-600 text-emerald-700 dark:text-emerald-300"
+                : ""
+            }
           >
             {saving ? "Saving" : "Save"}
           </Button>
