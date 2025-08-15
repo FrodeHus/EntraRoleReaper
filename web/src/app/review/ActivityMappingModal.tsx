@@ -190,7 +190,9 @@ export function ActivityMappingModal({
         body: JSON.stringify(ids),
       });
       if (!res.ok) throw new Error("Failed to save mapping");
-      toast.success("Mapping saved", { description: `${ids.length} actions mapped` });
+  toast.success("Mapping saved", {
+    description: `${ids.length} actions mapped`,
+  });
       window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
       onSaved?.(actName);
       onOpenChange(false);

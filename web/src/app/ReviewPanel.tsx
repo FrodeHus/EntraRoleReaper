@@ -357,7 +357,7 @@ export function ReviewPanel({
     const rows = data.map((r) => ({
       userId: r.user.id,
       userDisplayName: r.user.displayName,
-      operationCount: r.operations.length,
+      activityCount: r.operations.length,
       activeRoleIds: r.activeRoles.map((a) => a.id).join("|"),
       eligiblePimRoleIds: r.eligiblePimRoles.map((a) => a.id).join("|"),
       addedRoleIds: r.addedRoles.map((a) => a.id).join("|"),
@@ -455,7 +455,7 @@ export function ReviewPanel({
                     setPage(1);
                   }}
                 >
-                  <option value="ops">Operations</option>
+                  <option value="ops">Activities</option>
                   <option value="name">User name</option>
                 </select>
               </div>
@@ -513,7 +513,7 @@ export function ReviewPanel({
                 <tr>
                   <th className="text-left p-2">Select</th>
                   <th className="text-left p-2">User</th>
-                  <th className="text-left p-2">Operations</th>
+                  <th className="text-left p-2">Activities</th>
                   <th className="text-left p-2">Active roles</th>
                   <th className="text-left p-2">Eligible roles</th>
                   <th className="text-left p-2">Add</th>

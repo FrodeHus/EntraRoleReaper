@@ -29,22 +29,48 @@ public class RoleAdvisor(ActivityPermissionAnalyzer permissionAnalyzer, IRoleSer
         return [.. suggestedRoles];
     }
 
-    public List<RoleDefinition> ConsolidateRoles(List<RoleDefinition> allSuggestedRoles, List<ResourceAction> requiredActions)
+    public List<RoleDefinition> ConsolidateRoles(List<RoleDefinition> allSuggestedRoles, List<ResourceAction> eligibleActions)
     {
         var finalRoles = new List<RoleDefinition>();
         var distinctRoles = allSuggestedRoles.Distinct();
-        var resourceGroups = requiredActions.Select(a => a.Action.Split('/')[1]).Distinct();
+        var resourceGroups = eligibleActions.Select(a => a.Action.Split('/')[1]).Distinct();
         var rolesByResourceGroup = new Dictionary<string, List<RoleDefinition>>();
         foreach (var resourceGroup in resourceGroups)
         {
-            var rolesForGroup = FindRolesForResourceGroup(distinctRoles, requiredActions, resourceGroup);
+            var rolesForGroup = FindRolesForResourceGroup(distinctRoles, eligibleActions, resourceGroup);
             if (rolesForGroup.Any())
             {
                 rolesByResourceGroup[resourceGroup] = [.. rolesForGroup];
             }
         }
+        
+        foreach(var resourceGroup in rolesByResourceGroup.Keys)
+        {
+            var rolesForGroup = rolesByResourceGroup[resourceGroup];
+            if (rolesForGroup.Count == 1)
+            {
+                finalRoles.Add(rolesForGroup[0]);
+            }
+            else
+            {
+                var leastPrivilegeRole = FindLeastPrivilegedRole(rolesForGroup, resourceGroup);
+                finalRoles.Add(leastPrivilegeRole);
+            }
+        }
         var roleCandidates = new List<RoleDefinition>();
-        return roleCandidates;
+        return finalRoles;
+    }
+
+    private RoleDefinition FindLeastPrivilegedRole(List<RoleDefinition> rolesForGroup, string resourceGroup)
+    {
+        var rolesByPrivilege = rolesForGroup
+            .GroupBy(role => role.PermissionSets.Count(ps => ps.ResourceActions != null && ps.ResourceActions.Any(ra => ra.IsPrivileged)))
+            .OrderBy(g => g.Key);
+        var leastPrivilegedGroup = rolesByPrivilege.First();
+        var rolesByGroupActions = leastPrivilegedGroup
+            .GroupBy(role => role.PermissionSets.SelectMany(ps => ps.ResourceActions ?? []).Count(ra => ra.Action.Split('/')[1] == resourceGroup))
+            .OrderBy(g => g.Key);
+        return rolesByGroupActions.First().FirstOrDefault() ?? leastPrivilegedGroup.First();
     }
 
     private IEnumerable<RoleDefinition> FindRolesForResourceGroup(IEnumerable<RoleDefinition> distinctRoles, List<ResourceAction> requiredActions, string resourceGroup)

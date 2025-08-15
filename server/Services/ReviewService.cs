@@ -3,7 +3,6 @@ using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
-using System.Text.Json;
 
 namespace EntraRoleReaper.Api.Services;
 
@@ -15,7 +14,7 @@ public class ReviewService(
     ICacheService cache
 ) : IReviewService
 {
-    
+
     public async Task<ReviewResponse> ReviewAsync(ReviewRequest request)
     {
         var userIds = await graphService.ExpandUsersOrGroupsAsync(request.UsersOrGroups);
@@ -59,10 +58,12 @@ public class ReviewService(
                     targets,
                     uid
                 );
-                allSuggestedRoles.AddRange( suggestedRoles );
+                allSuggestedRoles.AddRange(suggestedRoles);
             }
 
-            var consolidatedRoles = roleAdvisor.ConsolidateRoles(allSuggestedRoles, []);
+            var eligibleActions = mappedActivities.SelectMany(a => a.MappedResourceActions).ToList();
+
+            var consolidatedRoles = roleAdvisor.ConsolidateRoles(allSuggestedRoles, eligibleActions);
 
             var reviewedActivities = auditActivities.ConvertAll(a => new OperationReview
             (
@@ -89,8 +90,19 @@ public class ReviewService(
                 CurrentActiveRoles = [.. roles.Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))],
                 CurrentEligiblePimRoles = [.. pimRoles.Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))]
             };
+            consolidatedRoles = consolidatedRoles.Where(r => !roles.Any(role => role?.Id == r.Id) || pimRoles.Any(pimRole => pimRole?.Id == r.Id)).ToList();
+            var removedRoles = roles.Where(r => !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
+            removedRoles = pimRoles.Where(r => !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
 
-            var review = new UserReview(user, reviewedActivities, [], []);
+            var review = new UserReview(user, reviewedActivities, consolidatedRoles.ConvertAll(r => new SimpleRole
+            (
+                r.Id.ToString(),
+                r.DisplayName
+            )), removedRoles.Select(r => new SimpleRole
+            (
+                r.Id.ToString(),
+                r.DisplayName
+            )).ToList());
             results.Add(review);
         }
         return new ReviewResponse(results);

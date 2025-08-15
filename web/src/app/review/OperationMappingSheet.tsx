@@ -290,7 +290,7 @@ export function OperationMappingSheet({
             <div className="flex items-center justify-between">
               <SheetTitle>
                 <span className="flex items-center gap-2">
-                  Operation Mapping
+                  Activity Mapping
                   {operationName && (
                     <span className="font-mono text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
                       {operationName}

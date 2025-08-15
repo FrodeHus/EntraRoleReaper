@@ -125,7 +125,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
             return [];
         }
         return await dbContext.Activities
-            .Where(x => activityNames.Contains(x.Name))
+            .Where(x => activityNames.Contains(x.Name) && !x.IsExcluded)
             .Include(x => x.Properties)
             .Include(x => x.MappedResourceActions)
             .ToListAsync();

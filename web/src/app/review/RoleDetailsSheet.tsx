@@ -242,7 +242,7 @@ export function RoleDetailsSheet({
                                   const isCover =
                                     !isExact && matchedReq.length > 0;
                                   const title = isExact
-                                    ? "Required for user's operations"
+                                    ? "Required for user's activities"
                                     : isCover
                                     ? `Covers: ${matchedReq.join(", ")}`
                                     : undefined;

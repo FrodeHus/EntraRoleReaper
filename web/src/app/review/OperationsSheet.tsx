@@ -302,7 +302,7 @@ export function OperationsSheet({
         <SheetContent side="right">
           <SheetHeader>
             <div className="flex items-center justify-between">
-              <SheetTitle>Operations for {review.user.displayName}</SheetTitle>
+              <SheetTitle>Activities for {review.user.displayName}</SheetTitle>
               <Button
                 variant="ghost"
                 size="sm"
@@ -316,7 +316,7 @@ export function OperationsSheet({
           <div className="mt-4 space-y-3">
             <div className="flex gap-2">
               <input
-                placeholder="Filter operations"
+                placeholder="Filter activities"
                 className="border rounded px-2 py-1 text-xs w-1/2 bg-background"
                 value={opFilter}
                 onChange={(e) => setOpFilter(e.target.value)}
@@ -343,7 +343,7 @@ export function OperationsSheet({
             <div className="space-y-3">
               {opData.length === 0 && (
                 <div className="text-xs text-muted-foreground">
-                  No operations in period.
+                  No activities in period.
                 </div>
               )}
               {opData
@@ -397,7 +397,7 @@ export function OperationsSheet({
                             type="button"
                             onClick={() => excludeOp(op.op)}
                             className="ml-3 text-[11px] text-red-600 hover:underline dark:text-red-400"
-                            title="Exclude this operation from reviews"
+                            title="Exclude this activity from reviews"
                           >
                             Exclude
                           </button>

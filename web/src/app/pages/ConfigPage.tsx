@@ -455,7 +455,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                     a.href = URL.createObjectURL(blob);
                     const ts = new Date();
                     const pad = (n: number) => n.toString().padStart(2, "0");
-                    a.download = `operation-mappings-${ts.getFullYear()}${pad(
+                    a.download = `activity-mappings-${ts.getFullYear()}${pad(
                       ts.getMonth() + 1
                     )}${pad(ts.getDate())}.json`;
                     document.body.appendChild(a);
@@ -465,15 +465,15 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                       typeof json === "object" && json
                         ? Object.keys(json).length
                         : 0;
-                    toast.success("Exported operation mappings", {
-                      description: `${opCount} operations`,
+                    toast.success("Exported activity mappings", {
+                      description: `${opCount} activities`,
                     });
                   } catch {
                     toast.error("Export failed");
                   }
                 }}
               >
-                Export operation mappings
+                Export activity mappings
               </Button>
               <Button
                 className="ml-2"
@@ -488,8 +488,8 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                 Create mapping
               </Button>
               <p className="text-xs text-muted-foreground mt-1">
-                Download current operation and property-level mappings. Legacy
-                operations without property mappings export as an array; those
+                Download current activity and property-level mappings. Legacy
+                activities without property mappings export as an array; those
                 with properties export an object containing actions and a
                 properties map.
               </p>
@@ -497,14 +497,14 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
             <div>
               <form onSubmit={(e) => e.preventDefault()} className="space-y-2">
                 <label className="text-xs font-medium">
-                  Import operation/property mappings
+                  Import activity/property mappings
                 </label>
                 <input
                   type="file"
                   accept="application/json,.json"
                   className="block text-xs"
                   disabled={!accessToken}
-                  aria-label="Import operation mappings JSON file"
+                  aria-label="Import activity mappings JSON file"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file || !accessToken) return;
@@ -516,9 +516,9 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                 <p className="text-xs text-muted-foreground space-y-1">
                   <span>Upload JSON. Accepted formats:</span>
                   <br />
-                  <code className="bg-muted px-1 py-0.5 rounded text-[10px] inline-block">{`{"Operation": ["action"]}`}</code>
+                  <code className="bg-muted px-1 py-0.5 rounded text-[10px] inline-block">{`{"Activity": ["action"]}`}</code>
                   <span className="mx-1">or</span>
-                  <code className="bg-muted px-1 py-0.5 rounded text-[10px] inline-block">{`{"Operation": {"actions": ["action"], "properties": {"Prop": ["action"]}}}`}</code>
+                  <code className="bg-muted px-1 py-0.5 rounded text-[10px] inline-block">{`{"Activity": {"actions": ["action"], "properties": {"Prop": ["action"]}}}`}</code>
                   <br />
                   <span>
                     All existing mappings (including property mappings) will be
@@ -674,7 +674,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         {activeTab === "exclusions" && (
           <div className="space-y-3 text-sm max-w-md">
             <p className="text-xs text-muted-foreground">
-              Operations in this list are excluded from review output.
+              Activities in this list are excluded from review output.
             </p>
             <div className="flex gap-2 flex-wrap">
               <Button
@@ -689,12 +689,12 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                     });
                     const a = document.createElement("a");
                     a.href = URL.createObjectURL(blob);
-                    a.download = "operation-exclusions.json";
+                    a.download = "activity-exclusions.json";
                     document.body.appendChild(a);
                     a.click();
                     a.remove();
                     toast.success("Exported exclusions", {
-                      description: `${names.length} operations`,
+                      description: `${names.length} activities`,
                     });
                   } catch {
                     toast.error("Export failed");
@@ -999,7 +999,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
               <p className="text-xs text-muted-foreground leading-relaxed">
                 This will{" "}
                 <span className="font-semibold">
-                  delete all existing operation mappings
+                  delete all existing activity mappings
                 </span>{" "}
                 and replace them with the contents of{" "}
                 <code className="px-1 py-0.5 bg-muted rounded text-[11px]">
