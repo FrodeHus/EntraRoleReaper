@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Data.Repositories;
 
-public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository resourceActionRepository) : IRoleRepository
+public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository resourceActionRepository, ILogger<RoleRepository> logger) : IRoleRepository
 {
     public Task<int> GetRoleCountAsync()
     {
@@ -16,7 +16,28 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
         return dbContext.SaveChangesAsync();
     }
 
+    public async Task AddRangeAsync(IEnumerable<RoleDefinition> roles)
+    {
+        if (roles == null || !roles.Any())
+        {
+            return;
+        }
 
+        try
+        {
+            foreach (var role in roles)
+            {
+                dbContext.RoleDefinitions.Add(role);
+            }
+
+            await dbContext.SaveChangesAsync();
+        }catch (DbUpdateException ex)
+        {
+            // Handle specific database update exceptions if needed
+            logger.LogError(ex, "Failed to trying to add roles.");
+            throw new Exception("An error occurred while adding roles.", ex);
+        }
+    }
     public async Task AddRoleAsync(RoleDefinition role)
     {
         if (role == null)

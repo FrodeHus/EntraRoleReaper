@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { ReviewPage } from "./pages/ReviewPage";
-import { RolesPage } from "./pages/RolesPage";
 import { ConfigPage } from "./pages/ConfigPage";
 import { AppHeader } from "./components/AppHeader";
 import { SidebarNav } from "./components/SidebarNav";
@@ -136,10 +135,6 @@ export default function App() {
                 <Route
                   path="/"
                   element={<ReviewPage accessToken={accessToken} />}
-                />
-                <Route
-                  path="/roles"
-                  element={<RolesPage accessToken={accessToken} />}
                 />
                 <Route
                   path="/config"

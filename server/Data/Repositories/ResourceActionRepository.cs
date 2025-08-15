@@ -28,6 +28,33 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
         }
     }
 
+    public async Task<IEnumerable<ResourceAction>> AddRangeAsync(IEnumerable<ResourceAction> resourceActions)
+    {
+        var addedResourceActions = resourceActions.ToList();
+        if (addedResourceActions.Count == 0)
+        {
+            return [];
+        }
+
+        var addedActions = new List<ResourceAction>();
+        foreach (var action in addedResourceActions)
+        {
+            var existingAction = dbContext.ResourceActions
+                .FirstOrDefault(x => x.Action == action.Action);
+            if (existingAction != null)
+            {
+                addedActions.Add(existingAction);
+            }
+            else
+            {
+                addedActions.Add(action);
+                dbContext.ResourceActions.Add(action);
+            }
+        }
+        await dbContext.SaveChangesAsync();
+        return addedActions;
+    }
+
     public async Task<ResourceAction?> GetResourceActionByNameAsync(string name)
     {
         return await dbContext.ResourceActions.FirstOrDefaultAsync(x => x.Action == name);

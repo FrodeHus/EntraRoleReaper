@@ -4,6 +4,9 @@ import { toast } from "sonner";
 import { CacheStatusChip } from "../CacheStatusChip";
 import { RoleDetailsSheet } from "../review/RoleDetailsSheet";
 import type { RoleDetails } from "../review/types";
+import ActivityMappingModal from "../review/ActivityMappingModal";
+import { OperationMappingSheet } from "../review/OperationMappingSheet";
+import { Plus, Trash2 } from "lucide-react";
 
 // Simple tab primitives (could be replaced with a UI lib tabs in future)
 interface TabConfig {
@@ -61,6 +64,106 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     Array<{ id: number; operationName: string; createdUtc: string }>
   >([]);
   const [exclusionsLoading, setExclusionsLoading] = useState(false);
+
+  // Mappings tab state
+  const [mappingsLoading, setMappingsLoading] = useState(false);
+  const [mappings, setMappings] = useState<
+    Array<{
+      name: string;
+      actions: string[];
+      properties: Record<string, string[]>;
+    }>
+  >([]);
+  const [mappingModalOpen, setMappingModalOpen] = useState(false);
+  const [mappingModalMode, setMappingModalMode] = useState<"create" | "edit">(
+    "create"
+  );
+  const [mappingModalName, setMappingModalName] = useState<string | null>(null);
+  const [opSheetOpen, setOpSheetOpen] = useState(false);
+  const [opSheetOperationName, setOpSheetOperationName] = useState<
+    string | null
+  >(null);
+
+  const deletePropertyMap = useCallback(
+    async (activityName: string, propertyName: string) => {
+      if (!accessToken) return;
+      try {
+        const res = await fetch(
+          new URL(
+            `/api/operations/map/${encodeURIComponent(
+              activityName
+            )}/properties/${encodeURIComponent(propertyName)}`,
+            apiBase
+          ),
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }
+        );
+        if (!res.ok) throw new Error();
+        toast.success("Property mapping deleted", {
+          description: `${activityName}::${propertyName}`,
+        });
+        window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
+      } catch {
+        toast.error("Failed to delete property mapping");
+      }
+    },
+    [accessToken, apiBase]
+  );
+
+  const loadMappings = useCallback(async () => {
+    if (!accessToken || activeTab !== "mappings") return;
+    try {
+      setMappingsLoading(true);
+      const res = await fetch(new URL("/api/operations/map/export", apiBase), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      // json is expected to be an array of ActivityExport
+      const arr: any[] = Array.isArray(json)
+        ? json
+        : typeof json === "object" && json
+        ? Object.values(json as any)
+        : [];
+      const list = arr.map((it) => {
+        const name = String(it.name ?? it.Name ?? "");
+        const actions: string[] = Array.isArray(it.mappedResourceActions)
+          ? it.mappedResourceActions
+          : Array.isArray(it.MappedResourceActions)
+          ? it.MappedResourceActions
+          : [];
+        const props: Record<string, string[]> = (it.properties ??
+          it.Properties ??
+          {}) as any;
+        return { name, actions, properties: props };
+      });
+      // sort alphabetically
+      list.sort((a, b) => a.name.localeCompare(b.name));
+      setMappings(list);
+    } catch {
+      setMappings([]);
+    } finally {
+      setMappingsLoading(false);
+    }
+  }, [accessToken, apiBase, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "mappings") {
+      loadMappings();
+    }
+  }, [activeTab, loadMappings]);
+
+  useEffect(() => {
+    const handler = () => {
+      // refresh mappings when updated elsewhere
+      loadMappings();
+    };
+    window.addEventListener("operation-mappings-updated", handler as any);
+    return () =>
+      window.removeEventListener("operation-mappings-updated", handler as any);
+  }, [loadMappings]);
 
   const loadExclusions = useCallback(async () => {
     if (!accessToken || activeTab !== "exclusions") return;
@@ -309,7 +412,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         )}
 
         {activeTab === "mappings" && (
-          <div className="grid gap-4 text-sm max-w-md">
+          <div className="grid gap-4 text-sm">
             <div>
               <Button
                 variant="outline"
@@ -351,6 +454,18 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
               >
                 Export operation mappings
               </Button>
+              <Button
+                className="ml-2"
+                size="sm"
+                disabled={!accessToken}
+                onClick={() => {
+                  setMappingModalMode("create");
+                  setMappingModalName(null);
+                  setMappingModalOpen(true);
+                }}
+              >
+                Create mapping
+              </Button>
               <p className="text-xs text-muted-foreground mt-1">
                 Download current operation and property-level mappings. Legacy
                 operations without property mappings export as an array; those
@@ -390,6 +505,147 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                   </span>
                 </p>
               </form>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">Current mappings</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={mappingsLoading || !accessToken}
+                  onClick={() => loadMappings()}
+                >
+                  {mappingsLoading ? "Refreshing" : "Refresh"}
+                </Button>
+              </div>
+              <div className="border rounded h-[55vh] overflow-auto text-xs divide-y bg-card text-card-foreground">
+                {mappingsLoading && (
+                  <div className="p-2 text-muted-foreground">Loading…</div>
+                )}
+                {!mappingsLoading && mappings.length === 0 && (
+                  <div className="p-2 text-muted-foreground">No mappings.</div>
+                )}
+                {!mappingsLoading && mappings.length > 0 && (
+                  <ul>
+                    {mappings.map((m) => {
+                      const propKeys = Object.keys(m.properties || {});
+                      const propCount = propKeys.length;
+                      return (
+                        <li key={m.name} className="p-2">
+                          <button
+                            className="w-full text-left flex items-center gap-2 hover:underline"
+                            onClick={() => {
+                              setMappingModalMode("edit");
+                              setMappingModalName(m.name);
+                              setMappingModalOpen(true);
+                            }}
+                            title="Edit base mapping"
+                          >
+                            <span className="font-mono break-all flex-1">
+                              {m.name}
+                            </span>
+                            <span className="text-[10px] px-1 rounded border bg-muted text-muted-foreground">
+                              actions: {m.actions.length}
+                            </span>
+                            <span className="text-[10px] px-1 rounded border bg-muted text-muted-foreground">
+                              properties: {propCount}
+                            </span>
+                          </button>
+                          {propCount > 0 && (
+                            <div className="mt-2 flex flex-wrap items-center gap-1">
+                              {propKeys.slice(0, 20).map((p) => (
+                                <div
+                                  key={`${m.name}::${p}`}
+                                  className="inline-flex items-center gap-1"
+                                >
+                                  <button
+                                    className="px-1.5 py-0.5 border rounded bg-muted hover:bg-muted/70"
+                                    title={`Edit property mapping: ${m.name}::${p}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpSheetOperationName(
+                                        `${m.name}::${p}`
+                                      );
+                                      setOpSheetOpen(true);
+                                    }}
+                                  >
+                                    <span className="font-mono">{p}</span>
+                                    <span className="ml-1 text-[10px] text-muted-foreground">
+                                      {m.properties?.[p]?.length ?? 0}
+                                    </span>
+                                  </button>
+                                  <button
+                                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                    title={`Delete ${m.name}::${p}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deletePropertyMap(m.name, p);
+                                    }}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                              {propKeys.length > 20 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  …
+                                </span>
+                              )}
+                              <button
+                                className="ml-2 px-1.5 py-0.5 border rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 flex items-center gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const prop = prompt("New property name");
+                                  const val = (prop || "").trim();
+                                  if (!val) return;
+                                  // if property exists, just open
+                                  if (
+                                    Object.keys(m.properties || {}).some(
+                                      (k) =>
+                                        k.toLowerCase() === val.toLowerCase()
+                                    )
+                                  ) {
+                                    setOpSheetOperationName(
+                                      `${m.name}::${val}`
+                                    );
+                                    setOpSheetOpen(true);
+                                    return;
+                                  }
+                                  setOpSheetOperationName(`${m.name}::${val}`);
+                                  setOpSheetOpen(true);
+                                }}
+                                title="Add property"
+                              >
+                                <Plus className="h-3 w-3" />
+                                <span>Add property</span>
+                              </button>
+                            </div>
+                          )}
+                          {propCount === 0 && (
+                            <div className="mt-2">
+                              <button
+                                className="px-1.5 py-0.5 border rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 flex items-center gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const prop = prompt("New property name");
+                                  const val = (prop || "").trim();
+                                  if (!val) return;
+                                  setOpSheetOperationName(`${m.name}::${val}`);
+                                  setOpSheetOpen(true);
+                                }}
+                                title="Add property"
+                              >
+                                <Plus className="h-3 w-3" />
+                                <span>Add property</span>
+                              </button>
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -824,6 +1080,22 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
           } as any)
         }
         loading={roleDetailsLoading}
+      />
+      <ActivityMappingModal
+        open={mappingModalOpen}
+        onOpenChange={(o) => setMappingModalOpen(o)}
+        accessToken={accessToken}
+        apiBase={apiBase}
+        initialActivityName={mappingModalName}
+        mode={mappingModalMode}
+        onSaved={() => loadMappings()}
+      />
+      <OperationMappingSheet
+        open={opSheetOpen}
+        onOpenChange={(o) => setOpSheetOpen(o)}
+        operationName={opSheetOperationName}
+        accessToken={accessToken}
+        apiBase={apiBase}
       />
     </>
   );

@@ -14,12 +14,14 @@ public interface IRoleService
 
     Task<IEnumerable<RoleDefinition>>
         SearchRolesAsync(string? searchTerm, bool privilegedOnly = false, int limit = 100);
+
     Task<IEnumerable<RoleDefinition>> GetUserRolesAsync(string userId);
 }
 
 public class RoleService(
     IRoleRepository roleRepository,
     IGraphService graphService,
+    IResourceActionRepository resourceActionRepository,
     ILogger<RoleService> logger) : IRoleService
 {
     public async Task InitializeAsync(bool forceRefresh = false)
@@ -33,6 +35,7 @@ public class RoleService(
         try
         {
             await roleRepository.ClearAsync();
+
             var roles = await graphService.GetAllRoleDefinitions();
             if (roles == null || !roles.Any())
             {
@@ -40,8 +43,17 @@ public class RoleService(
                 return;
             }
 
+            roles = roles.Distinct().ToList();
+
             logger.LogInformation("Initializing roles from Graph API, found {RoleCount} roles.", roles.Count);
             var resourceActionMetadata = await graphService.GetResourceActionMetadataAsync();
+            var resourceActions = resourceActionMetadata.Select(kvp => new ResourceAction
+            {
+                Action = kvp.Key,
+                IsPrivileged = kvp.Value
+            }).ToList();
+            var addedResourceActions = await resourceActionRepository.AddRangeAsync(resourceActions);
+            var addedRoles = new List<RoleDefinition>();
             foreach (var role in roles)
             {
                 var roleDefinition = new RoleDefinition
@@ -54,16 +66,18 @@ public class RoleService(
                     PermissionSets = (role.RolePermissions ?? []).Select(p => new PermissionSet
                     {
                         Condition = p.Condition,
-                        ResourceActions = p.AllowedResourceActions?.Select(ra => new ResourceAction
-                        {
-                            Action = ra,
-                            IsPrivileged = resourceActionMetadata.ContainsKey(ra) && resourceActionMetadata[ra]
-                        }).ToList()
+                        ResourceActions = p.AllowedResourceActions
+                            ?.Select(ra => addedResourceActions.First(a => a.Action == ra)).ToList()
                     }).ToList()
                 };
-                await roleRepository.AddRoleAsync(roleDefinition);
+                addedRoles.Add(roleDefinition);
                 logger.LogInformation("Added new role: {RoleName}", role.DisplayName);
             }
+            var distinctRoles = addedRoles
+                .GroupBy(r => r.DisplayName)
+                .Select(g => g.First())
+                .ToList();
+            await roleRepository.AddRangeAsync(addedRoles);
         }
         catch (Exception ex)
         {
@@ -159,12 +173,12 @@ public class RoleService(
     public async Task<IEnumerable<RoleDefinition>> GetUserRolesAsync(string userId)
     {
         var ctx = await graphService.GetUserAndRolesAsync(userId);
-        var userRoleIds= ctx.ActiveRoleIds;
+        var userRoleIds = ctx.ActiveRoleIds;
         userRoleIds.AddRange(ctx.EligibleRoleIds);
         userRoleIds.AddRange(ctx.PimActiveRoleIds);
         userRoleIds = [.. userRoleIds.Distinct()];
         var userRoles = new List<RoleDefinition>();
-        foreach(var roleId in userRoleIds)
+        foreach (var roleId in userRoleIds)
         {
             var role = await GetRoleByIdAsync(roleId);
             if (role != null)
@@ -172,6 +186,7 @@ public class RoleService(
                 userRoles.Add(role);
             }
         }
+
         return userRoles;
     }
 }

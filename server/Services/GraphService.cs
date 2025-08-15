@@ -204,18 +204,18 @@ public class GraphService(IGraphServiceFactory graphServiceFactory) : IGraphServ
         return groupedByActivity;
     }
 
-    private async Task<List<string?>> GetRoleAssignmentsAsync(string userId)
+    private async Task<List<string>> GetRoleAssignmentsAsync(string userId)
     {
         var assignments = await GraphClient.RoleManagement.Directory.RoleAssignments.GetAsync(q =>
         {
-
-            {
-                q.QueryParameters.Filter = $"principalId eq '{userId}'";
-                q.QueryParameters.Top = 50;
-            }
-            ;
+            q.QueryParameters.Filter = $"principalId eq '{userId}'";
+            q.QueryParameters.Top = 50;
         });
-        return assignments?.Value?.Select(a => a.RoleDefinitionId).ToList() ?? [];
+        return assignments?.Value?
+            .Select(a => a.RoleDefinitionId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id!)
+            .ToList() ?? new List<string>();
     }
     private async Task<(
         List<string> eligibleRoleIds,
@@ -279,32 +279,41 @@ public class GraphService(IGraphServiceFactory graphServiceFactory) : IGraphServ
     public async Task<Dictionary<string, bool>> GetResourceActionMetadataAsync()
     {
         var resourceActionsData = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        var resourceNamespaces = await GraphClient.RoleManagement.Directory.ResourceNamespaces.GetAsync();
-        foreach (var ns in resourceNamespaces?.Value ?? [])
+        var nsBuilder = GraphClient.RoleManagement.Directory.ResourceNamespaces;
+        var nsResponse = await nsBuilder.GetAsync();
+        while (nsResponse != null)
         {
-            if (string.IsNullOrWhiteSpace(ns?.Name)) continue;
-            var resourceActions = await GraphClient.RoleManagement.Directory.ResourceNamespaces[ns.Name].ResourceActions
-                .GetAsync();
-            foreach (var ra in resourceActions?.Value ?? [])
+            foreach (var ns in nsResponse.Value ?? [])
             {
-                var name = ra?.Name;
-                if (string.IsNullOrWhiteSpace(name)) continue;
-                var isPrivileged = false;
-                if (ra?.AdditionalData != null && ra.AdditionalData.TryGetValue("isPrivileged", out var raw))
+                if (string.IsNullOrWhiteSpace(ns.Name)) continue;
+                var actionsBuilder = GraphClient.RoleManagement.Directory.ResourceNamespaces[ns.Name].ResourceActions;
+                var raResponse = await actionsBuilder.GetAsync();
+                while (raResponse != null)
                 {
-                    isPrivileged = raw switch
+                    foreach (var ra in raResponse.Value ?? [])
                     {
-                        bool b => b,
-                        string s when bool.TryParse(s, out var pb) => pb,
-                        JsonElement je => je.ValueKind == JsonValueKind.True,
-                        _ => isPrivileged
-                    };
+                        var name = ra.Name;
+                        if (string.IsNullOrWhiteSpace(name)) continue;
+                        var isPrivileged = false;
+                        if (ra.AdditionalData != null && ra.AdditionalData.TryGetValue("isPrivileged", out var raw))
+                        {
+                            isPrivileged = raw switch
+                            {
+                                bool b => b,
+                                string s when bool.TryParse(s, out var pb) => pb,
+                                JsonElement je => je.ValueKind == JsonValueKind.True,
+                                _ => false
+                            };
+                        }
+                        resourceActionsData.TryAdd(name, isPrivileged);
+                    }
+                    if (string.IsNullOrEmpty(raResponse.OdataNextLink)) break;
+                    raResponse = await actionsBuilder.WithUrl(raResponse.OdataNextLink).GetAsync();
                 }
-
-                resourceActionsData.TryAdd(name, isPrivileged);
             }
+            if (string.IsNullOrEmpty(nsResponse.OdataNextLink)) break;
+            nsResponse = await nsBuilder.WithUrl(nsResponse.OdataNextLink).GetAsync();
         }
-
         return resourceActionsData;
     }
 

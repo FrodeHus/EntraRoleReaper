@@ -1,10 +1,10 @@
 # Build the React app
-FROM node:20.14.0-alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
 
 # Install dependencies
 COPY web/package.json web/package-lock.json* ./
-RUN npm ci || npm install
+RUN apk update && apk upgrade && npm ci || npm install
 
 ARG VITE_AAD_TENANT_ID
 ARG VITE_AAD_CLIENT_ID
@@ -22,10 +22,10 @@ ENV VITE_AAD_TENANT_ID=$VITE_AAD_TENANT_ID \
 RUN npm run build
 
 # Runtime: nginx, serve static SPA and proxy /api to backend
-FROM nginx:1.27-alpine AS final
+FROM nginx:alpine AS final
 
 # Create non-root user and group
-RUN addgroup -S rolereaper-web && adduser -S rolereaper -G rolereaper-web
+RUN apk update && apk upgrade && addgroup -S rolereaper-web && adduser -S rolereaper -G rolereaper-web
 
 # Create temp dirs for non-root runtime
 RUN mkdir -p /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp

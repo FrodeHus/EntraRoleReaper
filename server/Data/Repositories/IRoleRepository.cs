@@ -13,6 +13,7 @@ public interface IRoleRepository
     Task UpdateRoleAsync(RoleDefinition role);
 
     Task AddRoleAsync(RoleDefinition role);
+    Task AddRangeAsync(IEnumerable<RoleDefinition> roles);
     Task<int> GetRoleCountAsync();
     Task ClearAsync();
     Task<IEnumerable<RoleDefinition>> SearchRolesAsync(string searchTerm, bool privilegedOnly = false, int limit = 100);
