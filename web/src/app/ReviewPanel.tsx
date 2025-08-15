@@ -180,8 +180,23 @@ export function ReviewPanel({
         }
       );
       if (!res.ok) return;
-      const json: ReviewResponse = await res.json();
-      setReport(json.results);
+      const raw: any = await res.json();
+      const results: any[] = (raw?.results ?? raw?.Results ?? []) as any[];
+      // Normalize to legacy frontend shape: promote currentActiveRoles/currentEligiblePimRoles to top-level
+      const normalized = results.map((r: any) => {
+        const activeRoles = Array.isArray(r.activeRoles)
+          ? r.activeRoles
+          : r.user?.currentActiveRoles ?? [];
+        const eligiblePimRoles = Array.isArray(r.eligiblePimRoles)
+          ? r.eligiblePimRoles
+          : r.user?.currentEligiblePimRoles ?? [];
+        return {
+          ...r,
+          activeRoles,
+          eligiblePimRoles,
+        };
+      }) as unknown as UserReview[];
+      setReport(normalized);
     } finally {
       setLoading(false);
     }
@@ -191,8 +206,9 @@ export function ReviewPanel({
   useEffect(() => {
     if (!accessToken || !report || report.length === 0) return;
     const ops = new Set<string>();
-    for (const r of report)
-      for (const o of r.operations) if (o.operation) ops.add(o.operation);
+    for (const r of report ?? [])
+      for (const o of r.operations ?? [])
+        if (o?.operation) ops.add(o.operation);
     if (ops.size === 0) return;
     const controller = new AbortController();
     const refresh = async () => {
@@ -254,7 +270,9 @@ export function ReviewPanel({
     copy.sort((a, b) => {
       let cmp = 0;
       if (sortBy === "ops") {
-        cmp = a.operations.length - b.operations.length;
+        const aOps = (a.operations ?? []).length;
+        const bOps = (b.operations ?? []).length;
+        cmp = aOps - bOps;
       } else {
         // Case-insensitive locale compare for user display name
         cmp = a.user.displayName.localeCompare(b.user.displayName, undefined, {
@@ -281,10 +299,10 @@ export function ReviewPanel({
     if (!accessToken || !report || paged.length === 0) return;
     const idsToFetch = new Set<string>();
     for (const r of paged) {
-      for (const sr of r.activeRoles) idsToFetch.add(sr.id);
-      for (const sr of r.eligiblePimRoles) idsToFetch.add(sr.id);
-      for (const ar of r.addedRoles) idsToFetch.add(ar.id);
-      for (const rr of r.removedRoles) idsToFetch.add(rr.id);
+      for (const sr of r.activeRoles ?? []) idsToFetch.add(sr.id);
+      for (const sr of r.eligiblePimRoles ?? []) idsToFetch.add(sr.id);
+      for (const ar of r.addedRoles ?? []) idsToFetch.add(ar.id);
+      for (const rr of r.removedRoles ?? []) idsToFetch.add(rr.id);
       for (const op of r.operations)
         for (const p of op.permissions)
           for (const rid of p.grantedByRoleIds) idsToFetch.add(rid);
@@ -356,9 +374,9 @@ export function ReviewPanel({
   };
 
   const computeCounts = (r: UserReview) => ({
-    current: r.activeRoles.length,
-    add: r.addedRoles.length,
-    remove: r.removedRoles.length,
+    current: (r.activeRoles ?? []).length,
+    add: (r.addedRoles ?? []).length,
+    remove: (r.removedRoles ?? []).length,
   });
 
   return (
@@ -519,8 +537,8 @@ export function ReviewPanel({
                       <td className="p-2">{r.user.displayName}</td>
                       <td className="p-2">
                         <div className="flex items-center gap-2">
-                          <span>{r.operations.length}</span>
-                          {r.operations.length > 0 && (
+                          <span>{r.operations?.length ?? 0}</span>
+                          {(r.operations?.length ?? 0) > 0 && (
                             <Button
                               variant="link"
                               size="icon"
@@ -549,7 +567,7 @@ export function ReviewPanel({
                         )}
                       </td>
                       <td className="p-2">
-                        {r.eligiblePimRoles.length === 0 ? (
+                        {(r.eligiblePimRoles?.length ?? 0) === 0 ? (
                           <span
                             className="inline-flex items-center justify-center w-5 h-5 text-muted-foreground"
                             title="None"
@@ -559,7 +577,7 @@ export function ReviewPanel({
                           </span>
                         ) : (
                           <span className="inline-flex items-center rounded-md bg-purple-400/10 px-2 py-1 text-xs font-medium text-purple-900 inset-ring-purple-800 dark:text-purple-400 inset-ring dark:inset-ring-purple-400/30">
-                            {r.eligiblePimRoles.length}
+                            {r.eligiblePimRoles?.length ?? 0}
                           </span>
                         )}
                       </td>

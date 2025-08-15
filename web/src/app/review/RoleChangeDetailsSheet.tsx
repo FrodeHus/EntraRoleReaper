@@ -49,7 +49,7 @@ export function RoleChangeDetailsSheet({
                         })
                       }
                     >
-                      {roleNameLookup(r.id)}
+                      {r.displayName ?? roleNameLookup(r.id)}
                     </button>
                     {review.eligiblePimRoles.some((er) => er.id === r.id) && (
                       <span className="text-indigo-700 bg-indigo-50 border border-indigo-200 rounded px-1 text-[10px] dark:text-indigo-300 dark:bg-indigo-900/20 dark:border-indigo-700">
@@ -91,7 +91,7 @@ export function RoleChangeDetailsSheet({
                             })
                           }
                         >
-                          {roleNameLookup(r.id)}
+                          {r.displayName ?? roleNameLookup(r.id)}
                         </button>
                         <span className="text-indigo-700 dark:text-indigo-300 text-[10px]">
                           Eligible
@@ -127,7 +127,7 @@ export function RoleChangeDetailsSheet({
                         })
                       }
                     >
-                      {roleNameLookup(r.id)}
+                      {r.displayName ?? roleNameLookup(r.id)}
                     </button>
                     <span className="text-emerald-700 dark:text-emerald-300 text-[10px]">
                       Add
@@ -161,7 +161,7 @@ export function RoleChangeDetailsSheet({
                         })
                       }
                     >
-                      {roleNameLookup(r.id)}
+                      {r.displayName ?? roleNameLookup(r.id)}
                     </button>
                     <span className="text-red-700 dark:text-red-300 text-[10px]">
                       Remove
