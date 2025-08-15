@@ -19,6 +19,7 @@ export default function App() {
   const { theme, toggleTheme } = useTheme();
   const { accessToken } = useAccessToken();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const firstFocusableRef = useRef<HTMLButtonElement | null>(null);
@@ -37,21 +38,36 @@ export default function App() {
   const logout = () => instance.logoutRedirect();
   // toggleTheme provided by useTheme hook
 
-  // Restore/persist drawer state
+  // Restore/persist drawer state (scoped per tenant)
   useEffect(() => {
     try {
-      if (localStorage.getItem("er.drawerOpen") === "1") setSidebarOpen(true);
+      const key = (name: string) =>
+        tenantDomain ? `er.${tenantDomain}.${name}` : `er.${name}`;
+      if (localStorage.getItem(key("drawerOpen")) === "1") setSidebarOpen(true);
+      if (localStorage.getItem(key("sidebarPinned")) === "1")
+        setSidebarPinned(true);
     } catch {}
-  }, []);
+  }, [tenantDomain]);
   useEffect(() => {
     try {
-      localStorage.setItem("er.drawerOpen", sidebarOpen ? "1" : "0");
+      const key = tenantDomain
+        ? `er.${tenantDomain}.drawerOpen`
+        : "er.drawerOpen";
+      localStorage.setItem(key, sidebarOpen ? "1" : "0");
     } catch {}
-  }, [sidebarOpen]);
+  }, [sidebarOpen, tenantDomain]);
+  useEffect(() => {
+    try {
+      const key = tenantDomain
+        ? `er.${tenantDomain}.sidebarPinned`
+        : "er.sidebarPinned";
+      localStorage.setItem(key, sidebarPinned ? "1" : "0");
+    } catch {}
+  }, [sidebarPinned, tenantDomain]);
 
   // Focus trap for mobile sidebar
   useEffect(() => {
-    if (!sidebarOpen) return;
+    if (!sidebarOpen || sidebarPinned) return;
     const sidebar = document.querySelector(
       '[data-sidebar="true"]'
     ) as HTMLElement | null;
@@ -120,21 +136,30 @@ export default function App() {
               onClose={() => setSidebarOpen(false)}
               tenantDomain={tenantDomain}
               lastFocusableRef={lastFocusableRef}
+              pinned={sidebarPinned}
+              onTogglePinned={() => setSidebarPinned((p) => !p)}
             />
-            <div
-              className={`fixed inset-0 z-40 transition-opacity duration-300 ease-in-out ${
-                sidebarOpen
-                  ? "opacity-100 bg-black/40 backdrop-blur-sm"
-                  : "pointer-events-none opacity-0"
-              }`}
-              aria-hidden="true"
-              onClick={() => setSidebarOpen(false)}
-            />
+            {!sidebarPinned && (
+              <div
+                className={`fixed inset-0 z-40 transition-opacity duration-300 ease-in-out ${
+                  sidebarOpen
+                    ? "opacity-100 bg-black/40 backdrop-blur-sm"
+                    : "pointer-events-none opacity-0"
+                }`}
+                aria-hidden="true"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
             <div className="flex-1 space-y-6">
               <Routes>
                 <Route
                   path="/"
-                  element={<ReviewPage accessToken={accessToken} />}
+                  element={
+                    <ReviewPage
+                      accessToken={accessToken}
+                      tenantDomain={tenantDomain}
+                    />
+                  }
                 />
                 <Route
                   path="/config"

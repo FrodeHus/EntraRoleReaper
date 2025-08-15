@@ -1,18 +1,58 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Users, Plus, X, ChevronRight, ChevronDown } from "lucide-react";
 import { SearchUsers, type DirectoryItem } from "../SearchUsers";
 import { ReviewPanel } from "../ReviewPanel";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "../../components/ui/sheet";
 
 interface ReviewPageProps {
   accessToken: string | null;
+  tenantDomain: string;
 }
 
-export function ReviewPage({ accessToken }: ReviewPageProps) {
+export function ReviewPage({ accessToken, tenantDomain }: ReviewPageProps) {
   const [selected, setSelected] = useState<DirectoryItem[]>([]);
   const [openSearch, setOpenSearch] = useState(false);
   const [subjectsOpen, setSubjectsOpen] = useState(false);
+
+  // Restore previously selected users/groups from localStorage
+  useEffect(() => {
+    try {
+      const key = tenantDomain
+        ? `er.${tenantDomain}.selectedSubjects`
+        : `er.selectedSubjects`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        // Basic validation of shape
+        const valid = arr.filter(
+          (x: any) =>
+            x &&
+            typeof x.id === "string" &&
+            typeof x.displayName === "string" &&
+            (x.type === "user" || x.type === "group")
+        );
+        if (valid.length) setSelected(valid as DirectoryItem[]);
+      }
+    } catch {}
+  }, [tenantDomain]);
+
+  // Persist selection on change
+  useEffect(() => {
+    try {
+      const key = tenantDomain
+        ? `er.${tenantDomain}.selectedSubjects`
+        : `er.selectedSubjects`;
+      if (selected.length === 0) localStorage.removeItem(key);
+      else localStorage.setItem(key, JSON.stringify(selected));
+    } catch {}
+  }, [selected, tenantDomain]);
 
   return (
     <>
