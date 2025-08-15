@@ -136,4 +136,21 @@ public class RoleAdvisorTests
         Assert.Contains(suggestedRoles, r => r.DisplayName == "Global Administrator");
         Assert.Contains(suggestedRoles, r => r.DisplayName == "Groups Administrator");
     }
+
+    [Fact]
+    public async Task ConsolidateRoles_Should_Return_Least_Privilege_Roles_With_Requested_ResourceActions()
+    {
+        var roleService = new SimpleRoleService();
+        var graphService = new SimpleGraphService(new Dictionary<string, bool> { { "target1", true }, { "target2", false } });
+        var permissionAnalyzer = new ActivityPermissionAnalyzer(graphService);
+        var roleAdvisor = new RoleAdvisor(permissionAnalyzer, roleService);
+        var requestedActions = new List<ResourceAction>
+        {
+            new ResourceAction { Action = "/groups/members/update", IsPrivileged = false },
+            new ResourceAction { Action = "/groups/allProperties/allTasks", IsPrivileged = true }
+        };
+
+        var roles = roleAdvisor.ConsolidateRoles(await roleService.GetAllRolesAsync(), requestedActions);
+        Assert.Single(roles);
+    }
 }

@@ -1,3 +1,4 @@
+using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Interfaces;
@@ -35,6 +36,7 @@ public class ReviewService(
             // Audit operations + targets
             var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
             var mappedActivities = await activityService.GetActivitesAsync(auditActivities.Select(a => a.ActivityName));
+            var allSuggestedRoles = new List<RoleDefinition>();
             foreach (var activity in mappedActivities)
             {
                 if (activity.IsExcluded)
@@ -57,7 +59,10 @@ public class ReviewService(
                     targets,
                     uid
                 );
+                allSuggestedRoles.AddRange( suggestedRoles );
             }
+
+            var consolidatedRoles = roleAdvisor.ConsolidateRoles(allSuggestedRoles, []);
 
             var reviewedActivities = auditActivities.ConvertAll(a => new OperationReview
             (

@@ -28,4 +28,32 @@ public class RoleAdvisor(ActivityPermissionAnalyzer permissionAnalyzer, IRoleSer
         var suggestedRoles = allSuggestedRoles.Select(grant => grant.Role).Distinct();
         return [.. suggestedRoles];
     }
+
+    public List<RoleDefinition> ConsolidateRoles(List<RoleDefinition> allSuggestedRoles, List<ResourceAction> requiredActions)
+    {
+        var finalRoles = new List<RoleDefinition>();
+        var distinctRoles = allSuggestedRoles.Distinct();
+        var resourceGroups = requiredActions.Select(a => a.Action.Split('/')[1]).Distinct();
+        var rolesByResourceGroup = new Dictionary<string, List<RoleDefinition>>();
+        foreach (var resourceGroup in resourceGroups)
+        {
+            var rolesForGroup = FindRolesForResourceGroup(distinctRoles, requiredActions, resourceGroup);
+            if (rolesForGroup.Any())
+            {
+                rolesByResourceGroup[resourceGroup] = [.. rolesForGroup];
+            }
+        }
+        var roleCandidates = new List<RoleDefinition>();
+        return roleCandidates;
+    }
+
+    private IEnumerable<RoleDefinition> FindRolesForResourceGroup(IEnumerable<RoleDefinition> distinctRoles, List<ResourceAction> requiredActions, string resourceGroup)
+    {
+        return distinctRoles
+            .Where(role => role.PermissionSets
+                .Any(ps => ps.ResourceActions != null &&
+                           ps.ResourceActions.Any(ra => ra.Action.Split('/')[1] == resourceGroup &&
+                                                        requiredActions.Any(ra2 => ra2.Action == ra.Action))));
+
+    }
 }
