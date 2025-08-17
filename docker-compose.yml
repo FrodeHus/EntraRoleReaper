@@ -35,7 +35,7 @@ services:
       dockerfile: web/Dockerfile
       args:
         VITE_AAD_TENANT_ID: ${AZUREAD_TENANT_ID}
-        VITE_AAD_CLIENT_ID: ${VITE_AAD_CLIENT_ID}
+        VITE_AAD_CLIENT_ID: ${AZUREAD_CLIENT_ID}
         VITE_API_SCOPE: ${VITE_API_SCOPE}
         VITE_API_URL: http://localhost:5173
     image: entrarolereaper-web:local

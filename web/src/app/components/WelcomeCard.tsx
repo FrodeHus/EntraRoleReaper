@@ -48,7 +48,7 @@ export function WelcomeCard({ onSignIn }: WelcomeCardProps) {
             title={
               adminConsentUrl
                 ? "Open Entra ID admin consent flow"
-                : "Set VITE_AAD_TENANT_ID and VITE_AAD_CLIENT_ID to enable"
+                : "Set AZUREAD_TENANT_ID and AZUREAD_CLIENT_ID to enable"
             }
           >
             Onboard tenant

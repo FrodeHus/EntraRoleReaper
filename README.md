@@ -27,19 +27,14 @@ Full-stack app to perform access reviews of Entra ID users.
 
 ## Azure AD/Entra app registrations
 
-Create two app registrations:
+Create app registration:
 
-1. SPA (frontend)
-
-- Type: Single-page application
-- Redirect URI: <http://localhost:5173>
-- Expose no API. Add delegated permissions to the backend API scope once created.
-
-2. Web API (backend)
+Web API (backend)
 
 - Type: Web API (confidential)
 - Redirect URI (Web): <http://localhost:5099/signin-oidc> (not used directly but required by some portals)
-- Expose an API: api://<BACKEND_APP_ID> with scope access_as_user
+- Redirect URI (Single Page Application): <http://localhost:5173>
+- Expose an API: api://entra-role-reaper with scope access_as_user
 - Client secret: create and store securely
 
 Grant admin consent to API permissions required by the API to call Microsoft Graph on-behalf-of the user:
@@ -80,8 +75,7 @@ AZUREAD_CLIENT_ID=
 AZUREAD_CLIENT_SECRET=
 AZUREAD_AUDIENCE=
 AZUREAD_DOMAIN=
-
-VITE_AAD_CLIENT_ID=
+# Web (SPA) MSAL settings
 VITE_API_SCOPE=
 ```
 
@@ -119,8 +113,7 @@ Security hardening applied:
 
 Frontend: copy `.env.example` to `.env` and set:
 
-VITE_AAD_TENANT_ID=YOUR_TENANT_ID
-VITE_AAD_CLIENT_ID=FRONTEND_SPA_APP_ID
+
 VITE_API_SCOPE=api://BACKEND_APP_ID/access_as_user
 VITE_API_URL=<http://localhost:5099>
 
