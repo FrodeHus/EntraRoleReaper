@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { CheckCircle, AlertTriangle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAccessToken } from "../hooks/useAccessToken";
+import { useMsal } from "@azure/msal-react";
 
 export function OnboardPage() {
-  const [step, setStep] = useState(1);
+  const [searchParams] = useSearchParams();
+  const initialStepRaw = Number(searchParams.get("step") || "1");
+  const initialStep = isNaN(initialStepRaw)
+    ? 1
+    : Math.max(1, Math.min(3, initialStepRaw));
+  const [step, setStep] = useState(initialStep);
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [verifySuccess, setVerifySuccess] = useState<null | {
@@ -13,8 +20,21 @@ export function OnboardPage() {
     domain?: string;
   }>(null);
   const navigate = useNavigate();
+  const { accessToken } = useAccessToken();
+  const { instance } = useMsal();
   const tenantId = import.meta.env.VITE_AAD_TENANT_ID as string | undefined;
   const clientId = import.meta.env.VITE_AAD_CLIENT_ID as string | undefined;
+  const apiScope = import.meta.env.VITE_API_SCOPE as string;
+  // Build a redirect back to the onboard page, landing on step=3
+  const onboardRedirect = (() => {
+    try {
+      const url = new URL("/onboard", window.location.origin);
+      url.searchParams.set("step", "3");
+      return url.toString();
+    } catch {
+      return undefined;
+    }
+  })();
   const adminConsentUrl =
     tenantId && clientId
       ? `https://login.microsoftonline.com/${encodeURIComponent(
@@ -23,10 +43,12 @@ export function OnboardPage() {
           clientId
         )}&scope=${encodeURIComponent(
           "https://graph.microsoft.com/.default"
-        )}&redirect_uri=${encodeURIComponent(window.location.origin)}`
+        )}&redirect_uri=${encodeURIComponent(
+          onboardRedirect || window.location.origin
+        )}`
       : undefined;
 
-  const verify = async () => {
+  const doVerify = async (token: string) => {
     setVerifying(true);
     setVerifyError(null);
     setVerifySuccess(null);
@@ -37,6 +59,7 @@ export function OnboardPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -49,7 +72,6 @@ export function OnboardPage() {
         throw new Error(detail || `Verification failed (HTTP ${res.status}).`);
       }
       const json = await res.json();
-      // Redirect to home with a one-time success banner
       navigate("/", { replace: true, state: { verifiedTenant: json } });
     } catch (e: any) {
       setVerifyError(e?.message || "Verification failed. Please retry.");
@@ -57,6 +79,42 @@ export function OnboardPage() {
       setVerifying(false);
     }
   };
+
+  const verify = async () => {
+    setVerifyError(null);
+    setVerifySuccess(null);
+    try {
+      if (!accessToken) {
+        const url = new URL("/onboard", window.location.origin);
+        url.searchParams.set("step", "3");
+        url.searchParams.set("action", "verify");
+        await instance.loginRedirect({
+          scopes: [apiScope],
+          redirectStartPage: url.toString(),
+        });
+        return; // Redirecting to sign-in; after return we'll auto-verify
+      }
+      await doVerify(accessToken);
+    } catch (e: any) {
+      setVerifyError(e?.message || "Verification failed. Please retry.");
+    }
+  };
+
+  // After returning from sign-in, if action=verify and we have a token, run verification automatically
+  useEffect(() => {
+    const intent = searchParams.get("action");
+    if (
+      intent === "verify" &&
+      step === 3 &&
+      accessToken &&
+      !verifying &&
+      !verifySuccess &&
+      !verifyError
+    ) {
+      void doVerify(accessToken);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, step, accessToken]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -97,13 +155,15 @@ export function OnboardPage() {
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
-                  onClick={() =>
-                    adminConsentUrl &&
-                    window.open(adminConsentUrl, "_blank", "noopener")
-                  }
+                  onClick={() => {
+                    if (adminConsentUrl) {
+                      // Navigate in the same tab so we naturally return here after consent
+                      window.location.assign(adminConsentUrl);
+                    }
+                  }}
                   disabled={!adminConsentUrl}
                 >
-                  Open admin consent
+                  Grant admin consent
                 </Button>
                 <Button onClick={() => setStep(3)}>Already completed</Button>
               </div>
