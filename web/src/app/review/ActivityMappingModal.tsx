@@ -175,7 +175,7 @@ export function ActivityMappingModal({
     try {
       setSaving(true);
       const ids = Array.from(selected);
-      const url = new URL(`/api/activity/mapping`, apiBase);
+  const url = new URL(`/api/activity/activity`, apiBase);
       const res = await fetch(url, {
         method: "PUT",
         headers: {

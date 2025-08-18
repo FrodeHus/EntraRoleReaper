@@ -57,7 +57,7 @@ export function OperationMappingSheet({
       setLoading(true);
       setError(null);
       if (parsed.prop) {
-        // Property-level: there is no dedicated GET; fetch base mapping to get the 'all' list and start with none mapped.
+        // Property-level: fetch base mapping to get the 'all' list and start with none mapped.
         const baseUrl = new URL(
           `/api/activity/mapping/${encodeURIComponent(parsed.op)}`,
           apiBase
@@ -67,17 +67,27 @@ export function OperationMappingSheet({
         });
         if (!baseRes.ok) throw new Error("Failed to load base mapping");
         const baseJson = (await baseRes.json()) as any;
+        const rawAll: any[] = Array.isArray(baseJson.AllActions)
+          ? baseJson.AllActions
+          : Array.isArray(baseJson.all)
+          ? baseJson.all
+          : [];
+        const all: MappingAction[] = rawAll.map((a) => ({
+          id: String(a.id ?? a.Id ?? a.ID),
+          action: String(a.action ?? a.Action),
+          isPrivileged: Boolean(a.isPrivileged ?? a.IsPrivileged),
+        }));
         const merged: MappingData = {
           operationName: `${parsed.op}::${parsed.prop}`,
-          exists: true,
+          exists: false,
           mapped: [],
-          all: Array.isArray(baseJson.all)
-            ? (baseJson.all as MappingAction[])
-            : [],
+          all,
         };
         setData(merged);
         setSelected(new Set<string>());
         setOriginalSelected(new Set<string>());
+        // Show all when nothing is mapped yet
+        setShowMappedOnly(false);
       } else {
         const url = new URL(
           `/api/activity/mapping/${encodeURIComponent(parsed.op)}`,
@@ -89,8 +99,8 @@ export function OperationMappingSheet({
         if (!res.ok) throw new Error("Failed to load mapping");
         const json = (await res.json()) as any;
         // Normalize 'all' items to { id, action, isPrivileged } regardless of casing
-        const rawAll: any[] = Array.isArray(json.AllActions)
-          ? json.AllActions
+        const rawAll: any[] = Array.isArray(json.allActions)
+          ? json.allActions
           : Array.isArray(json.all)
           ? json.all
           : [];
@@ -100,8 +110,8 @@ export function OperationMappingSheet({
           isPrivileged: Boolean(a.isPrivileged ?? a.IsPrivileged),
         }));
         // 'mapped' comes back as an array of action names (strings)
-        const mappedNames: string[] = Array.isArray(json.MappedActions)
-          ? (json.MappedActions as any[]).map((m) => String(m))
+        const mappedNames: string[] = Array.isArray(json.mappedActions)
+          ? (json.mappedActions as any[]).map((m) => String(m))
           : Array.isArray(json.mapped)
           ? (json.mapped as any[]).map((m) => String(m))
           : [];
@@ -127,6 +137,8 @@ export function OperationMappingSheet({
         setData(dataObj);
         setSelected(new Set<string>(Array.from(selectedIds)));
         setOriginalSelected(new Set<string>(Array.from(selectedIds)));
+        // If nothing is mapped, default to show all
+        setShowMappedOnly(selectedIds.size > 0);
       }
     } catch (e: any) {
       setError(e.message || "Failed to load");
@@ -137,7 +149,8 @@ export function OperationMappingSheet({
 
   useEffect(() => {
     if (open) {
-      setShowMappedOnly(true); // default on each open
+      // default on each open; will be adjusted after load() based on mapped count
+      setShowMappedOnly(false);
       load();
     } else {
       setData(null);
@@ -238,7 +251,7 @@ export function OperationMappingSheet({
           await load();
           saved = null; // load handles state
         } else {
-          const url = new URL(`/api/activity/mapping`, apiBase);
+          const url = new URL(`/api/activity/activity`, apiBase);
           const res = await fetch(url, {
             method: "PUT",
             headers: {

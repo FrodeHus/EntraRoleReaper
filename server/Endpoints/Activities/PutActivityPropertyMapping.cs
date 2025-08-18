@@ -10,12 +10,12 @@ public class PutActivityPropertyMapping : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder builder)
     {
-        builder.MapPut("/activity/property", Handle)
+        builder.MapPut("/property", Handle)
             .WithSummary("Updates the property mapping for an activity")
             .RequireAuthorization();
     }
 
-    private static async Task<Results<Ok, BadRequest<string>>> Handle(Guid activityId, [FromBody] PutActivityPropertyMappingRequest request, IActivityService activityService)
+    private static async Task<Results<Ok, BadRequest<string>>> Handle(Guid activityId, [FromBody] PutActivityPropertyMappingRequest request, [FromServices] IActivityService activityService)
     {
         if (activityId == Guid.Empty || string.IsNullOrWhiteSpace(request.PropertyName) || request.ResourceActionIds == null || request.ResourceActionIds.Length == 0)
         {

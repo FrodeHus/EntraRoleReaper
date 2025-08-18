@@ -11,7 +11,7 @@ public class PutActivityMapping : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder builder)
     {
-        builder.MapPut("/mapping", Handle)
+        builder.MapPut("/activity", Handle)
             .WithSummary("Updates the mapping of an activity to a specific resource action")
             .RequireAuthorization();
     }
