@@ -953,7 +953,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                         >
                           {r.displayName || r.DisplayName}
                         </button>
-                        {/* Show PIM badge when role has any privileged actions */}
+                        {/* Show privileged badge when role has any privileged actions */}
                         {((r.permissionSets || r.PermissionSets) ?? []).some(
                           (ps: any) =>
                             (
@@ -966,7 +966,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                             )
                         ) && (
                           <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
-                            PIM
+                            Privileged
                           </span>
                         )}
                         <span className="ml-auto text-[10px] text-muted-foreground">
