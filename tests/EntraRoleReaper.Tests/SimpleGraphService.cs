@@ -1,4 +1,5 @@
-﻿using EntraRoleReaper.Api.Review.Models;
+﻿using EntraRoleReaper.Api.Data.Models;
+using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Models;
 
@@ -33,5 +34,10 @@ internal class SimpleGraphService(Dictionary<string, bool> targetOwners) : IGrap
     public Task<bool> IsOwnerAsync(string userId, ReviewTargetResource target)
     {
         return Task.FromResult(targetOwners[target.Id]);
+    }
+
+    public Task<Tenant?> FetchTenantMetadataAsync(Guid tenantId, CancellationToken ct = default)
+    {
+        throw new NotImplementedException();
     }
 }

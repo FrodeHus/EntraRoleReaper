@@ -73,6 +73,7 @@ builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.AddScoped<ActivityPermissionAnalyzer>();
 builder.Services.AddScoped<RoleAdvisor>();
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
+builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -106,7 +107,6 @@ if (enableDiag)
     };
 }
 
-app.UseMiddleware<TenantMiddleware>();
 // Database (cache) initialization with optional recreation toggle
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<ReaperDbContext>();
@@ -147,6 +147,9 @@ app.UseSwaggerUI();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Tenant resolution from Entra ID JWT
+app.UseMiddleware<TenantMiddleware>();
 
 // Simple exception logging middleware (before endpoints)
 app.Use(async (ctx, next) =>

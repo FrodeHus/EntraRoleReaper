@@ -4,11 +4,12 @@ using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using System.Text.Json;
+using EntraRoleReaper.Api.Data.Models;
 using ModifiedProperty = EntraRoleReaper.Api.Services.Models.ModifiedProperty;
 
 namespace EntraRoleReaper.Api.Services;
 
-public class GraphService(IGraphServiceFactory graphServiceFactory) : IGraphService
+public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<GraphService> logger) : IGraphService
 {
     private readonly Dictionary<string, bool> _ownershipCache = [];
 
@@ -204,18 +205,18 @@ public class GraphService(IGraphServiceFactory graphServiceFactory) : IGraphServ
         return groupedByActivity;
     }
 
-    private async Task<List<string>> GetRoleAssignmentsAsync(string userId)
+    private async Task<List<string?>> GetRoleAssignmentsAsync(string userId)
     {
         var assignments = await GraphClient.RoleManagement.Directory.RoleAssignments.GetAsync(q =>
         {
-            q.QueryParameters.Filter = $"principalId eq '{userId}'";
-            q.QueryParameters.Top = 50;
+
+            {
+                q.QueryParameters.Filter = $"principalId eq '{userId}'";
+                q.QueryParameters.Top = 50;
+            }
+            ;
         });
-        return assignments?.Value?
-            .Select(a => a.RoleDefinitionId)
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(id => id!)
-            .ToList() ?? new List<string>();
+        return assignments?.Value?.Select(a => a.RoleDefinitionId).ToList() ?? [];
     }
     private async Task<(
         List<string> eligibleRoleIds,
@@ -279,41 +280,32 @@ public class GraphService(IGraphServiceFactory graphServiceFactory) : IGraphServ
     public async Task<Dictionary<string, bool>> GetResourceActionMetadataAsync()
     {
         var resourceActionsData = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        var nsBuilder = GraphClient.RoleManagement.Directory.ResourceNamespaces;
-        var nsResponse = await nsBuilder.GetAsync();
-        while (nsResponse != null)
+        var resourceNamespaces = await GraphClient.RoleManagement.Directory.ResourceNamespaces.GetAsync();
+        foreach (var ns in resourceNamespaces?.Value ?? [])
         {
-            foreach (var ns in nsResponse.Value ?? [])
+            if (string.IsNullOrWhiteSpace(ns?.Name)) continue;
+            var resourceActions = await GraphClient.RoleManagement.Directory.ResourceNamespaces[ns.Name].ResourceActions
+                .GetAsync();
+            foreach (var ra in resourceActions?.Value ?? [])
             {
-                if (string.IsNullOrWhiteSpace(ns.Name)) continue;
-                var actionsBuilder = GraphClient.RoleManagement.Directory.ResourceNamespaces[ns.Name].ResourceActions;
-                var raResponse = await actionsBuilder.GetAsync();
-                while (raResponse != null)
+                var name = ra?.Name;
+                if (string.IsNullOrWhiteSpace(name)) continue;
+                var isPrivileged = false;
+                if (ra?.AdditionalData != null && ra.AdditionalData.TryGetValue("isPrivileged", out var raw))
                 {
-                    foreach (var ra in raResponse.Value ?? [])
+                    isPrivileged = raw switch
                     {
-                        var name = ra.Name;
-                        if (string.IsNullOrWhiteSpace(name)) continue;
-                        var isPrivileged = false;
-                        if (ra.AdditionalData != null && ra.AdditionalData.TryGetValue("isPrivileged", out var raw))
-                        {
-                            isPrivileged = raw switch
-                            {
-                                bool b => b,
-                                string s when bool.TryParse(s, out var pb) => pb,
-                                JsonElement je => je.ValueKind == JsonValueKind.True,
-                                _ => false
-                            };
-                        }
-                        resourceActionsData.TryAdd(name, isPrivileged);
-                    }
-                    if (string.IsNullOrEmpty(raResponse.OdataNextLink)) break;
-                    raResponse = await actionsBuilder.WithUrl(raResponse.OdataNextLink).GetAsync();
+                        bool b => b,
+                        string s when bool.TryParse(s, out var pb) => pb,
+                        JsonElement je => je.ValueKind == JsonValueKind.True,
+                        _ => isPrivileged
+                    };
                 }
+
+                resourceActionsData.TryAdd(name, isPrivileged);
             }
-            if (string.IsNullOrEmpty(nsResponse.OdataNextLink)) break;
-            nsResponse = await nsBuilder.WithUrl(nsResponse.OdataNextLink).GetAsync();
         }
+
         return resourceActionsData;
     }
 
@@ -335,5 +327,44 @@ public class GraphService(IGraphServiceFactory graphServiceFactory) : IGraphServ
     {
         var page = await GraphClient.RoleManagement.Directory.RoleDefinitions.GetAsync();
         return page?.Value;
+    }
+    
+    public async Task<Tenant?> FetchTenantMetadataAsync(Guid tenantId, CancellationToken ct = default)
+    {
+        
+        try
+        {
+            var orgs = await GraphClient.Organization.GetAsync(q =>
+            {
+                q.QueryParameters.Select = ["id", "displayName", "verifiedDomains"];
+            }, ct);
+            var org = orgs?.Value?.FirstOrDefault(o => Guid.TryParse(o.Id, out var oid) && oid == tenantId)
+                      ?? orgs?.Value?.FirstOrDefault();
+            if (org == null)
+            {
+                logger.LogWarning("Graph returned no organization objects for tenant {TenantId}", tenantId);
+                return null;
+            }
+            return new Tenant
+            {
+                Id = tenantId,
+                Name = org.DisplayName,
+                TenantDomain = TryGetPrimaryDomain(org.VerifiedDomains),
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed fetching tenant metadata (non-persistent) for {TenantId}", tenantId);
+            return null;
+        }
+    }
+    
+    private static string? TryGetPrimaryDomain(List<VerifiedDomain>? domains)
+    {
+        if (domains == null || domains.Count == 0) return null;
+        return domains.FirstOrDefault(d => d.IsDefault == true)?.Name
+               ?? domains.FirstOrDefault(d => d.IsInitial == true)?.Name
+               ?? domains.FirstOrDefault()?.Name;
     }
 }

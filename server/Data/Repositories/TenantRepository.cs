@@ -9,6 +9,7 @@ public interface ITenantRepository
     Task<Tenant?> GetByIdAsync(Guid id);
     Task<Tenant?> GetByNameAsync(string name);
     Task<IEnumerable<Tenant>> GetAllTenantsAsync();
+    Task<Tenant> UpdateAsync(Tenant tenant);
     Task ClearAsync();
 }
 
@@ -36,6 +37,13 @@ public class TenantRepository(ReaperDbContext dbContext, ILogger<TenantRepositor
     public async Task<IEnumerable<Tenant>> GetAllTenantsAsync()
     {
         return await dbContext.Tenants.ToListAsync();
+    }
+
+    public async Task<Tenant> UpdateAsync(Tenant tenant)
+    {
+        dbContext.Tenants.Update(tenant);
+        await dbContext.SaveChangesAsync();
+        return tenant;
     }
 
     public async Task ClearAsync()
