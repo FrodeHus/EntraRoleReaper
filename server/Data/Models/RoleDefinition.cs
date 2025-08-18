@@ -3,9 +3,8 @@ using Microsoft.EntityFrameworkCore;
 namespace EntraRoleReaper.Api.Data.Models;
 
 [Index(nameof(Id), nameof(DisplayName), IsUnique = true)]
-public class RoleDefinition
+public class RoleDefinition : Entity
 {
-    public Guid Id { get; set; }
     public Guid? TenantId { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

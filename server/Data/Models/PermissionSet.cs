@@ -2,9 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace EntraRoleReaper.Api.Data.Models;
 
-public class PermissionSet
+public class PermissionSet : Entity
 {
-    public Guid Id { get; set; }
     public Guid RoleDefinitionId { get; set; }
     [MaxLength(255)]
     public string Name { get; set; } = string.Empty;

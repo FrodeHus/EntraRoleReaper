@@ -4,9 +4,8 @@ using System.ComponentModel.DataAnnotations;
 namespace EntraRoleReaper.Api.Data.Models;
 
 [Index(nameof(Name), IsUnique = true)]
-public class Activity
+public class Activity : Entity
 {
-    public Guid Id { get; init; }
     [MaxLength(255)]
     public required string Name { get; init; }
     public bool IsExcluded { get; set; }

@@ -42,8 +42,7 @@ public class TenantService(
                 {
                     Id = tenantId,
                     Name = tenant.Name,
-                    TenantDomain = tenant.TenantDomain,
-                    CreatedAt = DateTime.UtcNow
+                    TenantDomain = tenant.TenantDomain
                 };
                 await tenantRepository.AddAsync(existing);
             }
@@ -62,6 +61,7 @@ public class TenantService(
                 }
                 if (changed)
                 {
+                    existing.UpdatedUtc = DateTime.UtcNow;
                     await tenantRepository.UpdateAsync(existing);
                 }
             }

@@ -358,8 +358,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
             {
                 Id = tenantId,
                 Name = org.DisplayName,
-                TenantDomain = TryGetPrimaryDomain(org.VerifiedDomains),
-                CreatedAt = DateTime.UtcNow
+                TenantDomain = TryGetPrimaryDomain(org.VerifiedDomains)
             };
         }
         catch (Exception ex)
