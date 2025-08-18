@@ -71,9 +71,9 @@ internal class SimpleRoleService(params string[] userRoleNames) : IRoleService
         return Task.FromResult(_roles);
     }
 
-    public Task<RoleDefinition?> GetRoleByIdAsync(string roleId)
+    public Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId)
     {
-        var role = _roles.FirstOrDefault(r => r.Id.ToString() == roleId);
+        var role = _roles.FirstOrDefault(r => r.Id == roleId);
         return Task.FromResult(role);
     }
 

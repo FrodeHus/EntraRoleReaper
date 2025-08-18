@@ -1,3 +1,4 @@
+using EntraRoleReaper.Api;
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Endpoints;
@@ -82,31 +83,6 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Global diagnostics hooks
-if (enableDiag)
-{
-    AppDomain.CurrentDomain.UnhandledException += (s, e) =>
-    {
-        try
-        {
-            Console.WriteLine($"[FATAL] UnhandledException: {e.ExceptionObject}");
-        }
-        catch
-        {
-        }
-    };
-    TaskScheduler.UnobservedTaskException += (s, e) =>
-    {
-        try
-        {
-            Console.WriteLine($"[WARN] UnobservedTaskException: {e.Exception}");
-        }
-        catch
-        {
-        }
-    };
-}
-
 // Database (cache) initialization with optional recreation toggle
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<ReaperDbContext>();
@@ -151,32 +127,11 @@ app.UseAuthorization();
 // Tenant resolution from Entra ID JWT
 app.UseMiddleware<TenantMiddleware>();
 
-// Simple exception logging middleware (before endpoints)
-app.Use(async (ctx, next) =>
-    {
-        try
-        {
-            await next();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(
-                $"[ERR] Request {ctx.Request.Method} {ctx.Request.Path} failed: {ex}"
-            );
-            throw;
-        }
-    }
-);
+app.MapEndpoints();
 
 // Minimal API endpoints composed via extension methods (explicit static call for Health to avoid resolution issues)
 app.MapHealth()
-    .MapCache()
     .MapRolesSummary()
-    .MapOperationMap()
-    .MapActions()
-    .MapSearch()
-    .MapReview()
-    .MapRolesLookup()
-    .MapOnboarding();
+    .MapOperationMap();
 
 app.Run();

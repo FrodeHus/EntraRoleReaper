@@ -7,7 +7,7 @@ public interface IRoleService
 {
     Task InitializeAsync(bool forceRefresh = false);
     Task<List<RoleDefinition>> GetAllRolesAsync();
-    Task<RoleDefinition?> GetRoleByIdAsync(string roleId);
+    Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId);
     Task<RoleDefinition?> GetRoleByNameAsync(string roleName);
     Task UpdateRoleAsync(RoleDefinition role);
     Task AddRoleAsync(RoleDefinition role);
@@ -106,7 +106,7 @@ public class RoleService(
         }
     }
 
-    public async Task<RoleDefinition?> GetRoleByIdAsync(string roleId)
+    public async Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId)
     {
         try
         {
@@ -188,7 +188,8 @@ public class RoleService(
         var userRoles = new List<RoleDefinition>();
         foreach (var roleId in userRoleIds)
         {
-            var role = await GetRoleByIdAsync(roleId);
+            var id = Guid.Parse(roleId);
+            var role = await GetRoleByIdAsync(id);
             if (role != null)
             {
                 userRoles.Add(role);

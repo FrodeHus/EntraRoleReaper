@@ -81,8 +81,8 @@ public class ReviewService(
             ));
 
             var user = new SimpleUser(uid, userCtx.DisplayName ?? uid, null, null);
-            var userCurrentActiveRoles = userCtx.ActiveRoleIds.Select(async id => await cache.GetRoleByIdAsync(id));
-            var userCurrentEligiblePimRoles = userCtx.EligibleRoleIds.Select(async id => await cache.GetRoleByIdAsync(id));
+            var userCurrentActiveRoles = userCtx.ActiveRoleIds.Select(async id => await cache.GetRoleByIdAsync(Guid.Parse(id)));
+            var userCurrentEligiblePimRoles = userCtx.EligibleRoleIds.Select(async id => await cache.GetRoleByIdAsync(Guid.Parse(id)));
             var roles = await Task.WhenAll(userCurrentActiveRoles);
             var pimRoles = await Task.WhenAll(userCurrentEligiblePimRoles);
             user = user with
@@ -90,7 +90,7 @@ public class ReviewService(
                 CurrentActiveRoles = [.. roles.Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))],
                 CurrentEligiblePimRoles = [.. pimRoles.Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))]
             };
-            consolidatedRoles = consolidatedRoles.Where(r => !roles.Any(role => role?.Id == r.Id) || pimRoles.Any(pimRole => pimRole?.Id == r.Id)).ToList();
+            consolidatedRoles = consolidatedRoles.Where(r => roles.All(role => role?.Id != r.Id) || pimRoles.Any(pimRole => pimRole?.Id == r.Id)).ToList();
             var removedRoles = roles.Where(r => !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
             removedRoles = pimRoles.Where(r => !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
 

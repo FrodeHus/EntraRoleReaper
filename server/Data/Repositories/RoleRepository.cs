@@ -93,27 +93,13 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
             .ToListAsync();
     }
 
-    public Task<RoleDefinition?> GetRoleByIdAsync(string roleId)
+    public Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId)
     {
-        if (string.IsNullOrWhiteSpace(roleId))
-        {
-            throw new ArgumentException("Role ID cannot be null or empty.", nameof(roleId));
-        }
-
-        // Parse to Guid and compare strongly to avoid case-sensitive string mismatches
-        if (!Guid.TryParse(roleId, out var roleGuid))
-        {
-            // Fallback to string compare if parsing fails (shouldn't happen for valid requests)
-            return dbContext
-                .RoleDefinitions.Include(r => r.PermissionSets)
-                .ThenInclude(ps => ps.ResourceActions)
-                .FirstOrDefaultAsync(r => r.Id.ToString() == roleId);
-        }
 
         return dbContext
             .RoleDefinitions.Include(r => r.PermissionSets)
             .ThenInclude(ps => ps.ResourceActions)
-            .FirstOrDefaultAsync(r => r.Id == roleGuid);
+            .FirstOrDefaultAsync(r => r.Id == roleId);
     }
 
     public Task<RoleDefinition?> GetRoleByNameAsync(string roleName)

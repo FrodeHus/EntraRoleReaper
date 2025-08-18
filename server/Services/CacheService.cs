@@ -57,14 +57,9 @@ public class CacheService(IMemoryCache memoryCache, ILogger<CacheService> logger
         };
     }
     
-    public async Task<RoleDefinition?> GetRoleByIdAsync(string roleId)
+    public async Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId)
     {
-        if (string.IsNullOrWhiteSpace(roleId))
-        {
-            throw new ArgumentException("Role ID cannot be null or empty.", nameof(roleId));
-        }
-        
-        var role = Get<RoleDefinition>(roleId);
+        var role = Get<RoleDefinition>(roleId.ToString());
         if (role is not null)
         {
             return role;
@@ -116,6 +111,6 @@ public class CacheMetadata
 public interface ICacheService
 {
     Task InitializeAsync(bool forceRefresh = false);
-    Task<RoleDefinition?> GetRoleByIdAsync(string roleId);
+    Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId);
     CacheMetadata GetCacheMetadata();   
 }
