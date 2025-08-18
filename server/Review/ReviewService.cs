@@ -1,10 +1,10 @@
 using EntraRoleReaper.Api.Data.Models;
-using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Review.Models;
+using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 
-namespace EntraRoleReaper.Api.Services;
+namespace EntraRoleReaper.Api.Review;
 
 public class ReviewService(
     IGraphService graphService,
@@ -19,12 +19,7 @@ public class ReviewService(
     {
         var userIds = await graphService.ExpandUsersOrGroupsAsync(request.UsersOrGroups);
 
-        // var results = new List<UserReview>();
-        // await roleService.InitializeAsync();
-        // var roles = cacheService.GetAll();
-        // var actionPrivilege = roleCache.GetActionPrivilegeMap();
-        // var roleStats = roleCache.GetRolePrivilegeStats();
-        //
+        
         var results = new List<UserReview>();
         foreach (var uid in userIds)
         {
@@ -34,6 +29,8 @@ public class ReviewService(
 
             // Audit operations + targets
             var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
+            await SaveActivitiesAsync(auditActivities);
+            
             var mappedActivities = await activityService.GetActivitesAsync(auditActivities.Select(a => a.ActivityName));
             var allSuggestedRoles = new List<RoleDefinition>();
             foreach (var activity in mappedActivities)
@@ -106,5 +103,16 @@ public class ReviewService(
             results.Add(review);
         }
         return new ReviewResponse(results);
+    }
+
+    private async Task SaveActivitiesAsync(IEnumerable<AuditActivity> activities)
+    {
+        foreach (var auditActivity in activities)
+        {
+            await activityService.AddAsync(new Activity
+            {
+                Name = auditActivity.ActivityName,
+            });
+        }
     }
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Services.Models;
 using JetBrains.Annotations;
 
 namespace EntraRoleReaper.Api.Services;
@@ -14,6 +15,7 @@ public interface IActivityService
     Task SetExclusionAsync(string activityName, bool isExcluded);
     Task<IEnumerable<Activity>> GetExcludedActivitiesAsync();
     Task<IEnumerable<Activity>> GetActivitesAsync(IEnumerable<string> activityNames);
+    Task<Activity?> AddAsync(Activity activity);
 }
 
 [UsedImplicitly]
@@ -93,10 +95,10 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
     }
 
     public async Task DeletePropertyMapAsync(string activityName, string propertyName)
-    {   
+    {
         await activityRepository.DeletePropertyMapAsync(activityName, propertyName);
     }
-    
+
     public async Task SetExclusionAsync(string activityName, bool isExcluded)
     {
         var existing = await activityRepository.GetByNameAsync(activityName);
@@ -121,7 +123,20 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
     public Task<IEnumerable<Activity>> GetActivitesAsync(IEnumerable<string> activityNames)
     {
         return activityRepository.GetActivitiesByNamesAsync(activityNames);
+    }
 
+    public async Task<Activity?> AddAsync(Activity activity)
+    {
+        var existing = await activityRepository.GetByNameAsync(activity.Name);
+        if (existing == null)
+        {
+            await activityRepository.AddAsync(activity);
+        }
+        else
+        {
+            return existing;
+        }
+        return activity;
     }
 }
 
