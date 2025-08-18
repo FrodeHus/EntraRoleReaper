@@ -10,6 +10,7 @@ import { useAccessToken } from "./hooks/useAccessToken";
 const apiScopeEnv = import.meta.env.VITE_API_SCOPE as string;
 const apiBase = import.meta.env.VITE_API_URL as string;
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { OnboardPage } from "./pages/OnboardPage";
 
 // apiBase constant retained for passing to components expecting explicit base.
 
@@ -22,6 +23,10 @@ export default function App() {
   const [sidebarPinned, setSidebarPinned] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const bannerState = (location.state as any) || null;
+  const [showVerifyBanner, setShowVerifyBanner] = useState<boolean>(
+    !!bannerState?.verifiedTenant
+  );
   const firstFocusableRef = useRef<HTMLButtonElement | null>(null);
   const lastFocusableRef = useRef<HTMLButtonElement | null>(null);
   // Focus trap helpers
@@ -151,6 +156,29 @@ export default function App() {
               />
             )}
             <div className="flex-1 space-y-6">
+              {showVerifyBanner && (
+                <div className="rounded-md border border-green-500/30 bg-green-50 text-green-900 dark:bg-green-900/20 dark:text-green-200 p-3 text-sm flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-medium">
+                      Tenant verification successful
+                    </div>
+                    {bannerState?.verifiedTenant && (
+                      <div className="text-xs mt-0.5">
+                        {bannerState.verifiedTenant.name || "(unknown)"} (
+                        {bannerState.verifiedTenant.domain || "-"})
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="text-xs underline hover:no-underline"
+                    onClick={() => setShowVerifyBanner(false)}
+                    aria-label="Dismiss"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
               <Routes>
                 <Route
                   path="/"
@@ -166,6 +194,10 @@ export default function App() {
                   element={
                     <ConfigPage accessToken={accessToken} apiBase={apiBase} />
                   }
+                />
+                <Route
+                  path="/onboard"
+                  element={<OnboardPage accessToken={accessToken} />}
                 />
               </Routes>
             </div>

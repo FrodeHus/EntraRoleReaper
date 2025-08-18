@@ -1,10 +1,12 @@
 import { Button } from "../../components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface WelcomeCardProps {
   onSignIn: () => void;
 }
 
 export function WelcomeCard({ onSignIn }: WelcomeCardProps) {
+  const navigate = useNavigate();
   const tenantId = import.meta.env.VITE_AAD_TENANT_ID as string | undefined;
   const clientId = import.meta.env.VITE_AAD_CLIENT_ID as string | undefined;
   const adminConsentUrl =
@@ -38,19 +40,7 @@ export function WelcomeCard({ onSignIn }: WelcomeCardProps) {
         </p>
         <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
           <Button onClick={onSignIn}>Sign in</Button>
-          <Button
-            variant="outline"
-            onClick={() =>
-              adminConsentUrl &&
-              window.open(adminConsentUrl, "_blank", "noopener")
-            }
-            disabled={!adminConsentUrl}
-            title={
-              adminConsentUrl
-                ? "Open Entra ID admin consent flow"
-                : "Set AZUREAD_TENANT_ID and AZUREAD_CLIENT_ID to enable"
-            }
-          >
+          <Button variant="outline" onClick={() => navigate("/onboard")}>
             Onboard tenant
           </Button>
         </div>

@@ -20,60 +20,59 @@ public class TenantService(
             return null;
         }
 
-        if (httpContext.Items.TryGetValue("TenantId", out var tenantObj) && tenantObj is Guid tenantId)
+        if (!httpContext.Items.TryGetValue("TenantId", out var tenantObj) || tenantObj is not Guid tenantId)
+            return null;
+        var existing = await tenantRepository.GetByIdAsync(tenantId);
+        if (existing != null && !refresh)
         {
-            var existing = await tenantRepository.GetByIdAsync(tenantId);
-            if (existing != null && !refresh)
-            {
-                return existing;
-            }
-
-            try
-            {
-                var tenant = await graphService.FetchTenantMetadataAsync(tenantId, ct);
-                if (tenant == null)
-                {
-                    logger.LogWarning("No tenant metadata found for {TenantId}", tenantId);
-                    return null;
-                }
-                if (existing == null)
-                {
-                    existing = new Tenant
-                    {
-                        Id = tenantId,
-                        Name = tenant.Name,
-                        TenantDomain = tenant.TenantDomain,
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    await tenantRepository.AddAsync(existing);
-                }
-                else
-                {
-                    var changed = false;
-                    if (!string.Equals(existing.Name, tenant.Name, StringComparison.Ordinal))
-                    {
-                        existing.Name = tenant.Name;
-                        changed = true;
-                    }
-                    if (!string.Equals(existing.TenantDomain, tenant.TenantDomain, StringComparison.OrdinalIgnoreCase))
-                    {
-                        existing.TenantDomain = tenant.TenantDomain;
-                        changed = true;
-                    }
-                    if (changed)
-                    {
-                        await tenantRepository.UpdateAsync(existing);
-                    }
-                }
-                return existing;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed retrieving tenant metadata for {TenantId}", tenantId);
-                return existing; // return stale if available
-            }
+            return existing;
         }
-        
+
+        try
+        {
+            var tenant = await graphService.FetchTenantMetadataAsync(tenantId, ct);
+            if (tenant == null)
+            {
+                logger.LogWarning("No tenant metadata found for {TenantId}", tenantId);
+                return null;
+            }
+            if (existing == null)
+            {
+                existing = new Tenant
+                {
+                    Id = tenantId,
+                    Name = tenant.Name,
+                    TenantDomain = tenant.TenantDomain,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await tenantRepository.AddAsync(existing);
+            }
+            else
+            {
+                var changed = false;
+                if (!string.Equals(existing.Name, tenant.Name, StringComparison.Ordinal))
+                {
+                    existing.Name = tenant.Name;
+                    changed = true;
+                }
+                if (!string.Equals(existing.TenantDomain, tenant.TenantDomain, StringComparison.OrdinalIgnoreCase))
+                {
+                    existing.TenantDomain = tenant.TenantDomain;
+                    changed = true;
+                }
+                if (changed)
+                {
+                    await tenantRepository.UpdateAsync(existing);
+                }
+            }
+            return existing;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed retrieving tenant metadata for {TenantId}", tenantId);
+            return existing; // return stale if available
+        }
+
         return null;
     }
     

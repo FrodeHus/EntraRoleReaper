@@ -22,6 +22,7 @@ public class RoleService(
     IRoleRepository roleRepository,
     IGraphService graphService,
     IResourceActionRepository resourceActionRepository,
+    ITenantService tenantService,
     ILogger<RoleService> logger) : IRoleService
 {
     public async Task InitializeAsync(bool forceRefresh = false)
@@ -70,6 +71,11 @@ public class RoleService(
                             ?.Select(ra => addedResourceActions.First(a => a.Action == ra)).ToList()
                     }).ToList()
                 };
+                if (!roleDefinition.IsBuiltIn)
+                {
+                    var tenant = await tenantService.GetCurrentTenantAsync();
+                    roleDefinition.TenantId = tenant?.Id;
+                }
                 addedRoles.Add(roleDefinition);
                 logger.LogInformation("Added new role: {RoleName}", role.DisplayName);
             }

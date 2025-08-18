@@ -176,6 +176,7 @@ app.MapHealth()
     .MapActions()
     .MapSearch()
     .MapReview()
-    .MapRolesLookup();
+    .MapRolesLookup()
+    .MapOnboarding();
 
 app.Run();
