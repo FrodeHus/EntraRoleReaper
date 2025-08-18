@@ -7,18 +7,7 @@ interface WelcomeCardProps {
 
 export function WelcomeCard({ onSignIn }: WelcomeCardProps) {
   const navigate = useNavigate();
-  const tenantId = import.meta.env.VITE_AAD_TENANT_ID as string | undefined;
-  const clientId = import.meta.env.VITE_AAD_CLIENT_ID as string | undefined;
-  const adminConsentUrl =
-    tenantId && clientId
-      ? `https://login.microsoftonline.com/${encodeURIComponent(
-          tenantId
-        )}/v2.0/adminconsent?client_id=${encodeURIComponent(
-          clientId
-        )}&scope=${encodeURIComponent(
-          "https://graph.microsoft.com/.default"
-        )}&redirect_uri=${encodeURIComponent(window.location.origin)}`
-      : undefined;
+
   return (
     <div className="py-16 flex items-center justify-center">
       <div className="w-full max-w-xl border bg-card text-card-foreground rounded-lg shadow-sm p-8 text-center">

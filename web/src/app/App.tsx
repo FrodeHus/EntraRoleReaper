@@ -131,8 +131,18 @@ export default function App() {
       />
       <main className="flex-1 mx-auto w-full max-w-7xl px-6 py-6 space-y-6">
         {!authed ? (
-          <div className="py-16 flex items-center justify-center">
-            <WelcomeCard onSignIn={login} />
+          <div className="py-16">
+            <Routes>
+              <Route path="/onboard" element={<OnboardPage />} />
+              <Route
+                path="*"
+                element={
+                  <div className="flex items-center justify-center">
+                    <WelcomeCard onSignIn={login} />
+                  </div>
+                }
+              />
+            </Routes>
           </div>
         ) : (
           <div className="flex gap-6">
@@ -195,10 +205,7 @@ export default function App() {
                     <ConfigPage accessToken={accessToken} apiBase={apiBase} />
                   }
                 />
-                <Route
-                  path="/onboard"
-                  element={<OnboardPage accessToken={accessToken} />}
-                />
+                <Route path="/onboard" element={<OnboardPage />} />
               </Routes>
             </div>
           </div>

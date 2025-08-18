@@ -3,18 +3,15 @@ import { Button } from "../../components/ui/button";
 import { CheckCircle, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-export function OnboardPage({ accessToken }: { accessToken: string | null }) {
+export function OnboardPage() {
   const [step, setStep] = useState(1);
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
-  const [verifySuccess, setVerifySuccess] = useState<
-    | null
-    | {
-        tenantId: string;
-        name?: string;
-        domain?: string;
-      }
-  >(null);
+  const [verifySuccess, setVerifySuccess] = useState<null | {
+    tenantId: string;
+    name?: string;
+    domain?: string;
+  }>(null);
   const navigate = useNavigate();
   const tenantId = import.meta.env.VITE_AAD_TENANT_ID as string | undefined;
   const clientId = import.meta.env.VITE_AAD_CLIENT_ID as string | undefined;
@@ -40,7 +37,6 @@ export function OnboardPage({ accessToken }: { accessToken: string | null }) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           },
         }
       );
@@ -50,13 +46,11 @@ export function OnboardPage({ accessToken }: { accessToken: string | null }) {
           const prob = await res.json();
           detail = prob?.detail || prob?.title || "";
         } catch {}
-        throw new Error(
-          detail || `Verification failed (HTTP ${res.status}).`
-        );
+        throw new Error(detail || `Verification failed (HTTP ${res.status}).`);
       }
-  const json = await res.json();
-  // Redirect to home with a one-time success banner
-  navigate("/", { replace: true, state: { verifiedTenant: json } });
+      const json = await res.json();
+      // Redirect to home with a one-time success banner
+      navigate("/", { replace: true, state: { verifiedTenant: json } });
     } catch (e: any) {
       setVerifyError(e?.message || "Verification failed. Please retry.");
     } finally {
@@ -118,17 +112,18 @@ export function OnboardPage({ accessToken }: { accessToken: string | null }) {
           {step === 3 && (
             <>
               <h2 className="text-lg font-medium">Verify connection</h2>
-              <p>
-                We will verify connectivity and retrieve tenant metadata.
-              </p>
+              <p>We will verify connectivity and retrieve tenant metadata.</p>
               {verifySuccess && (
                 <div className="flex items-start gap-2 rounded-md border border-green-500/30 bg-green-50 text-green-900 dark:bg-green-900/20 dark:text-green-200 p-3 text-sm">
                   <CheckCircle className="h-4 w-4 mt-0.5" />
                   <div>
                     <div className="font-medium">Verification successful</div>
                     <div className="text-xs mt-0.5">
-                      Tenant: <span className="font-medium">{verifySuccess.name || "(unknown)"}</span>
-                      {" "}({verifySuccess.domain || "-"})
+                      Tenant:{" "}
+                      <span className="font-medium">
+                        {verifySuccess.name || "(unknown)"}
+                      </span>{" "}
+                      ({verifySuccess.domain || "-"})
                     </div>
                   </div>
                 </div>
@@ -142,12 +137,23 @@ export function OnboardPage({ accessToken }: { accessToken: string | null }) {
                     <ul className="list-disc ml-5 mt-2 text-xs space-y-1">
                       <li>Ensure admin consent was granted successfully.</li>
                       <li>Use a Global Administrator account for consent.</li>
-                      <li>Sign out and back in if your session changed roles.</li>
-                      <li>Wait 1–2 minutes for consent to propagate, then retry.</li>
-                      <li>Check API URL configuration and network connectivity.</li>
+                      <li>
+                        Sign out and back in if your session changed roles.
+                      </li>
+                      <li>
+                        Wait 1–2 minutes for consent to propagate, then retry.
+                      </li>
+                      <li>
+                        Check API URL configuration and network connectivity.
+                      </li>
                     </ul>
                     <div className="mt-2">
-                      <Button size="sm" variant="outline" onClick={verify} disabled={verifying}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={verify}
+                        disabled={verifying}
+                      >
                         Retry
                       </Button>
                     </div>
@@ -155,7 +161,11 @@ export function OnboardPage({ accessToken }: { accessToken: string | null }) {
                 </div>
               )}
               <div className="mt-2">
-                <Button onClick={verify} disabled={verifying} aria-busy={verifying}>
+                <Button
+                  onClick={verify}
+                  disabled={verifying}
+                  aria-busy={verifying}
+                >
                   {verifying ? "Verifying…" : "Verify"}
                 </Button>
               </div>
