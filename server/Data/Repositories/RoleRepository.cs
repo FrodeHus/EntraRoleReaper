@@ -15,17 +15,26 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
         dbContext.RoleDefinitions.RemoveRange(dbContext.RoleDefinitions);
         return dbContext.SaveChangesAsync();
     }
+    
+    public Task<List<RoleDefinition>> GetTenantCustomRolesAsync(Guid tenantId)
+    {
+        return dbContext.RoleDefinitions
+            .Include(r => r.PermissionSets)
+            .ThenInclude(ps => ps.ResourceActions)
+            .Where(r => r.TenantId == tenantId && !r.IsBuiltIn).ToListAsync();
+    }
 
     public async Task AddRangeAsync(IEnumerable<RoleDefinition> roles)
     {
-        if (roles == null || !roles.Any())
+        var roleDefinitions = roles.ToList();
+        if (roleDefinitions.Count == 0)
         {
             return;
         }
 
         try
         {
-            foreach (var role in roles)
+            foreach (var role in roleDefinitions)
             {
                 dbContext.RoleDefinitions.Add(role);
             }
@@ -48,22 +57,20 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
         {
             foreach (var permissionSet in role.PermissionSets)
             {
-                if (permissionSet.ResourceActions != null)
-                {
-                    var existingActions = await resourceActionRepository
-                        .GetResourceActionsByNamesAsync(permissionSet.ResourceActions.Select(ra => ra.Action));
+                if (permissionSet.ResourceActions == null) continue;
+                var existingActions = await resourceActionRepository
+                    .GetResourceActionsByNamesAsync(permissionSet.ResourceActions.Select(ra => ra.Action));
 
-                    // Update the resource actions in the permission set with existing ones
-                    permissionSet.ResourceActions.RemoveAll(a => existingActions.Any(existing => existing.Action.Equals(a.Action, StringComparison.InvariantCultureIgnoreCase)));
-                    var newResourceActions = new List<ResourceAction>();
-                    foreach (var action in permissionSet.ResourceActions)
-                    {
-                        // Ensure each resource action is added to the repository
-                        newResourceActions.Add(await resourceActionRepository.AddAsync(action));
-                    }
-                    permissionSet.ResourceActions.AddRange(existingActions);
-                    permissionSet.ResourceActions.AddRange(newResourceActions);
+                // Update the resource actions in the permission set with existing ones
+                permissionSet.ResourceActions.RemoveAll(a => existingActions.Any(existing => existing.Action.Equals(a.Action, StringComparison.InvariantCultureIgnoreCase)));
+                var newResourceActions = new List<ResourceAction>();
+                foreach (var action in permissionSet.ResourceActions)
+                {
+                    // Ensure each resource action is added to the repository
+                    newResourceActions.Add(await resourceActionRepository.AddAsync(action));
                 }
+                permissionSet.ResourceActions.AddRange(existingActions);
+                permissionSet.ResourceActions.AddRange(newResourceActions);
             }
             dbContext.RoleDefinitions.Add(role);
             await dbContext.SaveChangesAsync();

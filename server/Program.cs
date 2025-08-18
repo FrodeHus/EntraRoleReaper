@@ -1,6 +1,7 @@
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Endpoints;
+using EntraRoleReaper.Api.Middlewares;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
@@ -71,6 +72,7 @@ builder.Services.AddScoped<IGraphService, GraphService>();
 builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.AddScoped<ActivityPermissionAnalyzer>();
 builder.Services.AddScoped<RoleAdvisor>();
+builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -104,6 +106,7 @@ if (enableDiag)
     };
 }
 
+app.UseMiddleware<TenantMiddleware>();
 // Database (cache) initialization with optional recreation toggle
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<ReaperDbContext>();
