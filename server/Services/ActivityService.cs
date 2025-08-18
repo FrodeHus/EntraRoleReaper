@@ -1,7 +1,5 @@
-using System.Text.Json;
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
-using EntraRoleReaper.Api.Services.Models;
 using JetBrains.Annotations;
 
 namespace EntraRoleReaper.Api.Services;
@@ -16,6 +14,7 @@ public interface IActivityService
     Task<IEnumerable<Activity>> GetExcludedActivitiesAsync();
     Task<IEnumerable<Activity>> GetActivitesAsync(IEnumerable<string> activityNames);
     Task<Activity?> AddAsync(Activity activity);
+    Task<Activity?> GetActivityById(Guid activityId);
 }
 
 [UsedImplicitly]
@@ -27,12 +26,12 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
         var activities = await activityRepository.GetAllActivitiesAsync();
         var exportData = activities.Select(activity => new
             ActivityExport
-            {
-                Name = activity.Name,
-                Properties = (activity.Properties ?? []).ToDictionary(p => p.Name,
+        {
+            Name = activity.Name,
+            Properties = (activity.Properties ?? []).ToDictionary(p => p.Name,
                     p => (p.MappedResourceActions ?? []).Select(a => a.Action)),
-                MappedResourceActions = activity.MappedResourceActions.Select(ra => ra.Action)
-            });
+            MappedResourceActions = activity.MappedResourceActions.Select(ra => ra.Action)
+        });
 
         return exportData;
     }
@@ -137,6 +136,15 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
             return existing;
         }
         return activity;
+    }
+
+    public Task<Activity?> GetActivityById(Guid activityId)
+    {
+        if (activityId == Guid.Empty)
+        {
+            return Task.FromResult<Activity?>(null);
+        }
+        return activityRepository.GetByIdAsync(activityId);
     }
 }
 

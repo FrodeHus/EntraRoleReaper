@@ -9,7 +9,7 @@ public class PostReview : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder builder)
     {
-        builder.MapPost("/api/review", Handle)
+        builder.MapPost("/", Handle)
             .WithSummary("Performs a role review")
             .RequireAuthorization();
     }

@@ -8,10 +8,10 @@ namespace EntraRoleReaper.Api.Endpoints.Roles;
 [UsedImplicitly]
 public class GetRole : IEndpoint
 {
-    
+
     public static void Map(IEndpointRouteBuilder builder)
     {
-        builder.MapGet("/api/roles/{id:guid}", Handle)
+        builder.MapGet("/{id:guid}", Handle)
             .WithSummary("Get role definition by ID")
             .RequireAuthorization();
     }
@@ -24,7 +24,7 @@ public class GetRole : IEndpoint
         var role = await roleService.GetRoleByIdAsync(id);
         if (role == null)
             return TypedResults.NotFound();
-        
+
         var grouped = role
             .PermissionSets.Select(rp => new
                 RolePermissionSetResponse(
@@ -34,7 +34,7 @@ public class GetRole : IEndpoint
                         a => a.Action,
                         StringComparer.OrdinalIgnoreCase
                     )
-                    .Select(a => new RolePermissionActionResponse(a.Action, a.IsPrivileged ))
+                    .Select(a => new RolePermissionActionResponse(a.Action, a.IsPrivileged))
                     .ToList())
             ).ToList();
 

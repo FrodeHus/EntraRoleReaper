@@ -1,4 +1,5 @@
 using EntraRoleReaper.Api.Endpoints;
+using EntraRoleReaper.Api.Endpoints.Activities;
 using EntraRoleReaper.Api.Endpoints.Cache;
 using EntraRoleReaper.Api.Endpoints.Onboarding;
 using EntraRoleReaper.Api.Endpoints.Review;
@@ -11,6 +12,7 @@ public static class EndpointMapper
 {
     public static void MapEndpoints(this WebApplication app)
     {
+        app.MapActivityEndpoints();
         app.MapRoleEndpoints();
         app.MapReviewEndpoints();
         app.MapSearchEndpoints();
@@ -18,38 +20,64 @@ public static class EndpointMapper
         app.MapResourceActionEndpoints();
         app.MapOnboardingEndpoints();
     }
-    
+
     private static void MapRoleEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapEndpoint<GetRole>();
-        // Add other role-related endpoints here
+        var group = app.MapGroup("/api/roles")
+            .WithTags("Roles");
+
+        group.MapEndpoint<GetRole>()
+            .MapEndpoint<GetRoleSummary>();
     }
-    
+
     private static void MapReviewEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapEndpoint<PostReview>();
-        // Add other review-related endpoints here
+        var group = app.MapGroup("/api/review")
+            .WithTags("Review");
+        group.MapEndpoint<PostReview>();
     }
-    
+
     private static void MapSearchEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapEndpoint<GetSearch>();
     }
-    
+
     private static void MapCacheEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapEndpoint<GetStatus>();
-        app.MapEndpoint<PostRefresh>();
+        var group = app.MapGroup("/api/cache")
+            .WithTags("Cache");
+        group.MapEndpoint<GetStatus>();
+        group.MapEndpoint<PostRefresh>();
     }
-    
+
     private static void MapResourceActionEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapEndpoint<EntraRoleReaper.Api.Endpoints.ResourceActions.GetSearch>();
+        var group = app.MapGroup("/api/resourceaction")
+            .WithTags("Resource Actions");
+        group.MapEndpoint<EntraRoleReaper.Api.Endpoints.ResourceActions.GetSearch>();
     }
-    
+
     private static void MapOnboardingEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapEndpoint<PostVerify>();
+        var group = app.MapGroup("/api/onboarding")
+            .WithTags("Onboarding");
+        group.MapEndpoint<PostVerify>();
+    }
+
+    private static void MapActivityEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/activity")
+            .WithTags("Activities");
+        group
+            .MapEndpoint<GetExport>()
+            .MapEndpoint<PostImport>()
+            .MapEndpoint<PutActivityMapping>()
+            .MapEndpoint<GetActivityMapping>()
+            .MapEndpoint<PutActivityPropertyMapping>()
+            .MapEndpoint<DeleteActivityPropertyMapping>()
+            .MapEndpoint<PostExclude>()
+            .MapEndpoint<DeleteExclude>()
+            .MapEndpoint<GetExcludedActivities>();
     }
     private static IEndpointRouteBuilder MapEndpoint<TEndpoint>(this IEndpointRouteBuilder app)
         where TEndpoint : IEndpoint

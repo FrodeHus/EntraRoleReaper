@@ -219,7 +219,7 @@ export function ReviewPanel({
         for (const op of ops) {
           try {
             const url = new URL(
-              `/api/operations/map/${encodeURIComponent(op)}`,
+              `/api/activity/mapping/${encodeURIComponent(op)}`,
               import.meta.env.VITE_API_URL
             );
             const res = await fetch(url, {
@@ -228,7 +228,8 @@ export function ReviewPanel({
             });
             if (!res.ok) continue;
             const json = await res.json();
-            const mappedArr: unknown = (json && (json.mapped ?? [])) || [];
+            const mappedArr: unknown =
+              (json && (json.MappedActions ?? json.mapped ?? [])) || [];
             const mappedCount = Array.isArray(mappedArr) ? mappedArr.length : 0;
             existsMap[op] = mappedCount > 0;
             if (mappedCount > 0) countMap[op] = mappedCount;

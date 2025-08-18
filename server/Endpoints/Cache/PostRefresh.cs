@@ -8,7 +8,7 @@ public class PostRefresh : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder builder)
     {
-        builder.MapPost("/api/cache/refresh", Handle)
+        builder.MapPost("/refresh", Handle)
             .WithSummary("Refreshes the cache")
             .RequireAuthorization();
     }

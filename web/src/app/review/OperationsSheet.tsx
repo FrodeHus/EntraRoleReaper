@@ -61,13 +61,13 @@ export function OperationsSheet({
     setLocalHidden((prev) => new Set(prev).add(opName));
     if (!accessToken) return; // cannot persist without token
     try {
-      const res = await fetch(new URL(`/api/operations/exclusions`, apiBase), {
+      const res = await fetch(new URL(`/api/activity/exclude`, apiBase), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ operationName: opName }),
+        body: JSON.stringify({ activityName: opName }),
       });
       if (!res.ok) throw new Error();
       // Notify other components (exclusions tab) to refresh
@@ -263,14 +263,19 @@ export function OperationsSheet({
         for (const op of opsToLoad) {
           try {
             const res = await fetch(
-              new URL(`/api/operations/map/${encodeURIComponent(op)}`, apiBase),
+              new URL(
+                `/api/activity/mapping/${encodeURIComponent(op)}`,
+                apiBase
+              ),
               {
                 headers: { Authorization: `Bearer ${accessToken}` },
               }
             );
             if (!res.ok) continue;
             const json = await res.json();
-            const mapped = Array.isArray(json.mapped)
+            const mapped = Array.isArray(json?.MappedActions)
+              ? (json.MappedActions as any[]).map((a) => String(a))
+              : Array.isArray(json?.mapped)
               ? (json.mapped as any[]).map((a) => String(a))
               : [];
             const unionSet = new Set<string>();

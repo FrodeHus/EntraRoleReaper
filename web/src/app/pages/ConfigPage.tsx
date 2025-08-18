@@ -86,35 +86,25 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     async (activityName: string, propertyName: string) => {
       if (!accessToken) return;
       try {
-        const res = await fetch(
-          new URL(
-            `/api/operations/map/${encodeURIComponent(
-              activityName
-            )}/properties/${encodeURIComponent(propertyName)}`,
-            apiBase
-          ),
-          {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
-        if (!res.ok) throw new Error();
-        toast.success("Property mapping deleted", {
-          description: `${activityName}::${propertyName}`,
+        // The new API requires activityId: DELETE /api/activity/{activityId:guid}/property with body { propertyName }.
+        // We don't have the activityId here; as a fallback, call the service via a temporary endpoint is not available.
+        // Until an ID lookup endpoint exists, we can't delete by name. Show a friendly message.
+        toast.error("Delete not supported", {
+          description:
+            "Property delete requires activityId in new API. Use server or add lookup API.",
         });
-        window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
       } catch {
         toast.error("Failed to delete property mapping");
       }
     },
-    [accessToken, apiBase]
+    [accessToken]
   );
 
   const loadMappings = useCallback(async () => {
     if (!accessToken || activeTab !== "mappings") return;
     try {
       setMappingsLoading(true);
-      const res = await fetch(new URL("/api/operations/map/export", apiBase), {
+      const res = await fetch(new URL("/api/activity/export", apiBase), {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) throw new Error();
@@ -184,7 +174,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     if (!accessToken || activeTab !== "exclusions") return;
     try {
       setExclusionsLoading(true);
-      const res = await fetch(new URL("/api/operations/exclusions", apiBase), {
+      const res = await fetch(new URL("/api/activity/exclude", apiBase), {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) throw new Error();
@@ -211,10 +201,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     if (!accessToken) return;
     try {
       const res = await fetch(
-        new URL(
-          `/api/operations/exclusions/${encodeURIComponent(name)}`,
-          apiBase
-        ),
+        new URL(`/api/activity/exclude/${encodeURIComponent(name)}`, apiBase),
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -259,7 +246,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
           setActionsTotalPages(1);
           return;
         }
-        const url = new URL("/api/actions/search", apiBase);
+        const url = new URL("/api/resourceaction/search", apiBase);
         url.searchParams.set("q", term);
         url.searchParams.set("limit", "100");
         const res = await fetch(url, {
@@ -443,7 +430,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                   if (!accessToken) return;
                   try {
                     const res = await fetch(
-                      new URL("/api/operations/map/export", apiBase),
+                      new URL("/api/activity/export", apiBase),
                       { headers: { Authorization: `Bearer ${accessToken}` } }
                     );
                     if (!res.ok) return;
@@ -734,7 +721,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                         if (!desired.has(name)) {
                           await fetch(
                             new URL(
-                              `/api/operations/exclusions/${encodeURIComponent(
+                              `/api/activity/exclude/${encodeURIComponent(
                                 name
                               )}`,
                               apiBase
@@ -753,14 +740,14 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                       for (const name of desired) {
                         if (!current.has(name)) {
                           await fetch(
-                            new URL("/api/operations/exclusions", apiBase),
+                            new URL("/api/activity/exclude", apiBase),
                             {
                               method: "POST",
                               headers: {
                                 Authorization: `Bearer ${accessToken}`,
                                 "Content-Type": "application/json",
                               },
-                              body: JSON.stringify({ operationName: name }),
+                              body: JSON.stringify({ activityName: name }),
                             }
                           );
                           created++;
@@ -1041,7 +1028,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                       const text = await pendingImportFile.text();
                       const json = JSON.parse(text);
                       const res = await fetch(
-                        new URL("/api/operations/map/import", apiBase),
+                        new URL("/api/activity/import", apiBase),
                         {
                           method: "POST",
                           headers: {

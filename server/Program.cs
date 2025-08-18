@@ -1,7 +1,6 @@
 using EntraRoleReaper.Api;
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
-using EntraRoleReaper.Api.Endpoints;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
@@ -82,9 +81,5 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 await app.ConfigureApplication(corsOrigins);
-
-app.MapHealth()
-    .MapRolesSummary()
-    .MapOperationMap();
 
 app.Run();

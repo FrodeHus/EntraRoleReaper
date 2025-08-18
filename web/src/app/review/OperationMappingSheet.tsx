@@ -57,9 +57,9 @@ export function OperationMappingSheet({
       setLoading(true);
       setError(null);
       if (parsed.prop) {
-        // Property-level: there is no GET in this UI; fetch base mapping to get the 'all' list and start with none mapped.
+        // Property-level: there is no dedicated GET; fetch base mapping to get the 'all' list and start with none mapped.
         const baseUrl = new URL(
-          `/api/operations/map/${encodeURIComponent(parsed.op)}`,
+          `/api/activity/mapping/${encodeURIComponent(parsed.op)}`,
           apiBase
         );
         const baseRes = await fetch(baseUrl, {
@@ -80,7 +80,7 @@ export function OperationMappingSheet({
         setOriginalSelected(new Set<string>());
       } else {
         const url = new URL(
-          `/api/operations/map/${encodeURIComponent(parsed.op)}`,
+          `/api/activity/mapping/${encodeURIComponent(parsed.op)}`,
           apiBase
         );
         const res = await fetch(url, {
@@ -89,14 +89,20 @@ export function OperationMappingSheet({
         if (!res.ok) throw new Error("Failed to load mapping");
         const json = (await res.json()) as any;
         // Normalize 'all' items to { id, action, isPrivileged } regardless of casing
-        const rawAll: any[] = Array.isArray(json.all) ? json.all : [];
+        const rawAll: any[] = Array.isArray(json.AllActions)
+          ? json.AllActions
+          : Array.isArray(json.all)
+          ? json.all
+          : [];
         const all: MappingAction[] = rawAll.map((a) => ({
           id: String(a.id ?? a.Id ?? a.ID),
           action: String(a.action ?? a.Action),
           isPrivileged: Boolean(a.isPrivileged ?? a.IsPrivileged),
         }));
         // 'mapped' comes back as an array of action names (strings)
-        const mappedNames: string[] = Array.isArray(json.mapped)
+        const mappedNames: string[] = Array.isArray(json.MappedActions)
+          ? (json.MappedActions as any[]).map((m) => String(m))
+          : Array.isArray(json.mapped)
           ? (json.mapped as any[]).map((m) => String(m))
           : [];
         const selectedIds = new Set<string>(
@@ -214,36 +220,35 @@ export function OperationMappingSheet({
         const bodyArr = Array.from(next);
         let saved: MappingData | null = null;
         if (parsed.prop) {
-          const url = new URL(
-            `/api/operations/map/${encodeURIComponent(
-              parsed.op
-            )}/properties/${encodeURIComponent(parsed.prop)}`,
-            apiBase
-          );
+          const url = new URL(`/api/activity/property`, apiBase);
           const res = await fetch(url, {
             method: "PUT",
             headers: {
               Authorization: `Bearer ${accessToken}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(bodyArr),
+            body: JSON.stringify({
+              activityName: parsed.op,
+              propertyName: parsed.prop,
+              resourceActionIds: bodyArr,
+            }),
           });
           if (!res.ok) throw new Error("Failed to save property mapping");
           // After save, reload to get authoritative list
           await load();
           saved = null; // load handles state
         } else {
-          const url = new URL(
-            `/api/operations/map/${encodeURIComponent(parsed.op)}`,
-            apiBase
-          );
+          const url = new URL(`/api/activity/mapping`, apiBase);
           const res = await fetch(url, {
             method: "PUT",
             headers: {
               Authorization: `Bearer ${accessToken}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(bodyArr),
+            body: JSON.stringify({
+              activityName: parsed.op,
+              resourceActionIds: bodyArr,
+            }),
           });
           if (!res.ok) throw new Error("Failed to save mapping");
           // No body returned; refresh from GET to reflect saved state

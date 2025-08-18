@@ -1,4 +1,3 @@
-using System.Reflection.Metadata;
 using EntraRoleReaper.Api.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +8,7 @@ public class GetStatus : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder builder)
     {
-        builder.MapGet("/api/cache/status", Handle)
+        builder.MapGet("/status", Handle)
             .WithSummary("Gets the status of the cache")
             .RequireAuthorization();
     }
@@ -18,7 +17,7 @@ public class GetStatus : IEndpoint
     {
         await cacheService.InitializeAsync();
         var metadata = cacheService.GetCacheMetadata();
-            
+
         return TypedResults.Ok(
             new CacheMetadataResponse
             (

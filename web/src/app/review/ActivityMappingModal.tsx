@@ -45,7 +45,7 @@ export function ActivityMappingModal({
       setError(null);
       const opName = name || "__new__"; // any string works for fetching all actions
       const url = new URL(
-        `/api/operations/map/${encodeURIComponent(opName)}`,
+        `/api/activity/mapping/${encodeURIComponent(opName)}`,
         apiBase
       );
       const res = await fetch(url, {
@@ -82,12 +82,9 @@ export function ActivityMappingModal({
       const act = (mode === "edit" ? initialActivityName : name)?.trim();
       if (act) {
         try {
-          const expRes = await fetch(
-            new URL(`/api/operations/map/export`, apiBase),
-            {
-              headers: { Authorization: `Bearer ${accessToken}` },
-            }
-          );
+          const expRes = await fetch(new URL(`/api/activity/export`, apiBase), {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
           if (expRes.ok) {
             const expJson = await expRes.json();
             const arr: any[] = Array.isArray(expJson)
@@ -152,14 +149,12 @@ export function ActivityMappingModal({
     if (privOnly) list = list.filter((a) => a.isPrivileged);
     if (t) list = list.filter((a) => a.action.toLowerCase().includes(t));
     // Deterministic order: selected first, then by name
-    return list
-      .slice()
-      .sort((a, b) => {
-        const as = selected.has(a.id) ? 0 : 1;
-        const bs = selected.has(b.id) ? 0 : 1;
-        if (as !== bs) return as - bs;
-        return a.action.localeCompare(b.action);
-      });
+    return list.slice().sort((a, b) => {
+      const as = selected.has(a.id) ? 0 : 1;
+      const bs = selected.has(b.id) ? 0 : 1;
+      if (as !== bs) return as - bs;
+      return a.action.localeCompare(b.action);
+    });
   }, [all, filter, privOnly, selected]);
 
   const toggle = (id: string) => {
@@ -180,19 +175,19 @@ export function ActivityMappingModal({
     try {
       setSaving(true);
       const ids = Array.from(selected);
-      const url = new URL(`/api/operations/map/${encodeURIComponent(actName)}`, apiBase);
+      const url = new URL(`/api/activity/mapping`, apiBase);
       const res = await fetch(url, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(ids),
+        body: JSON.stringify({ activityName: actName, resourceActionIds: ids }),
       });
       if (!res.ok) throw new Error("Failed to save mapping");
-  toast.success("Mapping saved", {
-    description: `${ids.length} actions mapped`,
-  });
+      toast.success("Mapping saved", {
+        description: `${ids.length} actions mapped`,
+      });
       window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
       onSaved?.(actName);
       onOpenChange(false);
