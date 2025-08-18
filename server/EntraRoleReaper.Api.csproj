@@ -8,16 +8,20 @@
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
-  <PackageReference Include="Microsoft.Identity.Client" Version="4.74.1" />
-  <PackageReference Include="Microsoft.Identity.Web" Version="3.13.0" />
-  <PackageReference Include="Azure.Identity" Version="1.14.2" />
-    <PackageReference Include="Microsoft.Graph" Version="5.89.0" />
+  <PackageReference Include="Microsoft.Identity.Client" Version="4.76.0" />
+  <PackageReference Include="Microsoft.Identity.Web" Version="3.13.1" />
+  <PackageReference Include="Azure.Identity" Version="1.15.0" />
+    <PackageReference Include="Microsoft.Graph" Version="5.90.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.8" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
-  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
-  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
-  <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.0" />
-  </ItemGroup>
+  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.8" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.8" />
+ <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+          </ItemGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>EntraRoleReaper.Tests</_Parameter1>
