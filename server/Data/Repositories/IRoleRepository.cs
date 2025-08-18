@@ -4,7 +4,7 @@ namespace EntraRoleReaper.Api.Data.Repositories;
 
 public interface IRoleRepository
 {
-    Task<List<RoleDefinition>> GetAllRolesAsync();
+    Task<List<RoleDefinition>> GetAllRolesAsync(Guid? tenantId);
 
     Task<RoleDefinition?> GetRoleByIdAsync(string roleId);
 

@@ -96,7 +96,8 @@ public class RoleService(
     {
         try
         {
-            return await roleRepository.GetAllRolesAsync();
+            var tenant = await tenantService.GetCurrentTenantAsync();
+            return await roleRepository.GetAllRolesAsync(tenant?.Id);
         }
         catch (Exception ex)
         {
@@ -162,7 +163,8 @@ public class RoleService(
     {
         if (string.IsNullOrEmpty(searchTerm))
         {
-            return await roleRepository.GetAllRolesAsync();
+            var tenant = await tenantService.GetCurrentTenantAsync();
+            return await roleRepository.GetAllRolesAsync(tenant?.Id);
         }
 
         try
