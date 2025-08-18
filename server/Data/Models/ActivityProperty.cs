@@ -8,6 +8,6 @@ public class ActivityProperty : Entity
     [MaxLength(255)]
     public required string Name { get; init; }
 
-    public ICollection<ResourceAction> MappedResourceActions { get; init; } = [];
+    public virtual ICollection<ResourceAction> MappedResourceActions { get; init; } = [];
 
 }

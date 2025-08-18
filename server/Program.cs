@@ -2,13 +2,11 @@ using EntraRoleReaper.Api;
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Endpoints;
-using EntraRoleReaper.Api.Middlewares;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 
@@ -83,53 +81,8 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Database (cache) initialization with optional recreation toggle
-using var scope = app.Services.CreateScope();
-var db = scope.ServiceProvider.GetRequiredService<ReaperDbContext>();
-var reset = Environment.GetEnvironmentVariable("ROLE_REAPER_RESET_DB") == "1";
-if (reset)
-{
-    try
-    {
-        await db.Database.EnsureDeletedAsync();
-        await db.Database.EnsureCreatedAsync();
-        Console.WriteLine("[Startup] Cache database recreated (ROLE_REAPER_RESET_DB=1).");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[Startup] Failed recreating database: {ex.Message}");
-    }
-}
-else
-{
-    try
-    {
-        await db.Database.EnsureCreatedAsync();
-        Console.WriteLine("[Startup] Cache database ensured (no reset).");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[Startup] Failed ensuring database: {ex.Message}");
-    }
-}
+await app.ConfigureApplication(corsOrigins);
 
-
-app.UseCors(policy =>
-    policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()
-);
-
-app.UseSwagger();
-app.UseSwaggerUI();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Tenant resolution from Entra ID JWT
-app.UseMiddleware<TenantMiddleware>();
-
-app.MapEndpoints();
-
-// Minimal API endpoints composed via extension methods (explicit static call for Health to avoid resolution issues)
 app.MapHealth()
     .MapRolesSummary()
     .MapOperationMap();
