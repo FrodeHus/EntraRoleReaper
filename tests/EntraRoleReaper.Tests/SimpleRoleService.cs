@@ -1,10 +1,11 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Services;
+using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Tests;
 internal class SimpleRoleService(params string[] userRoleNames) : IRoleService
 {
-    private readonly List<RoleDefinition> _roles = new List<RoleDefinition>
+    private readonly List<RoleDefinitionDto> _roles = new List<RoleDefinitionDto>
         {
         new() {
                 DisplayName = "Groups Administrator",
@@ -12,10 +13,9 @@ internal class SimpleRoleService(params string[] userRoleNames) : IRoleService
                 PermissionSets =
                 [
                     new() {
-                        ResourceActions = new List<ResourceAction> {
+                        ResourceActions = new List<ResourceActionDto> {
                             new() { Action = "/groups/members/update", IsPrivileged = true },
-                        },
-                        IsPrivileged = true
+                        }
                     }
                 ],
             },
@@ -25,11 +25,10 @@ internal class SimpleRoleService(params string[] userRoleNames) : IRoleService
                 PermissionSets =
                 [
                     new() {
-                        ResourceActions = new List<ResourceAction> {
+                        ResourceActions = new List<ResourceActionDto> {
                             new() { Action = "/users/allProperties/allTasks", IsPrivileged = true },
                             new() { Action = "/groups/allProperties/allTasks", IsPrivileged = true },
-                        },
-                        IsPrivileged = true
+                        }
                     }
                 ],
             },
@@ -39,20 +38,20 @@ internal class SimpleRoleService(params string[] userRoleNames) : IRoleService
                 PermissionSets =
                 [
                     new() {
-                        ResourceActions = new List<ResourceAction> {
+                        ResourceActions = new List<ResourceActionDto> {
                             new() { Action = "/users/basicprofile/read" },
                         },
                         Condition = ""
                     },
                     new() {
-                        ResourceActions = new List<ResourceAction> {
+                        ResourceActions = new List<ResourceActionDto> {
                             new() { Action = "/users/basicprofile/update" },
                             new() { Action = "/users/authenticationMethods/update", IsPrivileged = true },
                         },
                         Condition = "$ResourceIsSelf"
                     },
                     new() {
-                        ResourceActions = new List<ResourceAction> {
+                        ResourceActions = new List<ResourceActionDto> {
                             new() { Action = "/groups/members/update" },
                         },
                         Condition = "$SubjectIsOwner"
@@ -66,24 +65,24 @@ internal class SimpleRoleService(params string[] userRoleNames) : IRoleService
         throw new NotImplementedException();
     }
 
-    public Task<List<RoleDefinition>> GetAllRolesAsync()
+    public Task<List<RoleDefinitionDto>> GetAllRolesAsync()
     {
         return Task.FromResult(_roles);
     }
 
-    public Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId)
+    public Task<RoleDefinitionDto?> GetRoleByIdAsync(Guid roleId)
     {
         var role = _roles.FirstOrDefault(r => r.Id == roleId);
         return Task.FromResult(role);
     }
 
-    public Task<RoleDefinition?> GetRoleByNameAsync(string roleName)
+    public Task<RoleDefinitionDto?> GetRoleByNameAsync(string roleName)
     {
         var role = _roles.FirstOrDefault(r => r.DisplayName.Equals(roleName, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(role);
     }
 
-    public Task<IEnumerable<RoleDefinition>> GetUserRolesAsync(string userId)
+    public Task<IEnumerable<RoleDefinitionDto>> GetUserRolesAsync(string userId)
     {
         return Task.FromResult(_roles.Where(r => userRoleNames.Contains(r.DisplayName)));
     }
@@ -93,7 +92,7 @@ internal class SimpleRoleService(params string[] userRoleNames) : IRoleService
         throw new NotImplementedException();
     }
 
-    public Task<IEnumerable<RoleDefinition>> SearchRolesAsync(string? searchTerm, bool privilegedOnly = false, int limit = 100)
+    public Task<IEnumerable<RoleDefinitionDto>> SearchRolesAsync(string? searchTerm, bool privilegedOnly = false, int limit = 100)
     {
         throw new NotImplementedException();
     }

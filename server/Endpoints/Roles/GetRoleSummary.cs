@@ -2,6 +2,7 @@
 
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Services;
+using EntraRoleReaper.Api.Services.Dto;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -35,5 +36,5 @@ public class GetRoleSummary : IEndpoint
         return TypedResults.Ok(new SummaryResponse(total, roleDefinitions));
     }
 
-    private record SummaryResponse(int total, IEnumerable<RoleDefinition> Roles);
+    private record SummaryResponse(int total, IEnumerable<RoleDefinitionDto> Roles);
 }

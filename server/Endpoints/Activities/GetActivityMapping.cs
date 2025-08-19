@@ -2,6 +2,7 @@
 
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Services.Dto;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -36,7 +37,7 @@ public class GetActivityMapping : IEndpoint
     private record class ActivityMappingResponse(
         string OperationName,
         IEnumerable<string> MappedActions,
-        IEnumerable<ResourceAction> AllActions
+        IEnumerable<ResourceActionDto> AllActions
     );
     private record ActivityMappingRequest(string ActivityName);
 }

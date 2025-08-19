@@ -1,4 +1,5 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
+using EntraRoleReaper.Api.Services.Dto;
 using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Data.Repositories;
@@ -105,10 +106,10 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
             .ToListAsync();
     }
 
-    public async Task<ICollection<ResourceAction>> GetAllAsync()
+    public async Task<ICollection<ResourceActionDto>> GetAllAsync()
     {
-        return await dbContext.ResourceActions
+        return (await dbContext.ResourceActions
             .OrderBy(x => x.Action)
-            .ToListAsync();
+            .ToListAsync()).ConvertAll(ResourceActionDto.FromResourceAction);
     }
 }

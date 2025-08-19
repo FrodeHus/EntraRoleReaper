@@ -151,7 +151,7 @@ public class RoleAdvisorTests
             new ResourceAction { Action = "/users/allProperties/allTasks", IsPrivileged = true },
             new ResourceAction { Action = "/users/basicprofile/update", IsPrivileged = false }
         };
-
+        
         var roles = roleAdvisor.ConsolidateRoles(await roleService.GetAllRolesAsync(), requestedActions);
         Assert.Equal(2, roles.Count);
     }

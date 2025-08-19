@@ -1,12 +1,13 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services;
+using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Api.Review;
 
 public class RoleAdvisor(ActivityPermissionAnalyzer permissionAnalyzer, IRoleService roleService)
 {
-    public async Task<List<RoleDefinition>> GetSuggestedRoles(Activity activity, IEnumerable<ReviewTargetResource> targets, string userId)
+    public async Task<List<RoleDefinitionDto>> GetSuggestedRoles(Activity activity, IEnumerable<ReviewTargetResource> targets, string userId)
     {
         var allRoles = await roleService.GetAllRolesAsync();
         var allSuggestedRoles = new List<RoleGrant>();
@@ -29,12 +30,12 @@ public class RoleAdvisor(ActivityPermissionAnalyzer permissionAnalyzer, IRoleSer
         return [.. suggestedRoles];
     }
 
-    public List<RoleDefinition> ConsolidateRoles(List<RoleDefinition> allSuggestedRoles, List<ResourceAction> eligibleActions)
+    public List<RoleDefinitionDto> ConsolidateRoles(List<RoleDefinitionDto> allSuggestedRoles, List<ResourceAction> eligibleActions)
     {
-        var finalRoles = new List<RoleDefinition>();
+        var finalRoles = new List<RoleDefinitionDto>();
         var distinctRoles = allSuggestedRoles.Distinct();
         var resourceGroups = eligibleActions.Select(a => a.Action.Split('/')[1]).Distinct();
-        var rolesByResourceGroup = new Dictionary<string, List<RoleDefinition>>();
+        var rolesByResourceGroup = new Dictionary<string, List<RoleDefinitionDto>>();
         foreach (var resourceGroup in resourceGroups)
         {
             var rolesForGroup = FindRolesForResourceGroup(distinctRoles, eligibleActions, resourceGroup);
@@ -61,7 +62,7 @@ public class RoleAdvisor(ActivityPermissionAnalyzer permissionAnalyzer, IRoleSer
         return finalRoles;
     }
 
-    private RoleDefinition FindLeastPrivilegedRole(List<RoleDefinition> rolesForGroup, string resourceGroup)
+    private RoleDefinitionDto FindLeastPrivilegedRole(List<RoleDefinitionDto> rolesForGroup, string resourceGroup)
     {
         var rolesByPrivilege = rolesForGroup
             .GroupBy(role => role.PermissionSets.Count(ps => ps.ResourceActions != null && ps.ResourceActions.Any(ra => ra.IsPrivileged)))
@@ -73,7 +74,7 @@ public class RoleAdvisor(ActivityPermissionAnalyzer permissionAnalyzer, IRoleSer
         return rolesByGroupActions.First().FirstOrDefault() ?? leastPrivilegedGroup.First();
     }
 
-    private IEnumerable<RoleDefinition> FindRolesForResourceGroup(IEnumerable<RoleDefinition> distinctRoles, List<ResourceAction> requiredActions, string resourceGroup)
+    private IEnumerable<RoleDefinitionDto> FindRolesForResourceGroup(IEnumerable<RoleDefinitionDto> distinctRoles, List<ResourceAction> requiredActions, string resourceGroup)
     {
         return distinctRoles
             .Where(role => role.PermissionSets

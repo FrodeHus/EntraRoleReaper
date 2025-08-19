@@ -1,12 +1,13 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services;
+using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Api.Review;
 
 public sealed class ActivityPermissionAnalyzer(IGraphService graphService)
 {
-    public async Task<IEnumerable<RoleGrant>> FindLeastPrivilegedRoles(string userId, Activity activity, ReviewTargetResource target, IEnumerable<RoleDefinition> availableRoles)
+    public async Task<IEnumerable<RoleGrant>> FindLeastPrivilegedRoles(string userId, Activity activity, ReviewTargetResource target, IEnumerable<RoleDefinitionDto> availableRoles)
     {
         var relevantRoles = FindRelevantRoles(activity, availableRoles);
         var conditionsMetRoles = await GetRolesMatchingCondition(userId, activity, target, relevantRoles);
@@ -32,14 +33,14 @@ public sealed class ActivityPermissionAnalyzer(IGraphService graphService)
         return preferredRoles;
     }
 
-    private static IEnumerable<RoleDefinition> FindRelevantRoles(Activity activity, IEnumerable<RoleDefinition> roles)
+    private static IEnumerable<RoleDefinitionDto> FindRelevantRoles(Activity activity, IEnumerable<RoleDefinitionDto> roles)
     {
         var flattenedActions = activity.MappedResourceActions.Select(a => a.Action).ToList();
         return roles.Where(role => role.PermissionSets.Any(ps =>
             (ps.ResourceActions ?? []).Any(ra => flattenedActions.Any(fa => fa == ra.Action))));
     }
 
-    private async Task<IEnumerable<RoleGrant>> GetRolesMatchingCondition(string userId, Activity activity, ReviewTargetResource targetResource, IEnumerable<RoleDefinition> roles)
+    private async Task<IEnumerable<RoleGrant>> GetRolesMatchingCondition(string userId, Activity activity, ReviewTargetResource targetResource, IEnumerable<RoleDefinitionDto> roles)
     {
         var rolesWithConditionsMet = new List<RoleGrant>();
         var resourceActions = activity.MappedResourceActions.Select(a => a.Action);
@@ -58,7 +59,7 @@ public sealed class ActivityPermissionAnalyzer(IGraphService graphService)
         return rolesWithConditionsMet;
     }
 
-    private async Task<(bool granted, string condition)> PermissionSetFulfillsRequiredActions(string userId, PermissionSet set, IEnumerable<string> resourceActions, ReviewTargetResource target)
+    private async Task<(bool granted, string condition)> PermissionSetFulfillsRequiredActions(string userId, PermissionSetDto set, IEnumerable<string> resourceActions, ReviewTargetResource target)
     {
         var hasRequiredActions = set.ResourceActions?.Any(ra => resourceActions.Any(raAction => raAction.Equals(ra.Action, StringComparison.OrdinalIgnoreCase))) ?? false;
         return set.Condition switch
@@ -72,6 +73,6 @@ public sealed class ActivityPermissionAnalyzer(IGraphService graphService)
 
 public class RoleGrant
 {
-    public required RoleDefinition Role { get; set; }
+    public required RoleDefinitionDto Role { get; set; }
     public string? Condition { get; set; }
 }

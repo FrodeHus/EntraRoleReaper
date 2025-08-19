@@ -1,4 +1,5 @@
 using EntraRoleReaper.Api.Data.Models;
+using EntraRoleReaper.Api.Services.Dto;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace EntraRoleReaper.Api.Services;
@@ -57,9 +58,9 @@ public class CacheService(IMemoryCache memoryCache, ILogger<CacheService> logger
         };
     }
     
-    public async Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId)
+    public async Task<RoleDefinitionDto?> GetRoleByIdAsync(Guid roleId)
     {
-        var role = Get<RoleDefinition>(roleId.ToString());
+        var role = Get<RoleDefinitionDto>(roleId.ToString());
         if (role is not null)
         {
             return role;
@@ -111,6 +112,6 @@ public class CacheMetadata
 public interface ICacheService
 {
     Task InitializeAsync(bool forceRefresh = false);
-    Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId);
+    Task<RoleDefinitionDto?> GetRoleByIdAsync(Guid roleId);
     CacheMetadata GetCacheMetadata();   
 }

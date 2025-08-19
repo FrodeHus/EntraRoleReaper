@@ -1,4 +1,5 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
+using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Api.Data.Repositories;
 public interface IResourceActionRepository
@@ -11,5 +12,5 @@ public interface IResourceActionRepository
 
     Task<ICollection<ResourceAction>> GetResourceActionsByIdsAsync(Guid[] resourceActionIds);
     Task<ICollection<ResourceAction>> GetResourceActionsByNamesAsync(IEnumerable<string> allResourceActions);
-    Task<ICollection<ResourceAction>> GetAllAsync();
+    Task<ICollection<ResourceActionDto>> GetAllAsync();
 }

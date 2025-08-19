@@ -1,6 +1,7 @@
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services;
+using EntraRoleReaper.Api.Services.Dto;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 
@@ -32,7 +33,7 @@ public class ReviewService(
             await SaveActivitiesAsync(auditActivities);
             
             var mappedActivities = await activityService.GetActivitesAsync(auditActivities.Select(a => a.ActivityName));
-            var allSuggestedRoles = new List<RoleDefinition>();
+            var allSuggestedRoles = new List<RoleDefinitionDto>();
             foreach (var activity in mappedActivities)
             {
                 if (activity.IsExcluded)

@@ -1,12 +1,13 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Review.Models;
+using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Tests;
 public partial class ActivityPermissionAnalyzerTests
 {
-    private readonly List<RoleDefinition> _roles;
-    public ActivityPermissionAnalyzerTests() => _roles = new List<RoleDefinition>
+    private readonly List<RoleDefinitionDto> _roles;
+    public ActivityPermissionAnalyzerTests() => _roles = new List<RoleDefinitionDto>
         {
         new() {
                 DisplayName = "Groups Administrator",
@@ -14,10 +15,9 @@ public partial class ActivityPermissionAnalyzerTests
                 PermissionSets =
                 [
                     new() {
-                        ResourceActions = new List<ResourceAction> {
+                        ResourceActions = new List<ResourceActionDto> {
                             new() { Action = "/groups/members/update", IsPrivileged = true },
-                        },
-                        IsPrivileged = true
+                        }
                     }
                 ],
             },
@@ -27,11 +27,10 @@ public partial class ActivityPermissionAnalyzerTests
                 PermissionSets =
                 [
                     new() {
-                        ResourceActions = new List<ResourceAction> {
+                        ResourceActions = new List<ResourceActionDto> {
                             new() { Action = "/users/allProperties/allTasks", IsPrivileged = true },
                             new() { Action = "/groups/allProperties/allTasks", IsPrivileged = true },
-                        },
-                        IsPrivileged = true
+                        }
                     }
                 ],
             },
@@ -41,20 +40,20 @@ public partial class ActivityPermissionAnalyzerTests
                 PermissionSets =
                 [
                     new() {
-                        ResourceActions = new List<ResourceAction> {
+                        ResourceActions = new List<ResourceActionDto> {
                             new() { Action = "/users/basicprofile/read" },
                         },
                         Condition = ""
                     },
                     new() {
-                        ResourceActions = new List<ResourceAction> {
+                        ResourceActions = new List<ResourceActionDto> {
                             new() { Action = "/users/basicprofile/update" },
                             new() { Action = "/users/authenticationMethods/update", IsPrivileged = true },
                         },
                         Condition = "$ResourceIsSelf"
                     },
                     new() {
-                        ResourceActions = new List<ResourceAction> {
+                        ResourceActions = new List<ResourceActionDto> {
                             new() { Action = "/groups/members/update" },
                         },
                         Condition = "$SubjectIsOwner"

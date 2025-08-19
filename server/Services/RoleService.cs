@@ -1,21 +1,22 @@
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Api.Services;
 
 public interface IRoleService
 {
     Task InitializeAsync(bool forceRefresh = false);
-    Task<List<RoleDefinition>> GetAllRolesAsync();
-    Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId);
-    Task<RoleDefinition?> GetRoleByNameAsync(string roleName);
+    Task<List<RoleDefinitionDto>> GetAllRolesAsync();
+    Task<RoleDefinitionDto?> GetRoleByIdAsync(Guid roleId);
+    Task<RoleDefinitionDto?> GetRoleByNameAsync(string roleName);
     Task UpdateRoleAsync(RoleDefinition role);
     Task AddRoleAsync(RoleDefinition role);
 
-    Task<IEnumerable<RoleDefinition>>
+    Task<IEnumerable<RoleDefinitionDto>>
         SearchRolesAsync(string? searchTerm, bool privilegedOnly = false, int limit = 100);
 
-    Task<IEnumerable<RoleDefinition>> GetUserRolesAsync(string userId);
+    Task<IEnumerable<RoleDefinitionDto>> GetUserRolesAsync(string userId);
 }
 
 public class RoleService(
@@ -76,9 +77,11 @@ public class RoleService(
                     var tenant = await tenantService.GetCurrentTenantAsync();
                     roleDefinition.TenantId = tenant?.Id;
                 }
+
                 addedRoles.Add(roleDefinition);
                 logger.LogInformation("Added new role: {RoleName}", role.DisplayName);
             }
+
             var distinctRoles = addedRoles
                 .GroupBy(r => r.DisplayName)
                 .Select(g => g.First())
@@ -92,12 +95,13 @@ public class RoleService(
         }
     }
 
-    public async Task<List<RoleDefinition>> GetAllRolesAsync()
+    public async Task<List<RoleDefinitionDto>> GetAllRolesAsync()
     {
         try
         {
             var tenant = await tenantService.GetCurrentTenantAsync();
-            return await roleRepository.GetAllRolesAsync(tenant?.Id);
+            var roles = await roleRepository.GetAllRolesAsync(tenant?.Id);
+            return roles.ConvertAll(RoleDefinitionDto.FromRoleDefinition);
         }
         catch (Exception ex)
         {
@@ -106,11 +110,17 @@ public class RoleService(
         }
     }
 
-    public async Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId)
+    public async Task<RoleDefinitionDto?> GetRoleByIdAsync(Guid roleId)
     {
         try
         {
-            return await roleRepository.GetRoleByIdAsync(roleId);
+            var role = await roleRepository.GetRoleByIdAsync(roleId);
+            if (role == null)
+            {
+                logger.LogWarning("Role not found for ID: {RoleId}", roleId);
+                return null;
+            }
+            return RoleDefinitionDto.FromRoleDefinition(role);
         }
         catch (Exception ex)
         {
@@ -119,11 +129,12 @@ public class RoleService(
         }
     }
 
-    public async Task<RoleDefinition?> GetRoleByNameAsync(string roleName)
+    public async Task<RoleDefinitionDto?> GetRoleByNameAsync(string roleName)
     {
         try
         {
-            return await roleRepository.GetRoleByNameAsync(roleName);
+            var role = await roleRepository.GetRoleByNameAsync(roleName);
+            return RoleDefinitionDto.FromRoleDefinition(role);
         }
         catch (Exception ex)
         {
@@ -158,18 +169,20 @@ public class RoleService(
         }
     }
 
-    public async Task<IEnumerable<RoleDefinition>> SearchRolesAsync(string? searchTerm, bool privilegedOnly = false,
+    public async Task<IEnumerable<RoleDefinitionDto>> SearchRolesAsync(string? searchTerm, bool privilegedOnly = false,
         int limit = 100)
     {
         if (string.IsNullOrEmpty(searchTerm))
         {
             var tenant = await tenantService.GetCurrentTenantAsync();
-            return await roleRepository.GetAllRolesAsync(tenant?.Id);
+            var roles = await roleRepository.GetAllRolesAsync(tenant?.Id);
+            return roles.ConvertAll(RoleDefinitionDto.FromRoleDefinition);
         }
 
         try
         {
-            return await roleRepository.SearchRolesAsync(searchTerm, privilegedOnly, limit);
+            var roles =  await roleRepository.SearchRolesAsync(searchTerm, privilegedOnly, limit);
+            return roles.Select(RoleDefinitionDto.FromRoleDefinition).ToList();
         }
         catch (Exception ex)
         {
@@ -178,14 +191,14 @@ public class RoleService(
         }
     }
 
-    public async Task<IEnumerable<RoleDefinition>> GetUserRolesAsync(string userId)
+    public async Task<IEnumerable<RoleDefinitionDto>> GetUserRolesAsync(string userId)
     {
         var ctx = await graphService.GetUserAndRolesAsync(userId);
         var userRoleIds = ctx.ActiveRoleIds;
         userRoleIds.AddRange(ctx.EligibleRoleIds);
         userRoleIds.AddRange(ctx.PimActiveRoleIds);
         userRoleIds = [.. userRoleIds.Distinct()];
-        var userRoles = new List<RoleDefinition>();
+        var userRoles = new List<RoleDefinitionDto>();
         foreach (var roleId in userRoleIds)
         {
             var id = Guid.Parse(roleId);
