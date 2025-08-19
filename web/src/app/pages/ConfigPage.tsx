@@ -257,7 +257,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         const term = search.trim();
         // Use wildcard to request a default list on empty search
         const q = term.length === 0 ? "*" : term;
-        const url = new URL("/api/actions/search", apiBase);
+        const url = new URL("/api/resourceaction/search", apiBase);
         url.searchParams.set("q", q);
         url.searchParams.set("limit", "100");
         const res = await fetch(url, {

@@ -1,4 +1,3 @@
-using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +8,7 @@ public class GetSearch : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder builder)
     {
-        builder.MapGet("/api/actions/search", Handle)
+        builder.MapGet("/search", Handle)
             .WithSummary("Searches for resource actions")
             .RequireAuthorization();
     }
@@ -28,6 +27,6 @@ public class GetSearch : IEndpoint
         var items = await resourceActionRepository.SearchResourceActionsAsync(term, take);
         return TypedResults.Ok(items.Select(x => new ResourceActionSearchResponse(x.Id, x.Action, x.IsPrivileged)).ToArray());
     }
-    
+
     private record ResourceActionSearchResponse(Guid Id, string Action, bool IsPrivileged);
 }
