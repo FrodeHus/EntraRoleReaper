@@ -11,5 +11,5 @@ public class ReaperDbContext(DbContextOptions<ReaperDbContext> options) : DbCont
     public DbSet<Activity> Activities { get; set; }
     public DbSet<ActivityProperty> ActivityProperties { get; set; }
     public DbSet<Tenant> Tenants { get; set; }
-
+    
 }

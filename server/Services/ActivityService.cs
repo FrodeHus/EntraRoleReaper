@@ -110,8 +110,8 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
             });
             return;
         }
-
-        await activityRepository.SetExclusionAsync(activityName, isExcluded);
+        existing.IsExcluded = isExcluded;
+        await activityRepository.UpdateAsync(existing);
     }
 
     public Task<IEnumerable<Activity>> GetExcludedActivitiesAsync()

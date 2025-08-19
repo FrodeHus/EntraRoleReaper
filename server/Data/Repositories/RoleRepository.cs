@@ -85,7 +85,6 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
 
     public Task<List<RoleDefinition>> GetAllRolesAsync(Guid? tenantId)
     {
-        
         return dbContext
             .RoleDefinitions.Where(r => r.TenantId == tenantId || r.TenantId == null)
             .Include(r => r.PermissionSets)

@@ -16,4 +16,5 @@ public interface IActivityRepository
     Task SetExclusionAsync(string activityName, bool isExcluded);
     Task<IEnumerable<Activity>> GetExcludedActivitiesAsync();
     Task<IEnumerable<Activity>> GetActivitiesByNamesAsync(IEnumerable<string> activityNames);
+    Task UpdateAsync(Activity existing);
 }

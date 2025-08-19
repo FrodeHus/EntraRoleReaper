@@ -11,7 +11,7 @@ public class PostExclude : IEndpoint
     public static void Map(IEndpointRouteBuilder builder)
     {
         builder.MapPost("/exclude", Handle)
-            .WithSummary("Excludes an acitivity from the activity log")
+            .WithSummary("Sets an activity to be excluded from the review process")
             .RequireAuthorization();
     }
 
@@ -21,5 +21,5 @@ public class PostExclude : IEndpoint
         return TypedResults.Ok();
     }
 
-    public record ExcludeActivityRequest(string ActivityName);
+    private record ExcludeActivityRequest(string ActivityName);
 }

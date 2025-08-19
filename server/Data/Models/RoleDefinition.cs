@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Data.Models;
@@ -6,7 +7,9 @@ namespace EntraRoleReaper.Api.Data.Models;
 public class RoleDefinition : Entity
 {
     public Guid? TenantId { get; set; }
+    [MaxLength(100)]
     public string DisplayName { get; set; } = string.Empty;
+    [MaxLength(255)]
     public string Description { get; set; } = string.Empty;
     public bool IsEnabled { get; set; }
     public bool IsBuiltIn { get; set; }
