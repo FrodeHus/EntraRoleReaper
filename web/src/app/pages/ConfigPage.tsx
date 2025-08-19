@@ -621,53 +621,6 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                                   …
                                 </span>
                               )}
-                              <button
-                                className="ml-2 px-1.5 py-0.5 border rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 flex items-center gap-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const prop = prompt("New property name");
-                                  const val = (prop || "").trim();
-                                  if (!val) return;
-                                  // if property exists, just open
-                                  if (
-                                    Object.keys(m.properties || {}).some(
-                                      (k) =>
-                                        k.toLowerCase() === val.toLowerCase()
-                                    )
-                                  ) {
-                                    setOpSheetOperationName(
-                                      `${m.name}::${val}`
-                                    );
-                                    setOpSheetOpen(true);
-                                    return;
-                                  }
-                                  setOpSheetOperationName(`${m.name}::${val}`);
-                                  setOpSheetOpen(true);
-                                }}
-                                title="Add property"
-                              >
-                                <Plus className="h-3 w-3" />
-                                <span>Add property</span>
-                              </button>
-                            </div>
-                          )}
-                          {propCount === 0 && (
-                            <div className="mt-2">
-                              <button
-                                className="px-1.5 py-0.5 border rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 flex items-center gap-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const prop = prompt("New property name");
-                                  const val = (prop || "").trim();
-                                  if (!val) return;
-                                  setOpSheetOperationName(`${m.name}::${val}`);
-                                  setOpSheetOpen(true);
-                                }}
-                                title="Add property"
-                              >
-                                <Plus className="h-3 w-3" />
-                                <span>Add property</span>
-                              </button>
                             </div>
                           )}
                         </li>

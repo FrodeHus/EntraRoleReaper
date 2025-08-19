@@ -53,7 +53,9 @@ export function ActivityMappingModal({
       });
       if (!res.ok) throw new Error("Failed to load actions");
       const json = (await res.json()) as any;
-      const rawAll: any[] = Array.isArray(json.all) ? json.all : [];
+      const rawAll: any[] = Array.isArray(json.allActions)
+        ? json.allActions
+        : [];
       const actions: MappingAction[] = rawAll.map((a) => ({
         id: String(a.id ?? a.Id ?? a.ID),
         action: String(a.action ?? a.Action),
@@ -63,8 +65,8 @@ export function ActivityMappingModal({
       // If editing with a real activity name, map current selection from mapped names
       let sel = new Set<string>();
       if (mode === "edit" && initialActivityName) {
-        const mappedNames: string[] = Array.isArray(json.mapped)
-          ? (json.mapped as any[]).map((m) => String(m))
+        const mappedNames: string[] = Array.isArray(json.mappedActions)
+          ? (json.mappedActions as any[]).map((m) => String(m))
           : [];
         sel = new Set(
           actions
