@@ -15,13 +15,8 @@ public class PutActivityPropertyMapping : IEndpoint
             .RequireAuthorization();
     }
 
-    private static async Task<Results<Ok, BadRequest<string>>> Handle(Guid activityId, [FromBody] PutActivityPropertyMappingRequest request, [FromServices] IActivityService activityService)
+    private static async Task<Results<Ok, BadRequest<string>>> Handle([FromBody] PutActivityPropertyMappingRequest request, [FromServices] IActivityService activityService)
     {
-        if (activityId == Guid.Empty || string.IsNullOrWhiteSpace(request.PropertyName) || request.ResourceActionIds == null || request.ResourceActionIds.Length == 0)
-        {
-            return TypedResults.BadRequest("Missing values");
-        }
-
         await activityService.AddPropertyMapToActivityAsync(request.ActivityName, request.PropertyName, request.ResourceActionIds);
         return TypedResults.Ok();
     }

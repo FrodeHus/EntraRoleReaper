@@ -251,7 +251,7 @@ export function OperationMappingSheet({
           await load();
           saved = null; // load handles state
         } else {
-          const url = new URL(`/api/activity/activity`, apiBase);
+          const url = new URL(`/api/activity`, apiBase);
           const res = await fetch(url, {
             method: "PUT",
             headers: {
