@@ -13,6 +13,14 @@ import type {
   RoleDetails,
 } from "./review/types";
 import { normalizeRoleDetails } from "../lib/normalizeRoleDetails";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "../components/ui/table";
 
 export function ReviewPanel({
   accessToken,
@@ -442,101 +450,53 @@ export function ReviewPanel({
                   <Download className="h-3.5 w-3.5 mr-1" /> CSV
                 </Button>
               </div>
-              <div className="flex items-center gap-2">
-                <label htmlFor="sort-by" className="text-foreground/80">
-                  Sort by
-                </label>
-                <select
-                  id="sort-by"
-                  aria-label="sort by"
-                  className="border rounded px-2 py-1 bg-background text-foreground"
-                  value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value as "ops" | "name");
-                    setPage(1);
-                  }}
-                >
-                  <option value="ops">Activities</option>
-                  <option value="name">User name</option>
-                </select>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-2"
-                onClick={() => {
-                  setSortAsc((s) => !s);
-                  setPage(1);
-                }}
-              >
-                {sortAsc ? "Asc" : "Desc"}
-              </Button>
-              <div className="flex items-center gap-1">
-                <span>Page</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2 text-foreground"
-                  disabled={page === 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  {"<"}
-                </Button>
-                <span>{page}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2 text-foreground"
-                  disabled={page * pageSize >= (report?.length ?? 0)}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  {">"}
-                </Button>
-              </div>
-              <select
-                aria-label="page size"
-                className="border rounded px-2 py-1 bg-background text-foreground"
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setPage(1);
-                }}
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
             </div>
           </div>
           <div className="border rounded overflow-hidden bg-card text-card-foreground">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left p-2">Select</th>
-                  <th className="text-left p-2">User</th>
-                  <th className="text-left p-2">Activities</th>
-                  <th className="text-left p-2">Active roles</th>
-                  <th className="text-left p-2">Eligible roles</th>
-                  <th className="text-left p-2">Add</th>
-                  <th className="text-left p-2">Remove</th>
-                  <th className="text-left p-2">Changes</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="text-sm">
+              <TableHeader className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-[backdrop-filter]:bg-muted/60">
+                <TableRow>
+                  <TableHead className="sticky top-0 z-10 bg-transparent">
+                    Select
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-transparent">
+                    User
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-transparent">
+                    Activities
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-transparent">
+                    Active roles
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-transparent">
+                    Eligible roles
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-transparent">
+                    Add
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-transparent">
+                    Remove
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-transparent">
+                    Changes
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {paged.map((r) => {
                   const counts = computeCounts(r);
                   return (
-                    <tr key={r.user.id} className="border-t align-top">
-                      <td className="p-2">
+                    <TableRow key={r.user.id} className="align-top">
+                      <TableCell>
                         <input
                           aria-label={`select ${r.user.displayName}`}
                           type="checkbox"
                           checked={selection.includes(r.user.id)}
                           onChange={() => toggle(r.user.id)}
                         />
-                      </td>
-                      <td className="p-2">{r.user.displayName}</td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>{r.user.displayName}</TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <span>{r.operations?.length ?? 0}</span>
                           {(r.operations?.length ?? 0) > 0 && (
@@ -551,8 +511,8 @@ export function ReviewPanel({
                           )}
                           {/* Mapping icon now shown per operation inside OperationsSheet */}
                         </div>
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
                         {counts.current === 0 ? (
                           <span
                             className="inline-flex items-center justify-center w-5 h-5 text-muted-foreground"
@@ -566,8 +526,8 @@ export function ReviewPanel({
                             {counts.current}
                           </span>
                         )}
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
                         {(r.eligiblePimRoles?.length ?? 0) === 0 ? (
                           <span
                             className="inline-flex items-center justify-center w-5 h-5 text-muted-foreground"
@@ -581,8 +541,8 @@ export function ReviewPanel({
                             {r.eligiblePimRoles?.length ?? 0}
                           </span>
                         )}
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
                         {counts.add === 0 ? (
                           <span
                             className="inline-flex items-center justify-center w-5 h-5 text-muted-foreground"
@@ -596,8 +556,8 @@ export function ReviewPanel({
                             +{counts.add}
                           </span>
                         )}
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
                         {counts.remove === 0 ? (
                           <span
                             className="inline-flex items-center justify-center w-5 h-5 text-muted-foreground"
@@ -611,8 +571,8 @@ export function ReviewPanel({
                             -{counts.remove}
                           </span>
                         )}
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
                         <Button
                           variant="link"
                           size="icon"
@@ -622,12 +582,12 @@ export function ReviewPanel({
                         >
                           <Info />
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           {/* Role details sheet (refactored) */}
           <RoleDetailsSheet

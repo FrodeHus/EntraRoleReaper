@@ -37,9 +37,7 @@ export function OnboardPage() {
   })();
   const adminConsentUrl =
     tenantId && clientId
-      ? `https://login.microsoftonline.com/${encodeURIComponent(
-          tenantId
-        )}/v2.0/adminconsent?client_id=${encodeURIComponent(
+      ? `https://login.microsoftonline.com/common/adminconsent?client_id=${encodeURIComponent(
           clientId
         )}&scope=${encodeURIComponent(
           "https://graph.microsoft.com/.default"

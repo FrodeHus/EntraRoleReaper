@@ -9,6 +9,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../../components/ui/sheet";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "../../components/ui/table";
 
 interface ReviewPageProps {
   accessToken: string | null;
@@ -102,20 +110,26 @@ export function ReviewPage({ accessToken, tenantDomain }: ReviewPageProps) {
                 </p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/50 text-left">
-                      <tr>
-                        <th className="p-2">Display name</th>
-                        <th className="p-2">Type</th>
-                        <th className="p-2 sr-only">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table className="text-sm">
+                    <TableHeader className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-[backdrop-filter]:bg-muted/60 text-left">
+                      <TableRow>
+                        <TableHead className="sticky top-0 z-10 bg-transparent">
+                          Display name
+                        </TableHead>
+                        <TableHead className="sticky top-0 z-10 bg-transparent">
+                          Type
+                        </TableHead>
+                        <TableHead className="sticky top-0 z-10 bg-transparent sr-only">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {selected.map((s) => (
-                        <tr key={`${s.type}:${s.id}`} className="border-t">
-                          <td className="p-2">{s.displayName}</td>
-                          <td className="p-2 capitalize">{s.type}</td>
-                          <td className="p-2 text-right">
+                        <TableRow key={`${s.type}:${s.id}`}>
+                          <TableCell>{s.displayName}</TableCell>
+                          <TableCell className="capitalize">{s.type}</TableCell>
+                          <TableCell className="text-right">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -132,11 +146,11 @@ export function ReviewPage({ accessToken, tenantDomain }: ReviewPageProps) {
                             >
                               <X className="h-4 w-4" />
                             </Button>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>

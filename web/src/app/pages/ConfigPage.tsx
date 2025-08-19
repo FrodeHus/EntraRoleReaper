@@ -7,6 +7,14 @@ import type { RoleDetails } from "../review/types";
 import ActivityMappingModal from "../review/ActivityMappingModal";
 import { OperationMappingSheet } from "../review/OperationMappingSheet";
 import { Plus, Trash2 } from "lucide-react";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "../../components/ui/table";
 
 // Simple tab primitives (could be replaced with a UI lib tabs in future)
 interface TabConfig {
@@ -923,53 +931,89 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                 {rolesPrivOnly ? "Showing privileged" : "Privileged only"}
               </Button>
             </div>
-            <div className="border rounded h-[55vh] overflow-auto text-xs divide-y">
-              {rolesLoading && (
-                <div className="p-2 text-muted-foreground">Loading roles…</div>
-              )}
-              {!rolesLoading && rolesItems.length === 0 && (
-                <div className="p-2 text-muted-foreground">No roles found.</div>
-              )}
-              {!rolesLoading && rolesItems.length > 0 && (
-                <ul>
-                  {rolesItems.map((r: any) => (
-                    <li key={r.id || r.Id} className="p-2 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <button
-                          className="font-semibold text-left hover:underline"
-                          onClick={() => {
-                            const id = r.id || r.Id;
-                            const name = r.displayName || r.DisplayName;
-                            setSelectedRole({ id, name });
-                            setRoleDetailsOpen(true);
-                          }}
-                        >
-                          {r.displayName || r.DisplayName}
-                        </button>
-                        {/* Show privileged badge when role has any privileged actions */}
-                        {((r.permissionSets || r.PermissionSets) ?? []).some(
-                          (ps: any) =>
-                            (
-                              (ps.resourceActions || ps.ResourceActions) ??
-                              []
-                            ).some(
-                              (ra: any) =>
-                                ra.isPrivileged === true ||
-                                ra.IsPrivileged === true
-                            )
-                        ) && (
-                          <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
-                            Privileged
-                          </span>
-                        )}
-                        <span className="ml-auto text-[10px] text-muted-foreground">
-                          {r.isBuiltIn === true ? "Built-in" : "Custom"}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <div className="border rounded h-[55vh] overflow-auto">
+              <Table className="text-xs">
+                <TableHeader className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-[backdrop-filter]:bg-muted/60">
+                  <TableRow>
+                    <TableHead className="sticky top-0 z-10 bg-transparent">
+                      Role
+                    </TableHead>
+                    <TableHead className="sticky top-0 z-10 bg-transparent">
+                      Privileged
+                    </TableHead>
+                    <TableHead className="sticky top-0 z-10 bg-transparent">
+                      Type
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rolesLoading && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-muted-foreground">
+                        Loading roles…
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!rolesLoading && rolesItems.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-muted-foreground">
+                        No roles found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!rolesLoading &&
+                    rolesItems.length > 0 &&
+                    rolesItems.map((r: any) => {
+                      const id = r.id || r.Id;
+                      const name = r.displayName || r.DisplayName;
+                      const isPriv = (
+                        (r.permissionSets || r.PermissionSets) ??
+                        []
+                      ).some((ps: any) =>
+                        (
+                          ((ps.resourceActions || ps.ResourceActions) ??
+                            []) as any[]
+                        ).some(
+                          (ra: any) =>
+                            ra.isPrivileged === true || ra.IsPrivileged === true
+                        )
+                      );
+                      const type = r.isBuiltIn === true ? "Built-in" : "Custom";
+                      return (
+                        <TableRow key={id}>
+                          <TableCell className="max-w-0">
+                            <button
+                              className="font-semibold text-left hover:underline truncate"
+                              title={name}
+                              onClick={() => {
+                                setSelectedRole({ id, name });
+                                setRoleDetailsOpen(true);
+                              }}
+                            >
+                              {name}
+                            </button>
+                          </TableCell>
+                          <TableCell>
+                            {isPriv ? (
+                              <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
+                                Privileged
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">
+                                —
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-[10px] text-muted-foreground">
+                              {type}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
             </div>
           </div>
         )}
