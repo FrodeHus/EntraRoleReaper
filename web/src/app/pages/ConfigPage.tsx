@@ -86,18 +86,24 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     async (activityName: string, propertyName: string) => {
       if (!accessToken) return;
       try {
-        // The new API requires activityId: DELETE /api/activity/{activityId:guid}/property with body { propertyName }.
-        // We don't have the activityId here; as a fallback, call the service via a temporary endpoint is not available.
-        // Until an ID lookup endpoint exists, we can't delete by name. Show a friendly message.
-        toast.error("Delete not supported", {
-          description:
-            "Property delete requires activityId in new API. Use server or add lookup API.",
+        const res = await fetch(new URL("/api/activity/property", apiBase), {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ activityName, propertyName }),
         });
+        if (!res.ok) throw new Error();
+        toast.success("Property mapping deleted", {
+          description: `${activityName}::${propertyName}`,
+        });
+        window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
       } catch {
         toast.error("Failed to delete property mapping");
       }
     },
-    [accessToken]
+    [accessToken, apiBase]
   );
 
   const loadMappings = useCallback(async () => {

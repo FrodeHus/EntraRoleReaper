@@ -15,16 +15,11 @@ public class DeleteActivityPropertyMapping : IEndpoint
             .RequireAuthorization();
     }
 
-    private static async Task<Results<NoContent, BadRequest>> Handle(Guid activityId, [FromBody] DeleteActivityPropertyMappingRequest request, [FromServices] IActivityService activityService)
+    private static async Task<Results<NoContent, BadRequest>> Handle([FromBody] DeleteActivityPropertyMappingRequest request, [FromServices] IActivityService activityService)
     {
-        var activity = await activityService.GetActivityById(activityId);
-        if (activity == null)
-        {
-            return TypedResults.BadRequest();
-        }
-        await activityService.DeletePropertyMapAsync(activity.Name, request.PropertyName);
+        await activityService.DeletePropertyMapAsync(request.ActivityName, request.PropertyName);
         return TypedResults.NoContent();
     }
 
-    private record DeleteActivityPropertyMappingRequest(string PropertyName);
+    private record DeleteActivityPropertyMappingRequest(string ActivityName, string PropertyName);
 }
