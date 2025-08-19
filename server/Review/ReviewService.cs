@@ -20,7 +20,7 @@ public class ReviewService(
     {
         var userIds = await graphService.ExpandUsersOrGroupsAsync(request.UsersOrGroups);
 
-        
+
         var results = new List<UserReview>();
         foreach (var uid in userIds)
         {
@@ -31,14 +31,14 @@ public class ReviewService(
             // Audit operations + targets
             var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
             await SaveActivitiesAsync(auditActivities);
-            
+
             var mappedActivities = await activityService.GetActivitesAsync(auditActivities.Select(a => a.ActivityName));
             var allSuggestedRoles = new List<RoleDefinitionDto>();
             foreach (var activity in mappedActivities)
             {
                 if (activity.IsExcluded)
                 {
-                    // Skip excluded activities
+                    auditActivities.RemoveAll(a => a.ActivityName.Equals(activity.Name, StringComparison.InvariantCultureIgnoreCase));
                     continue;
                 }
 

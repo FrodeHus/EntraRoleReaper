@@ -15,6 +15,6 @@ public interface IActivityRepository
     Task DeletePropertyMapAsync(string activityName, string propertyName);
     Task SetExclusionAsync(string activityName, bool isExcluded);
     Task<IEnumerable<Activity>> GetExcludedActivitiesAsync();
-    Task<IEnumerable<Activity>> GetActivitiesByNamesAsync(IEnumerable<string> activityNames);
+    Task<IEnumerable<Activity>> GetActivitiesByNamesAsync(IEnumerable<string> activityNames, bool includeExcluded = false);
     Task UpdateAsync(Activity existing);
 }

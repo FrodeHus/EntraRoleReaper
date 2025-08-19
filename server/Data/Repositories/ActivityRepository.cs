@@ -18,7 +18,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
                     existing.Properties.Any(e => e.Name.Equals(x.Name, StringComparison.InvariantCultureIgnoreCase)))
                 .ToList();
             newProperties.ForEach(p => existing.Properties.Add(p));
-            
+
             var newMappedActions = activity.MappedResourceActions
                 .Where(x => existing.MappedResourceActions.All(e => e.Id != x.Id)).ToList();
             newMappedActions.ForEach(a => existing.MappedResourceActions.Add(a));
@@ -134,7 +134,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
         return await dbContext.Activities.Where(x => x.IsExcluded).ToListAsync();
     }
 
-    public async Task<IEnumerable<Activity>> GetActivitiesByNamesAsync(IEnumerable<string> activityNames)
+    public async Task<IEnumerable<Activity>> GetActivitiesByNamesAsync(IEnumerable<string> activityNames, bool includeExcluded = false)
     {
         if (activityNames?.Any() != true)
         {
@@ -142,7 +142,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
         }
 
         return await dbContext.Activities
-            .Where(x => activityNames.Contains(x.Name) && !x.IsExcluded)
+            .Where(x => activityNames.Contains(x.Name) || (includeExcluded && x.IsExcluded))
             .Include(x => x.Properties)
             .Include(x => x.MappedResourceActions)
             .ToListAsync();

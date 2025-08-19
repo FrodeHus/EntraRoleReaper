@@ -26,7 +26,7 @@ const tabs: TabConfig[] = [
   { key: "mappings", label: "Mappings" },
   { key: "exclusions", label: "Exclusions" },
   { key: "roles", label: "Roles" },
-  { key: "actions", label: "Actions" },
+  { key: "actions", label: "Resource Actions" },
   { key: "future", label: "Upcoming" },
 ];
 
@@ -255,13 +255,10 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
       try {
         setActionsLoading(true);
         const term = search.trim();
-        if (!term) {
-          setActionsItems([]);
-          setActionsTotalPages(1);
-          return;
-        }
-        const url = new URL("/api/resourceaction/search", apiBase);
-        url.searchParams.set("q", term);
+        // Use wildcard to request a default list on empty search
+        const q = term.length === 0 ? "*" : term;
+        const url = new URL("/api/actions/search", apiBase);
+        url.searchParams.set("q", q);
         url.searchParams.set("limit", "100");
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -300,6 +297,17 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     },
     [accessToken, apiBase, actionsSort, actionsDir, actionsPrivFilter]
   );
+
+  // Helper to parse the action into Namespace and Resource Type columns
+  const parseActionParts = (
+    action: string
+  ): { namespace: string; resourceType: string } => {
+    const parts = String(action || "").split("/");
+    return {
+      namespace: parts[0] || "",
+      resourceType: parts[1] || "",
+    };
+  };
 
   useEffect(() => {
     if (activeTab === "actions") {
@@ -874,35 +882,81 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                 </select>
               </div>
             </div>
-            <div className="border rounded h-[55vh] overflow-auto text-xs divide-y">
-              {actionsLoading && (
-                <div className="p-2 text-muted-foreground">
-                  Loading actions…
-                </div>
-              )}
-              {!actionsLoading && actionsItems.length === 0 && (
-                <div className="p-2 text-muted-foreground">
-                  No actions found.
-                </div>
-              )}
-              {!actionsLoading && actionsItems.length > 0 && (
-                <ul>
-                  {actionsItems.map((a) => (
-                    <li key={a.id} className="p-2 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono break-all">{a.action}</span>
-                        {a.isPrivileged && (
-                          <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
-                            priv
-                          </span>
-                        )}
-                        {/* roles count not available in search endpoint */}
-                      </div>
-                      {/* roles list not provided by search endpoint */}
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <div className="border rounded h-[55vh] overflow-auto">
+              <Table className="text-xs">
+                <TableHeader className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-[backdrop-filter]:bg-muted/60">
+                  <TableRow>
+                    <TableHead className="sticky top-0 z-10 bg-transparent">
+                      Namespace
+                    </TableHead>
+                    <TableHead className="sticky top-0 z-10 bg-transparent">
+                      Resource Type
+                    </TableHead>
+                    <TableHead className="sticky top-0 z-10 bg-transparent">
+                      Privileged
+                    </TableHead>
+                    <TableHead className="sticky top-0 z-10 bg-transparent">
+                      Action
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {actionsLoading && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-muted-foreground">
+                        Loading actions…
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!actionsLoading && actionsItems.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-muted-foreground">
+                        No actions found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!actionsLoading &&
+                    actionsItems.length > 0 &&
+                    actionsItems.map((a) => {
+                      const { namespace, resourceType } = parseActionParts(
+                        a.action
+                      );
+                      return (
+                        <TableRow key={a.id}>
+                          <TableCell className="max-w-0">
+                            <span className="truncate" title={namespace}>
+                              {namespace || ""}
+                            </span>
+                          </TableCell>
+                          <TableCell className="max-w-0">
+                            <span className="truncate" title={resourceType}>
+                              {resourceType || ""}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {a.isPrivileged ? (
+                              <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
+                                Privileged
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">
+                                —
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="max-w-0">
+                            <span
+                              className="font-mono truncate block"
+                              title={a.action}
+                            >
+                              {a.action}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
             </div>
             <div className="flex items-center gap-2 justify-end text-[10px]">
               <span>Page 1 / 1</span>
