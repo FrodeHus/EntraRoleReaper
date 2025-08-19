@@ -11,6 +11,7 @@ public class RoleDefinitionDto
     public bool IsEnabled { get; set; }
     public List<PermissionSetDto> PermissionSets { get; set; } = new();
     public Guid? TenantId { get; set; }
+    public bool IsPrivileged => PermissionSets.Any(ps => ps.ResourceActions?.Any(ra => ra.IsPrivileged) == true);
 
     public static RoleDefinitionDto? FromRoleDefinition(RoleDefinition? role)
     {
@@ -24,7 +25,7 @@ public class RoleDefinitionDto
             DisplayName = role.DisplayName,
             Description = role.Description,
             IsBuiltIn = role.IsBuiltIn,
-            IsEnabled = role.IsEnabled, 
+            IsEnabled = role.IsEnabled,
             PermissionSets = role.PermissionSets.Select(ps => new PermissionSetDto
             {
                 Id = ps.Id,

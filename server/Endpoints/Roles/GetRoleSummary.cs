@@ -1,7 +1,4 @@
-﻿
-
-using EntraRoleReaper.Api.Data.Models;
-using EntraRoleReaper.Api.Services;
+﻿using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Dto;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
