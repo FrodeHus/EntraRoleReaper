@@ -58,7 +58,7 @@ export function MappingsTab({
         : [];
       const list = arr.map((it) => {
         const name = String(it.name ?? it.Name ?? "");
-        const category = String(it.auditCategory ?? "").trim();
+        const category = String(it.category ?? "").trim();
         const service = String(it.service ?? "").trim();
         const actions: string[] = Array.isArray(it.mappedResourceActions)
           ? it.mappedResourceActions
