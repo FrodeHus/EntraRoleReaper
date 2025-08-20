@@ -1,20 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "../../components/ui/button";
 import { toast } from "sonner";
-import { CacheStatusChip } from "../CacheStatusChip";
 import { RoleDetailsSheet } from "../review/RoleDetailsSheet";
 import type { RoleDetails } from "../review/types";
 import ActivityMappingModal from "../review/ActivityMappingModal";
 import { OperationMappingSheet } from "../review/OperationMappingSheet";
-import { Plus, Trash2 } from "lucide-react";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "../../components/ui/table";
 import { CacheTab } from "./config/CacheTab";
 import { MappingsTab } from "./config/MappingsTab";
 import { ExclusionsTab } from "./config/ExclusionsTab";

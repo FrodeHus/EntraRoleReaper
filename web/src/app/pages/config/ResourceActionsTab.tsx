@@ -1,10 +1,19 @@
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../../components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../../components/ui/table";
 
 export interface ResourceActionItem {
   id: string;
   action: string;
   isPrivileged: boolean;
+  mappedCount?: number;
 }
 
 export function ResourceActionsTab({
@@ -19,7 +28,8 @@ export function ResourceActionsTab({
   onToggleDir,
   onSort,
   onPrivFilter,
-  parseActionParts,
+  parseActionParts: _parseActionParts,
+  onMapSelected,
 }: {
   accessToken: string | null;
   searchInput: string;
@@ -32,8 +42,40 @@ export function ResourceActionsTab({
   onToggleDir: () => void;
   onSort: (v: "action" | "roles" | "privileged") => void;
   onPrivFilter: (v: "all" | "priv" | "nonpriv") => void;
-  parseActionParts: (action: string) => { namespace: string; resourceType: string };
+  parseActionParts: (action: string) => {
+    namespace: string;
+    resourceType: string;
+  };
+  onMapSelected?: (ids: string[]) => void;
 }) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const currentIds = useMemo(() => new Set(items.map((i) => i.id)), [items]);
+
+  useEffect(() => {
+    // Prune selections that are no longer visible
+    setSelectedIds((prev) => {
+      const next = new Set<string>();
+      prev.forEach((id) => {
+        if (currentIds.has(id)) next.add(id);
+      });
+      return next;
+    });
+  }, [currentIds]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleMap = () => {
+    if (!onMapSelected) return;
+    onMapSelected(Array.from(selectedIds));
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
@@ -60,7 +102,13 @@ export function ResourceActionsTab({
             <option value="roles">Role count</option>
             <option value="privileged">Privileged</option>
           </select>
-          <Button size="sm" variant="outline" onClick={onToggleDir} disabled={loading} title="Toggle sort direction">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onToggleDir}
+            disabled={loading}
+            title="Toggle sort direction"
+          >
             {dir === "asc" ? "Asc" : "Desc"}
           </Button>
           <select
@@ -74,50 +122,84 @@ export function ResourceActionsTab({
             <option value="priv">Privileged</option>
             <option value="nonpriv">Non-privileged</option>
           </select>
+          <Button
+            size="sm"
+            onClick={handleMap}
+            disabled={loading || selectedIds.size === 0}
+            title="Map selected actions"
+          >
+            Map
+          </Button>
         </div>
       </div>
       <div className="border rounded h-[55vh] overflow-auto">
         <Table className="text-xs">
           <TableHeader className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-[backdrop-filter]:bg-muted/60">
             <TableRow>
-              <TableHead className="sticky top-0 z-10 bg-transparent">Namespace</TableHead>
-              <TableHead className="sticky top-0 z-10 bg-transparent">Resource Type</TableHead>
-              <TableHead className="sticky top-0 z-10 bg-transparent">Privileged</TableHead>
-              <TableHead className="sticky top-0 z-10 bg-transparent">Action</TableHead>
+              <TableHead className="sticky top-0 z-10 bg-transparent w-10">
+                Select
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-transparent">
+                Action
+              </TableHead>
+              <TableHead className="sticky top-0 z-10 bg-transparent text-right">
+                Mapped activities
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading && (
               <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground">Loading actions…</TableCell>
+                <TableCell colSpan={3} className="text-muted-foreground">
+                  Loading actions…
+                </TableCell>
               </TableRow>
             )}
             {!loading && items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground">No actions found.</TableCell>
+                <TableCell colSpan={3} className="text-muted-foreground">
+                  No actions found.
+                </TableCell>
               </TableRow>
             )}
             {!loading &&
               items.length > 0 &&
               items.map((a) => {
-                const { namespace, resourceType } = parseActionParts(a.action);
                 return (
                   <TableRow key={a.id}>
-                    <TableCell className="max-w-0">
-                      <span className="truncate" title={namespace}>{namespace || ""}</span>
+                    <TableCell className="align-top">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${a.action}`}
+                        checked={selectedIds.has(a.id)}
+                        onChange={() => toggleSelect(a.id)}
+                        disabled={loading}
+                      />
                     </TableCell>
-                    <TableCell className="max-w-0">
-                      <span className="truncate" title={resourceType}>{resourceType || ""}</span>
+                    <TableCell className="align-top text-left">
+                      <div className="flex items-start gap-2">
+                        <div className="w-24">
+                          {a.isPrivileged ? (
+                            <span className="inline-block text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
+                              Privileged
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-block w-0"
+                              aria-hidden="true"
+                            ></span>
+                          )}
+                        </div>
+                        <span
+                          className="font-mono block whitespace-normal break-all"
+                          title={a.action}
+                        >
+                          {a.action}
+                        </span>
+                      </div>
                     </TableCell>
-                    <TableCell>
-                      {a.isPrivileged ? (
-                        <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">Privileged</span>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="max-w-0">
-                      <span className="font-mono truncate block" title={a.action}>{a.action}</span>
+                    <TableCell className="text-right tabular-nums">
+                      {typeof a.mappedCount === "number" ? a.mappedCount : 0}
                     </TableCell>
                   </TableRow>
                 );
