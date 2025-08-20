@@ -41,6 +41,9 @@ export function StatusNav({ authed, reviewerName, tenantDomain, accessToken, api
           <NavLink to="/config" className={linkClass}>
             Configuration
           </NavLink>
+          <NavLink to="/tenant" className={linkClass}>
+            Tenant
+          </NavLink>
         </nav>
 
         {/* right: status/actions */}
@@ -62,6 +65,9 @@ export function StatusNav({ authed, reviewerName, tenantDomain, accessToken, api
           </NavLink>
           <NavLink to="/config" className={linkClass}>
             Configuration
+          </NavLink>
+          <NavLink to="/tenant" className={linkClass}>
+            Tenant
           </NavLink>
         </div>
       </nav>

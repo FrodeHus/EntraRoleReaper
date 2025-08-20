@@ -25,7 +25,7 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev
     volumes:
-      - rolereaper-cache:/cache
+      - /Users/frode.hus/rolereaper:/cache
     networks:
       - appnet
 
