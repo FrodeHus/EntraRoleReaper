@@ -1,8 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "../../../components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../../components/ui/table";
 
 export interface MappingItem {
   name: string;
+  category: string;
+  service: string;
   actions: string[];
   properties: Record<string, string[]>;
 }
@@ -24,6 +34,10 @@ export function MappingsTab({
 }) {
   const [items, setItems] = useState<MappingItem[]>([]);
   const [loading, setLoading] = useState(false);
+  // Optional metadata lookup map: name -> { category, service }
+  const [meta, setMeta] = useState<
+    Record<string, { category?: string; service?: string }>
+  >({});
 
   const load = useCallback(async () => {
     if (!accessToken) {
@@ -44,6 +58,8 @@ export function MappingsTab({
         : [];
       const list = arr.map((it) => {
         const name = String(it.name ?? it.Name ?? "");
+        const category = String(it.auditCategory ?? "").trim();
+        const service = String(it.service ?? "").trim();
         const actions: string[] = Array.isArray(it.mappedResourceActions)
           ? it.mappedResourceActions
           : Array.isArray(it.MappedResourceActions)
@@ -52,7 +68,13 @@ export function MappingsTab({
         const props: Record<string, string[]> = (it.properties ??
           it.Properties ??
           {}) as any;
-        return { name, actions, properties: props } as MappingItem;
+        return {
+          name,
+          category,
+          service,
+          actions,
+          properties: props,
+        } as MappingItem;
       });
       list.sort((a, b) => a.name.localeCompare(b.name));
       setItems(list);
@@ -92,6 +114,7 @@ export function MappingsTab({
   useEffect(() => {
     void load();
   }, [load]);
+
   useEffect(() => {
     const handler = () => void load();
     window.addEventListener("operation-mappings-updated", handler as any);
@@ -137,76 +160,65 @@ export function MappingsTab({
             {loading ? "Refreshing" : "Refresh"}
           </Button>
         </div>
-        <div className="border rounded h-[55vh] overflow-auto text-xs divide-y bg-card text-card-foreground">
-          {loading && <div className="p-2 text-muted-foreground">Loading…</div>}
+        <div className="border rounded h-[55vh] overflow-auto bg-card text-card-foreground">
+          {loading && (
+            <div className="p-2 text-muted-foreground text-xs">Loading…</div>
+          )}
           {!loading && items.length === 0 && (
-            <div className="p-2 text-muted-foreground">No mappings.</div>
+            <div className="p-2 text-muted-foreground text-xs">
+              No mappings.
+            </div>
           )}
           {!loading && items.length > 0 && (
-            <ul>
-              {items.map((m) => {
-                const propKeys = Object.keys(m.properties || {});
-                const propCount = propKeys.length;
-                return (
-                  <li key={m.name} className="p-2">
-                    <button
-                      className="w-full text-left flex items-center gap-2 hover:underline"
+            <Table className="text-xs">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[45%]">Activity</TableHead>
+                  <TableHead className="w-[20%]">Audit Category</TableHead>
+                  <TableHead className="w-[20%]">Service</TableHead>
+                  <TableHead className="w-[15%]">Map count</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((m) => {
+                  const propKeys = Object.keys(m.properties || {});
+                  const baseCount = m.actions.length;
+                  const propMapCount = propKeys.reduce(
+                    (acc, k) => acc + (m.properties?.[k]?.length ?? 0),
+                    0
+                  );
+                  const totalCount = baseCount + propMapCount;
+                  return (
+                    <TableRow
+                      key={m.name}
+                      className="cursor-pointer"
                       onClick={() => onEditBase(m.name)}
                       title="Edit base mapping"
                     >
-                      <span className="font-mono break-all flex-1">
+                      <TableCell className="font-mono break-all">
                         {m.name}
-                      </span>
-                      <span className="text-[10px] px-1 rounded border bg-muted text-muted-foreground">
-                        actions: {m.actions.length}
-                      </span>
-                      <span className="text-[10px] px-1 rounded border bg-muted text-muted-foreground">
-                        properties: {propCount}
-                      </span>
-                    </button>
-                    {propCount > 0 && (
-                      <div className="mt-2 flex flex-wrap items-center gap-1">
-                        {propKeys.slice(0, 20).map((p) => (
-                          <div
-                            key={`${m.name}::${p}`}
-                            className="inline-flex items-center gap-1"
-                          >
-                            <button
-                              className="px-1.5 py-0.5 border rounded bg-muted hover:bg-muted/70"
-                              title={`Edit property mapping: ${m.name}::${p}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onEditProperty(m.name, p);
-                              }}
-                            >
-                              <span className="font-mono">{p}</span>
-                              <span className="ml-1 text-[10px] text-muted-foreground">
-                                {m.properties?.[p]?.length ?? 0}
-                              </span>
-                            </button>
-                            <button
-                              className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                              title={`Delete ${m.name}::${p}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteProperty(m.name, p);
-                              }}
-                            >
-                              🗑
-                            </button>
-                          </div>
-                        ))}
-                        {propKeys.length > 20 && (
-                          <span className="text-[10px] text-muted-foreground">
-                            …
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {m.category ?? "-"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {m.service ?? "-"}
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1">
+                          <span className="px-1 rounded border bg-muted text-muted-foreground">
+                            {totalCount}
                           </span>
-                        )}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({baseCount} base, {propMapCount} props)
+                          </span>
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>

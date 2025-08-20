@@ -69,7 +69,7 @@ public class DatabaseSeeder(
                 }
                 try
                 {
-                    await activityRepository.AddAsync(new Activity { Name = name });
+                    await activityRepository.AddAsync(new Activity { Name = name, AuditCategory = item.AuditCategory, Service = item.Service});
                     added++;
                 }
                 catch (Exception ex)

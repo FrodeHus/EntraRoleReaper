@@ -5,7 +5,7 @@ Extract all Microsoft Entra audit activity tables and save to JSON.
 Outputs array of:
 {
   "Service": "<heading above the table>",
-  "Audit category": "<table cell>",
+  "AuditCategory": "<table cell>",
   "Activity": "<table cell>"
 }
 
@@ -74,7 +74,7 @@ def normalize(text: str) -> str:
 def header_map_from_table(table: Tag) -> Dict[str, int]:
     """
     Try to detect columns by header text (case-insensitive).
-    Returns a mapping like {'audit category': 0, 'activity': 1}
+    Returns a mapping like {'AuditCategory': 0, 'activity': 1}
     """
     # Find header row (prefer the first <thead> row, else first <tr>)
     header_cells = []
@@ -99,16 +99,16 @@ def header_map_from_table(table: Tag) -> Dict[str, int]:
 
     # Look for direct matches
     for idx, h in enumerate(headers):
-        if "audit category" in h or h == "auditcategory":
-            col_map["audit category"] = idx
+        if "AuditCategory" in h or h == "auditcategory":
+            col_map["AuditCategory"] = idx
         if h == "activity" or " activity" in h or h.endswith("activity"):
             col_map["activity"] = idx
 
     # If not found, try fuzzy heuristics
-    if "audit category" not in col_map:
+    if "AuditCategory" not in col_map:
         for idx, h in enumerate(headers):
             if "audit" in h and "categor" in h:
-                col_map["audit category"] = idx
+                col_map["AuditCategory"] = idx
                 break
 
     if "activity" not in col_map:
@@ -118,7 +118,7 @@ def header_map_from_table(table: Tag) -> Dict[str, int]:
                 break
 
     # If still missing and table has exactly 2 columns, assume 0/1
-    if ("audit category" not in col_map or "activity" not in col_map) and header_cells:
+    if ("AuditCategory" not in col_map or "activity" not in col_map) and header_cells:
         # Count columns by the *first data row*
         first_data_row = None
         all_rows = table.find_all("tr")
@@ -127,7 +127,7 @@ def header_map_from_table(table: Tag) -> Dict[str, int]:
         if first_data_row:
             cols = first_data_row.find_all(["td", "th"])
             if len(cols) == 2:
-                col_map.setdefault("audit category", 0)
+                col_map.setdefault("AuditCategory", 0)
                 col_map.setdefault("activity", 1)
 
     return col_map
@@ -167,7 +167,7 @@ def extract_table_records(table: Tag, service: str) -> List[Dict[str, str]]:
             continue
 
         # Resolve indices
-        ac_idx = col_map.get("audit category")
+        ac_idx = col_map.get("AuditCategory")
         act_idx = col_map.get("activity")
 
         # If columns still unknown, try positional fallback
@@ -189,7 +189,7 @@ def extract_table_records(table: Tag, service: str) -> List[Dict[str, str]]:
         records.append(
             {
                 "Service": service,
-                "Audit category": audit_category,
+                "AuditCategory": audit_category,
                 "Activity": activity,
             }
         )

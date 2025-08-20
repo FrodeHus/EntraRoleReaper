@@ -30,12 +30,16 @@ public class GetActivityMapping : IEndpoint
             new ActivityMappingResponse
             (
                 operationName,
+                activities?.AuditCategory ?? "Unknown",
+                activities?.Service ?? "Unknown",
                 activities?.MappedResourceActions?.Select(a => a.Action) ?? [],
                 allActions
         ));
     }
     private record class ActivityMappingResponse(
         string OperationName,
+        string AuditCategory,
+        string Service,
         IEnumerable<string> MappedActions,
         IEnumerable<ResourceActionDto> AllActions
     );

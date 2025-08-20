@@ -28,6 +28,8 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
             ActivityExport
         {
             Name = activity.Name,
+            Category = activity.AuditCategory ?? string.Empty,
+            Service = activity.Service ?? string.Empty,
             Properties = (activity.Properties ?? []).ToDictionary(p => p.Name,
                     p => (p.MappedResourceActions ?? []).Select(a => a.Action)),
             MappedResourceActions = activity.MappedResourceActions.Select(ra => ra.Action)
@@ -151,6 +153,8 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
 public class ActivityExport
 {
     public string Name { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string Service { get; set; } = string.Empty;
     public Dictionary<string, IEnumerable<string>> Properties { get; set; } = new();
     public IEnumerable<string> MappedResourceActions { get; set; } = [];
 }
