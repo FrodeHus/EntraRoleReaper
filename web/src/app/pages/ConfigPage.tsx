@@ -52,10 +52,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
   >("all");
   const pageSize = 25;
 
-  // Roles tab state
-  const [rolesItems, setRolesItems] = useState<any[]>([]);
-  const [rolesLoading, setRolesLoading] = useState(false);
-  const [rolesPrivOnly, setRolesPrivOnly] = useState(false);
+  // Roles tab state moved into RolesTab
   const [selectedRole, setSelectedRole] = useState<{
     id: string;
     name: string;
@@ -63,24 +60,17 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
   const [roleDetailsOpen, setRoleDetailsOpen] = useState(false);
   const [roleDetailsLoading, setRoleDetailsLoading] = useState(false);
   const [roleDetails, setRoleDetails] = useState<RoleDetails | null>(null);
-  // Exclusions tab state (backend returns Activity objects with Name/IsExcluded)
-  const [exclusions, setExclusions] = useState<Array<{ name: string }>>([]);
-  const [exclusionsLoading, setExclusionsLoading] = useState(false);
+  // Exclusions tab state moved into ExclusionsTab
 
   // Mappings tab state
-  const [mappingsLoading, setMappingsLoading] = useState(false);
-  const [mappings, setMappings] = useState<
-    Array<{
-      name: string;
-      actions: string[];
-      properties: Record<string, string[]>;
-    }>
-  >([]);
   const [mappingModalOpen, setMappingModalOpen] = useState(false);
   const [mappingModalMode, setMappingModalMode] = useState<"create" | "edit">(
     "create"
   );
   const [mappingModalName, setMappingModalName] = useState<string | null>(null);
+  const [preselectedActionIds, setPreselectedActionIds] = useState<
+    string[] | null
+  >(null);
   const [opSheetOpen, setOpSheetOpen] = useState(false);
   const [opSheetOperationName, setOpSheetOperationName] = useState<
     string | null
@@ -110,58 +100,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     [accessToken, apiBase]
   );
 
-  const loadMappings = useCallback(async () => {
-    if (!accessToken || activeTab !== "mappings") return;
-    try {
-      setMappingsLoading(true);
-      const res = await fetch(new URL("/api/activity/export", apiBase), {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (!res.ok) throw new Error();
-      const json = await res.json();
-      // json is expected to be an array of ActivityExport
-      const arr: any[] = Array.isArray(json)
-        ? json
-        : typeof json === "object" && json
-        ? Object.values(json as any)
-        : [];
-      const list = arr.map((it) => {
-        const name = String(it.name ?? it.Name ?? "");
-        const actions: string[] = Array.isArray(it.mappedResourceActions)
-          ? it.mappedResourceActions
-          : Array.isArray(it.MappedResourceActions)
-          ? it.MappedResourceActions
-          : [];
-        const props: Record<string, string[]> = (it.properties ??
-          it.Properties ??
-          {}) as any;
-        return { name, actions, properties: props };
-      });
-      // sort alphabetically
-      list.sort((a, b) => a.name.localeCompare(b.name));
-      setMappings(list);
-    } catch {
-      setMappings([]);
-    } finally {
-      setMappingsLoading(false);
-    }
-  }, [accessToken, apiBase, activeTab]);
-
-  useEffect(() => {
-    if (activeTab === "mappings") {
-      loadMappings();
-    }
-  }, [activeTab, loadMappings]);
-
-  useEffect(() => {
-    const handler = () => {
-      // refresh mappings when updated elsewhere
-      loadMappings();
-    };
-    window.addEventListener("operation-mappings-updated", handler as any);
-    return () =>
-      window.removeEventListener("operation-mappings-updated", handler as any);
-  }, [loadMappings]);
+  // Mappings list is now owned by MappingsTab
 
   useEffect(() => {
     const openHandler = (e: Event) => {
@@ -179,52 +118,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     return () =>
       window.removeEventListener("open-op-mapping", openHandler as any);
   }, []);
-
-  const loadExclusions = useCallback(async () => {
-    if (!accessToken || activeTab !== "exclusions") return;
-    try {
-      setExclusionsLoading(true);
-      const res = await fetch(new URL("/api/activity/exclude", apiBase), {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (!res.ok) throw new Error();
-      const json = await res.json();
-      const arr: any[] = Array.isArray(json) ? json : [];
-      const list = arr.map((a) => ({
-        name: String(a.name ?? a.Name ?? ""),
-      })) as Array<{
-        name: string;
-      }>;
-      setExclusions(list.filter((e) => e.name));
-    } catch {
-      setExclusions([]);
-    } finally {
-      setExclusionsLoading(false);
-    }
-  }, [accessToken, apiBase, activeTab]);
-
-  useEffect(() => {
-    loadExclusions();
-  }, [loadExclusions]);
-
-  const removeExclusion = async (name: string) => {
-    if (!accessToken) return;
-    try {
-      const res = await fetch(
-        new URL(`/api/activity/exclude/${encodeURIComponent(name)}`, apiBase),
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-      if (res.ok) {
-        toast.success("Exclusion removed", { description: name });
-        loadExclusions();
-      }
-    } catch {
-      /* ignore */
-    }
-  };
+  // Exclusions list is now owned by ExclusionsTab
 
   const manualRefresh = async () => {
     if (!accessToken) return;
@@ -311,54 +205,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     }
   }, [activeTab, actionsSearch, loadActions]);
 
-  // Load roles when roles tab active or filter toggled
-  useEffect(() => {
-    const loadRoles = async () => {
-      if (activeTab !== "roles") return;
-      if (!accessToken) {
-        setRolesItems([]);
-        return;
-      }
-      try {
-        setRolesLoading(true);
-        const url = new URL("/api/roles/summary", apiBase);
-        // fetch a generous page size to get all (cached) role definitions
-        url.searchParams.set("page", "1");
-        url.searchParams.set("pageSize", "500");
-        if (rolesPrivOnly) url.searchParams.set("privilegedOnly", "true");
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        if (!res.ok) throw new Error();
-        const json = await res.json();
-        // API returns { total, roles }
-        const list = (json?.roles ?? json?.items ?? []) as any[];
-        // Helper to determine if a role has any privileged actions
-        const isRolePrivileged = (r: any) =>
-          ((r.permissionSets || r.PermissionSets) ?? []).some((ps: any) =>
-            ((ps.resourceActions || ps.ResourceActions) ?? []).some(
-              (ra: any) => ra.isPrivileged === true || ra.IsPrivileged === true
-            )
-          );
-        // Apply client-side privileged filter as backend may ignore it without a search term
-        const filtered = rolesPrivOnly ? list.filter(isRolePrivileged) : list;
-        // Sort alphabetically by display name
-        filtered.sort((a: any, b: any) =>
-          String(a.displayName || a.DisplayName || "")
-            .toLowerCase()
-            .localeCompare(
-              String(b.displayName || b.DisplayName || "").toLowerCase()
-            )
-        );
-        setRolesItems(filtered);
-      } catch {
-        setRolesItems([]);
-      } finally {
-        setRolesLoading(false);
-      }
-    };
-    loadRoles();
-  }, [activeTab, rolesPrivOnly, accessToken, apiBase]);
+  // Roles list is now owned by RolesTab
 
   // Fetch role details when a role is selected (opened)
   useEffect(() => {
@@ -428,68 +275,6 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         {activeTab === "mappings" && (
           <div className="grid gap-4 text-sm">
             <div>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!accessToken}
-                onClick={async () => {
-                  if (!accessToken) return;
-                  try {
-                    const res = await fetch(
-                      new URL("/api/activity/export", apiBase),
-                      {
-                        headers: { Authorization: `Bearer ${accessToken}` },
-                      }
-                    );
-                    if (!res.ok) return;
-                    const json = await res.json();
-                    const blob = new Blob([JSON.stringify(json, null, 2)], {
-                      type: "application/json",
-                    });
-                    const a = document.createElement("a");
-                    a.href = URL.createObjectURL(blob);
-                    const ts = new Date();
-                    const pad = (n: number) => n.toString().padStart(2, "0");
-                    a.download = `activity-mappings-${ts.getFullYear()}${pad(
-                      ts.getMonth() + 1
-                    )}${pad(ts.getDate())}.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    const opCount =
-                      typeof json === "object" && json
-                        ? Object.keys(json).length
-                        : 0;
-                    toast.success("Exported activity mappings", {
-                      description: `${opCount} activities`,
-                    });
-                  } catch {
-                    toast.error("Export failed");
-                  }
-                }}
-              >
-                Export activity mappings
-              </Button>
-              <Button
-                className="ml-2"
-                size="sm"
-                disabled={!accessToken}
-                onClick={() => {
-                  setMappingModalMode("create");
-                  setMappingModalName(null);
-                  setMappingModalOpen(true);
-                }}
-              >
-                Create mapping
-              </Button>
-              <p className="text-xs text-muted-foreground mt-1">
-                Download current activity and property-level mappings. Legacy
-                activities without property mappings export as an array; those
-                with properties export an object containing actions and a
-                properties map.
-              </p>
-            </div>
-            <div>
               <form onSubmit={(e) => e.preventDefault()} className="space-y-2">
                 <label className="text-xs font-medium">
                   Import activity/property mappings
@@ -525,10 +310,6 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
             <MappingsTab
               accessToken={accessToken}
               apiBase={apiBase}
-              items={mappings}
-              loading={mappingsLoading}
-              onRefresh={() => loadMappings()}
-              onExport={async () => {}}
               onCreate={() => {
                 setMappingModalMode("create");
                 setMappingModalName(null);
@@ -549,81 +330,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         )}
 
         {activeTab === "exclusions" && (
-          <ExclusionsTab
-            accessToken={accessToken}
-            items={exclusions}
-            loading={exclusionsLoading}
-            onExport={async () => {
-              try {
-                const names = exclusions.map((e) => e.name);
-                const blob = new Blob([JSON.stringify(names, null, 2)], {
-                  type: "application/json",
-                });
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = "activity-exclusions.json";
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                toast.success("Exported exclusions", {
-                  description: `${names.length} activities`,
-                });
-              } catch {
-                toast.error("Export failed");
-              }
-            }}
-            onImport={async (file) => {
-              if (!accessToken) return;
-              try {
-                const text = await file.text();
-                const arr = JSON.parse(text);
-                if (!Array.isArray(arr)) throw new Error();
-                const current = new Set(
-                  exclusions.map((e) => e.name.toLowerCase())
-                );
-                const desired = new Set(
-                  (arr as string[]).map((s) => s.toLowerCase())
-                );
-                let created = 0;
-                let removed = 0;
-                for (const name of current) {
-                  if (!desired.has(name)) {
-                    await fetch(
-                      new URL(
-                        `/api/activity/exclude/${encodeURIComponent(name)}`,
-                        apiBase
-                      ),
-                      {
-                        method: "DELETE",
-                        headers: { Authorization: `Bearer ${accessToken}` },
-                      }
-                    );
-                    removed++;
-                  }
-                }
-                for (const name of desired) {
-                  if (!current.has(name)) {
-                    await fetch(new URL("/api/activity/exclude", apiBase), {
-                      method: "POST",
-                      headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({ activityName: name }),
-                    });
-                    created++;
-                  }
-                }
-                toast.success("Import complete", {
-                  description: `${created} created, ${removed} removed`,
-                });
-                loadExclusions();
-              } catch {
-                toast.error("Import failed");
-              }
-            }}
-            onRemove={(name) => removeExclusion(name)}
-          />
+          <ExclusionsTab accessToken={accessToken} apiBase={apiBase} />
         )}
 
         {activeTab === "actions" && (
@@ -642,16 +349,20 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
             onSort={(v) => setActionsSort(v)}
             onPrivFilter={(v) => setActionsPrivFilter(v)}
             parseActionParts={parseActionParts}
+            onMapSelected={(ids) => {
+              if (!ids || ids.length === 0) return;
+              setMappingModalMode("create");
+              setMappingModalName(null);
+              setPreselectedActionIds(ids);
+              setMappingModalOpen(true);
+            }}
           />
         )}
 
         {activeTab === "roles" && (
           <RolesTab
             accessToken={accessToken}
-            items={rolesItems}
-            loading={rolesLoading}
-            privOnly={rolesPrivOnly}
-            onTogglePrivOnly={() => setRolesPrivOnly((v) => !v)}
+            apiBase={apiBase}
             onOpenRole={(id, name) => {
               setSelectedRole({ id, name });
               setRoleDetailsOpen(true);
@@ -777,12 +488,18 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
       />
       <ActivityMappingModal
         open={mappingModalOpen}
-        onOpenChange={(o) => setMappingModalOpen(o)}
+        onOpenChange={(o) => {
+          setMappingModalOpen(o);
+          if (!o) setPreselectedActionIds(null);
+        }}
         accessToken={accessToken}
         apiBase={apiBase}
         initialActivityName={mappingModalName}
         mode={mappingModalMode}
-        onSaved={() => loadMappings()}
+        preselectedIds={preselectedActionIds ?? undefined}
+        onSaved={() => {
+          window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
+        }}
       />
       <OperationMappingSheet
         open={opSheetOpen}

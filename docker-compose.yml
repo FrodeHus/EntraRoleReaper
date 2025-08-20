@@ -14,7 +14,7 @@ services:
       AzureAd__Audience: "${AZUREAD_AUDIENCE}"
       AzureAd__Domain: "${AZUREAD_DOMAIN}"
       Cors__AllowedOrigins__0: "http://localhost:5173"
-      Cache__SqlitePath: "/cache/rolereaper_cache.sqlite"
+      Database__SqlitePath: "/cache/rolereaper_cache.sqlite"
     expose:
       - "8080"
     security_opt:

@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
 import { toast } from "sonner";
 
 interface MappingAction {
@@ -17,6 +25,7 @@ export function ActivityMappingModal({
   initialActivityName,
   mode, // "create" | "edit"
   onSaved,
+  preselectedIds,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -25,6 +34,7 @@ export function ActivityMappingModal({
   initialActivityName?: string | null;
   mode: "create" | "edit";
   onSaved?: (activityName: string) => void;
+  preselectedIds?: string[];
 }) {
   const [name, setName] = useState<string>(initialActivityName || "");
   const [loading, setLoading] = useState(false);
@@ -32,10 +42,13 @@ export function ActivityMappingModal({
   const [error, setError] = useState<string | null>(null);
   const [all, setAll] = useState<MappingAction[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [originalSelected, setOriginalSelected] = useState<Set<string>>(new Set());
+  const [originalSelected, setOriginalSelected] = useState<Set<string>>(
+    new Set()
+  );
   const [filter, setFilter] = useState("");
   const [privOnly, setPrivOnly] = useState(false);
   const [properties, setProperties] = useState<Record<string, number>>({});
+  const [newPropName, setNewPropName] = useState<string>("");
 
   // Load list of all actions and existing mapping (if edit)
   const load = useCallback(async () => {
@@ -62,7 +75,7 @@ export function ActivityMappingModal({
         isPrivileged: Boolean(a.isPrivileged ?? a.IsPrivileged),
       }));
       setAll(actions);
-      // If editing with a real activity name, map current selection from mapped names
+      // Determine initial selection
       let sel = new Set<string>();
       if (mode === "edit" && initialActivityName) {
         const mappedNames: string[] = Array.isArray(json.mappedActions)
@@ -77,6 +90,13 @@ export function ActivityMappingModal({
             )
             .map((a) => a.id)
         );
+      } else if (
+        mode === "create" &&
+        preselectedIds &&
+        preselectedIds.length > 0
+      ) {
+        const idSet = new Set(preselectedIds);
+        sel = new Set(actions.filter((a) => idSet.has(a.id)).map((a) => a.id));
       }
       setSelected(sel);
       setOriginalSelected(new Set(sel));
@@ -124,7 +144,7 @@ export function ActivityMappingModal({
     } finally {
       setLoading(false);
     }
-  }, [accessToken, apiBase, name, mode, initialActivityName]);
+  }, [accessToken, apiBase, name, mode, initialActivityName, preselectedIds]);
 
   useEffect(() => {
     if (open) {
@@ -177,7 +197,7 @@ export function ActivityMappingModal({
     try {
       setSaving(true);
       const ids = Array.from(selected);
-  const url = new URL(`/api/activity`, apiBase);
+      const url = new URL(`/api/activity`, apiBase);
       const res = await fetch(url, {
         method: "PUT",
         headers: {
@@ -248,60 +268,91 @@ export function ActivityMappingModal({
               placeholder="e.g., Reset user password"
             />
           </label>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                const act = (
-                  mode === "edit" ? initialActivityName : name
-                )?.trim();
-                if (!act) {
-                  toast.error("Set an activity name first");
-                  return;
-                }
-                const prop = prompt("New property name");
-                const val = (prop || "").trim();
-                if (!val) return;
-                // Close modal and open property mapping sheet via event
-                onOpenChange(false);
-                window.dispatchEvent(
-                  new CustomEvent("open-op-mapping", {
-                    detail: { operationName: `${act}::${val}` },
-                  })
-                );
-              }}
-            >
-              Add property
-            </Button>
-            {Object.keys(properties).length > 0 && (
-              <div className="text-[11px] text-muted-foreground">
-                {Object.entries(properties).map(([p, count]) => (
-                  <button
-                    key={p}
-                    className="ml-1 px-1.5 py-0.5 border rounded bg-muted hover:bg-muted/70"
-                    title={`Edit ${name}::${p}`}
-                    onClick={() => {
-                      const act = (
-                        mode === "edit" ? initialActivityName : name
-                      )?.trim();
-                      if (!act) return;
-                      onOpenChange(false);
-                      window.dispatchEvent(
-                        new CustomEvent("open-op-mapping", {
-                          detail: { operationName: `${act}::${p}` },
-                        })
-                      );
-                    }}
-                  >
-                    <span className="font-mono">{p}</span>
-                    <span className="ml-1 text-[10px] text-muted-foreground">
-                      {count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <input
+                className="border rounded px-2 py-1 text-xs bg-background flex-1"
+                placeholder="New property name"
+                value={newPropName}
+                onChange={(e) => setNewPropName(e.target.value)}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const act = (
+                    mode === "edit" ? initialActivityName : name
+                  )?.trim();
+                  if (!act) {
+                    toast.error("Set an activity name first");
+                    return;
+                  }
+                  const val = newPropName.trim();
+                  if (!val) return;
+                  setNewPropName("");
+                  onOpenChange(false);
+                  window.dispatchEvent(
+                    new CustomEvent("open-op-mapping", {
+                      detail: { operationName: `${act}::${val}` },
+                    })
+                  );
+                }}
+              >
+                Add property
+              </Button>
+            </div>
+            <div className="border rounded bg-muted/40 overflow-hidden">
+              <Table className="text-xs">
+                <TableHeader className="bg-muted/60">
+                  <TableRow>
+                    <TableHead className="w-2/3">Property</TableHead>
+                    <TableHead className="text-right">Mapped actions</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.keys(properties).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-muted-foreground">
+                        No properties
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    Object.entries(properties).map(([p, count]) => (
+                      <TableRow key={p}>
+                        <TableCell>
+                          <span className="font-mono break-all">{p}</span>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {count}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            title={`Edit ${name}::${p}`}
+                            onClick={() => {
+                              const act = (
+                                mode === "edit" ? initialActivityName : name
+                              )?.trim();
+                              if (!act) return;
+                              onOpenChange(false);
+                              window.dispatchEvent(
+                                new CustomEvent("open-op-mapping", {
+                                  detail: { operationName: `${act}::${p}` },
+                                })
+                              );
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <label className="inline-flex items-center gap-2 text-xs">
