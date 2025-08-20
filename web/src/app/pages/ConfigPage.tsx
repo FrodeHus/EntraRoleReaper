@@ -15,6 +15,12 @@ import {
   TableHead,
   TableCell,
 } from "../../components/ui/table";
+import { CacheTab } from "./config/CacheTab";
+import { MappingsTab } from "./config/MappingsTab";
+import { ExclusionsTab } from "./config/ExclusionsTab";
+import { ResourceActionsTab } from "./config/ResourceActionsTab";
+import { RolesTab } from "./config/RolesTab";
+import { FutureTab } from "./config/FutureTab";
 
 // Simple tab primitives (could be replaced with a UI lib tabs in future)
 interface TabConfig {
@@ -422,23 +428,11 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         </div>
 
         {activeTab === "cache" && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 flex-wrap">
-              <CacheStatusChip accessToken={accessToken} apiBase={apiBase} />
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={!accessToken}
-                onClick={manualRefresh}
-              >
-                Refresh cache now
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground max-w-md">
-              The role cache is periodically refreshed; trigger a manual refresh
-              if you recently adjusted directory role definitions.
-            </p>
-          </div>
+          <CacheTab
+            accessToken={accessToken}
+            apiBase={apiBase}
+            onRefresh={manualRefresh}
+          />
         )}
 
         {activeTab === "mappings" && (
@@ -453,7 +447,9 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                   try {
                     const res = await fetch(
                       new URL("/api/activity/export", apiBase),
-                      { headers: { Authorization: `Bearer ${accessToken}` } }
+                      {
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                      }
                     );
                     if (!res.ok) return;
                     const json = await res.json();
@@ -536,501 +532,144 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                 </p>
               </form>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">Current mappings</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={mappingsLoading || !accessToken}
-                  onClick={() => loadMappings()}
-                >
-                  {mappingsLoading ? "Refreshing" : "Refresh"}
-                </Button>
-              </div>
-              <div className="border rounded h-[55vh] overflow-auto text-xs divide-y bg-card text-card-foreground">
-                {mappingsLoading && (
-                  <div className="p-2 text-muted-foreground">Loading…</div>
-                )}
-                {!mappingsLoading && mappings.length === 0 && (
-                  <div className="p-2 text-muted-foreground">No mappings.</div>
-                )}
-                {!mappingsLoading && mappings.length > 0 && (
-                  <ul>
-                    {mappings.map((m) => {
-                      const propKeys = Object.keys(m.properties || {});
-                      const propCount = propKeys.length;
-                      return (
-                        <li key={m.name} className="p-2">
-                          <button
-                            className="w-full text-left flex items-center gap-2 hover:underline"
-                            onClick={() => {
-                              setMappingModalMode("edit");
-                              setMappingModalName(m.name);
-                              setMappingModalOpen(true);
-                            }}
-                            title="Edit base mapping"
-                          >
-                            <span className="font-mono break-all flex-1">
-                              {m.name}
-                            </span>
-                            <span className="text-[10px] px-1 rounded border bg-muted text-muted-foreground">
-                              actions: {m.actions.length}
-                            </span>
-                            <span className="text-[10px] px-1 rounded border bg-muted text-muted-foreground">
-                              properties: {propCount}
-                            </span>
-                          </button>
-                          {propCount > 0 && (
-                            <div className="mt-2 flex flex-wrap items-center gap-1">
-                              {propKeys.slice(0, 20).map((p) => (
-                                <div
-                                  key={`${m.name}::${p}`}
-                                  className="inline-flex items-center gap-1"
-                                >
-                                  <button
-                                    className="px-1.5 py-0.5 border rounded bg-muted hover:bg-muted/70"
-                                    title={`Edit property mapping: ${m.name}::${p}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpSheetOperationName(
-                                        `${m.name}::${p}`
-                                      );
-                                      setOpSheetOpen(true);
-                                    }}
-                                  >
-                                    <span className="font-mono">{p}</span>
-                                    <span className="ml-1 text-[10px] text-muted-foreground">
-                                      {m.properties?.[p]?.length ?? 0}
-                                    </span>
-                                  </button>
-                                  <button
-                                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                                    title={`Delete ${m.name}::${p}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      deletePropertyMap(m.name, p);
-                                    }}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              ))}
-                              {propKeys.length > 20 && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  …
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </div>
+            <MappingsTab
+              accessToken={accessToken}
+              apiBase={apiBase}
+              items={mappings}
+              loading={mappingsLoading}
+              onRefresh={() => loadMappings()}
+              onExport={async () => {}}
+              onCreate={() => {
+                setMappingModalMode("create");
+                setMappingModalName(null);
+                setMappingModalOpen(true);
+              }}
+              onEditBase={(name) => {
+                setMappingModalMode("edit");
+                setMappingModalName(name);
+                setMappingModalOpen(true);
+              }}
+              onEditProperty={(op, prop) => {
+                setOpSheetOperationName(`${op}::${prop}`);
+                setOpSheetOpen(true);
+              }}
+              onDeleteProperty={(op, prop) => deletePropertyMap(op, prop)}
+            />
           </div>
         )}
 
         {activeTab === "exclusions" && (
-          <div className="space-y-3 text-sm max-w-md">
-            <p className="text-xs text-muted-foreground">
-              Activities in this list are excluded from review output.
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!accessToken}
-                onClick={async () => {
-                  try {
-                    const names = exclusions.map((e) => e.name);
-                    const blob = new Blob([JSON.stringify(names, null, 2)], {
-                      type: "application/json",
-                    });
-                    const a = document.createElement("a");
-                    a.href = URL.createObjectURL(blob);
-                    a.download = "activity-exclusions.json";
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    toast.success("Exported exclusions", {
-                      description: `${names.length} activities`,
-                    });
-                  } catch {
-                    toast.error("Export failed");
+          <ExclusionsTab
+            accessToken={accessToken}
+            items={exclusions}
+            loading={exclusionsLoading}
+            onExport={async () => {
+              try {
+                const names = exclusions.map((e) => e.name);
+                const blob = new Blob([JSON.stringify(names, null, 2)], {
+                  type: "application/json",
+                });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "activity-exclusions.json";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                toast.success("Exported exclusions", {
+                  description: `${names.length} activities`,
+                });
+              } catch {
+                toast.error("Export failed");
+              }
+            }}
+            onImport={async (file) => {
+              if (!accessToken) return;
+              try {
+                const text = await file.text();
+                const arr = JSON.parse(text);
+                if (!Array.isArray(arr)) throw new Error();
+                const current = new Set(
+                  exclusions.map((e) => e.name.toLowerCase())
+                );
+                const desired = new Set(
+                  (arr as string[]).map((s) => s.toLowerCase())
+                );
+                let created = 0;
+                let removed = 0;
+                for (const name of current) {
+                  if (!desired.has(name)) {
+                    await fetch(
+                      new URL(
+                        `/api/activity/exclude/${encodeURIComponent(name)}`,
+                        apiBase
+                      ),
+                      {
+                        method: "DELETE",
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                      }
+                    );
+                    removed++;
                   }
-                }}
-              >
-                Export
-              </Button>
-              <div>
-                <label className="text-[10px] block font-medium mb-0.5">
-                  Import
-                </label>
-                <input
-                  type="file"
-                  className="text-[10px]"
-                  accept="application/json,.json"
-                  disabled={!accessToken}
-                  aria-label="Import exclusion list JSON file"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file || !accessToken) return;
-                    try {
-                      const text = await file.text();
-                      const arr = JSON.parse(text);
-                      if (!Array.isArray(arr)) throw new Error();
-                      // Replace current exclusions with imported list client-side
-                      const current = new Set(
-                        exclusions.map((e) => e.name.toLowerCase())
-                      );
-                      const desired = new Set(
-                        (arr as string[]).map((s) => s.toLowerCase())
-                      );
-                      let created = 0;
-                      let removed = 0;
-                      // Remove not desired
-                      for (const name of current) {
-                        if (!desired.has(name)) {
-                          await fetch(
-                            new URL(
-                              `/api/activity/exclude/${encodeURIComponent(
-                                name
-                              )}`,
-                              apiBase
-                            ),
-                            {
-                              method: "DELETE",
-                              headers: {
-                                Authorization: `Bearer ${accessToken}`,
-                              },
-                            }
-                          );
-                          removed++;
-                        }
-                      }
-                      // Add new ones
-                      for (const name of desired) {
-                        if (!current.has(name)) {
-                          await fetch(
-                            new URL("/api/activity/exclude", apiBase),
-                            {
-                              method: "POST",
-                              headers: {
-                                Authorization: `Bearer ${accessToken}`,
-                                "Content-Type": "application/json",
-                              },
-                              body: JSON.stringify({ activityName: name }),
-                            }
-                          );
-                          created++;
-                        }
-                      }
-                      toast.success("Import complete", {
-                        description: `${created} created, ${removed} removed`,
-                      });
-                      loadExclusions();
-                    } catch {
-                      toast.error("Import failed");
-                    }
-                    e.target.value = "";
-                  }}
-                />
-              </div>
-            </div>
-            <div className="border rounded bg-card text-card-foreground divide-y">
-              {exclusionsLoading && (
-                <div className="p-2 text-xs text-muted-foreground">
-                  Loading…
-                </div>
-              )}
-              {!exclusionsLoading && exclusions.length === 0 && (
-                <div className="p-2 text-xs text-muted-foreground">
-                  No exclusions.
-                </div>
-              )}
-              {!exclusionsLoading && exclusions.length > 0 && (
-                <ul>
-                  {exclusions.map((e) => (
-                    <li
-                      key={e.name}
-                      className="flex items-center gap-2 p-2 text-xs"
-                    >
-                      <span className="font-mono break-all flex-1">
-                        {e.name}
-                      </span>
-                      <button
-                        onClick={() => removeExclusion(e.name)}
-                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                        title="Remove exclusion"
-                      >
-                        🗑
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+                }
+                for (const name of desired) {
+                  if (!current.has(name)) {
+                    await fetch(new URL("/api/activity/exclude", apiBase), {
+                      method: "POST",
+                      headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({ activityName: name }),
+                    });
+                    created++;
+                  }
+                }
+                toast.success("Import complete", {
+                  description: `${created} created, ${removed} removed`,
+                });
+                loadExclusions();
+              } catch {
+                toast.error("Import failed");
+              }
+            }}
+            onRemove={(name) => removeExclusion(name)}
+          />
         )}
 
         {activeTab === "actions" && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  placeholder="Search actions"
-                  value={actionsSearchInput}
-                  onChange={(e) => setActionsSearchInput(e.target.value)}
-                  className="border rounded px-2 py-1 pr-6 text-xs w-full bg-background"
-                  // Keep input enabled during loading so focus isn't lost; only disable when no token
-                  disabled={!accessToken}
-                  aria-label="Search actions or roles"
-                />
-                {actionsLoading && (
-                  <span
-                    className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-muted-foreground"
-                    aria-hidden="true"
-                  >
-                    <span className="h-3 w-3 inline-block animate-spin rounded-full border border-muted-foreground/40 border-t-muted-foreground" />
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-2 items-center text-[10px]">
-                <select
-                  className="border rounded px-1 py-1 bg-background"
-                  value={actionsSort}
-                  onChange={(e) => setActionsSort(e.target.value as any)}
-                  disabled={actionsLoading}
-                  aria-label="Sort by"
-                >
-                  <option value="action">Action</option>
-                  <option value="roles">Role count</option>
-                  <option value="privileged">Privileged</option>
-                </select>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    setActionsDir((d) => (d === "asc" ? "desc" : "asc"))
-                  }
-                  disabled={actionsLoading}
-                  title="Toggle sort direction"
-                >
-                  {actionsDir === "asc" ? "Asc" : "Desc"}
-                </Button>
-                <select
-                  className="border rounded px-1 py-1 bg-background"
-                  value={actionsPrivFilter}
-                  onChange={(e) => setActionsPrivFilter(e.target.value as any)}
-                  disabled={actionsLoading}
-                  aria-label="Privilege filter"
-                >
-                  <option value="all">All</option>
-                  <option value="priv">Privileged</option>
-                  <option value="nonpriv">Non-privileged</option>
-                </select>
-              </div>
-            </div>
-            <div className="border rounded h-[55vh] overflow-auto">
-              <Table className="text-xs">
-                <TableHeader className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-[backdrop-filter]:bg-muted/60">
-                  <TableRow>
-                    <TableHead className="sticky top-0 z-10 bg-transparent">
-                      Namespace
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-transparent">
-                      Resource Type
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-transparent">
-                      Privileged
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-transparent">
-                      Action
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {actionsLoading && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-muted-foreground">
-                        Loading actions…
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {!actionsLoading && actionsItems.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-muted-foreground">
-                        No actions found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {!actionsLoading &&
-                    actionsItems.length > 0 &&
-                    actionsItems.map((a) => {
-                      const { namespace, resourceType } = parseActionParts(
-                        a.action
-                      );
-                      return (
-                        <TableRow key={a.id}>
-                          <TableCell className="max-w-0">
-                            <span className="truncate" title={namespace}>
-                              {namespace || ""}
-                            </span>
-                          </TableCell>
-                          <TableCell className="max-w-0">
-                            <span className="truncate" title={resourceType}>
-                              {resourceType || ""}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {a.isPrivileged ? (
-                              <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
-                                Privileged
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground">
-                                —
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="max-w-0">
-                            <span
-                              className="font-mono truncate block"
-                              title={a.action}
-                            >
-                              {a.action}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="flex items-center gap-2 justify-end text-[10px]">
-              <span>Page 1 / 1</span>
-              <div className="flex gap-1">
-                <Button size="sm" variant="outline" disabled onClick={() => {}}>
-                  Prev
-                </Button>
-                <Button size="sm" variant="outline" disabled onClick={() => {}}>
-                  Next
-                </Button>
-              </div>
-            </div>
-          </div>
+          <ResourceActionsTab
+            accessToken={accessToken}
+            searchInput={actionsSearchInput}
+            loading={actionsLoading}
+            items={actionsItems}
+            sort={actionsSort}
+            dir={actionsDir}
+            privFilter={actionsPrivFilter}
+            onSearchInput={(v) => setActionsSearchInput(v)}
+            onToggleDir={() =>
+              setActionsDir((d) => (d === "asc" ? "desc" : "asc"))
+            }
+            onSort={(v) => setActionsSort(v)}
+            onPrivFilter={(v) => setActionsPrivFilter(v)}
+            parseActionParts={parseActionParts}
+          />
         )}
 
         {activeTab === "roles" && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 justify-between">
-              <h3 className="text-sm font-medium">Role definitions</h3>
-              <Button
-                size="sm"
-                variant={rolesPrivOnly ? "default" : "outline"}
-                onClick={() => setRolesPrivOnly((v) => !v)}
-                disabled={!accessToken || rolesLoading}
-              >
-                {rolesPrivOnly ? "Showing privileged" : "Privileged only"}
-              </Button>
-            </div>
-            <div className="border rounded h-[55vh] overflow-auto">
-              <Table className="text-xs">
-                <TableHeader className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-[backdrop-filter]:bg-muted/60">
-                  <TableRow>
-                    <TableHead className="sticky top-0 z-10 bg-transparent">
-                      Role
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-transparent">
-                      Privileged
-                    </TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-transparent">
-                      Type
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rolesLoading && (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-muted-foreground">
-                        Loading roles…
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {!rolesLoading && rolesItems.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-muted-foreground">
-                        No roles found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {!rolesLoading &&
-                    rolesItems.length > 0 &&
-                    rolesItems.map((r: any) => {
-                      const id = r.id || r.Id;
-                      const name = r.displayName || r.DisplayName;
-                      const isPriv = (
-                        (r.permissionSets || r.PermissionSets) ??
-                        []
-                      ).some((ps: any) =>
-                        (
-                          ((ps.resourceActions || ps.ResourceActions) ??
-                            []) as any[]
-                        ).some(
-                          (ra: any) =>
-                            ra.isPrivileged === true || ra.IsPrivileged === true
-                        )
-                      );
-                      const type = r.isBuiltIn === true ? "Built-in" : "Custom";
-                      return (
-                        <TableRow key={id}>
-                          <TableCell className="max-w-0">
-                            <button
-                              className="font-semibold text-left hover:underline truncate"
-                              title={name}
-                              onClick={() => {
-                                setSelectedRole({ id, name });
-                                setRoleDetailsOpen(true);
-                              }}
-                            >
-                              {name}
-                            </button>
-                          </TableCell>
-                          <TableCell>
-                            {isPriv ? (
-                              <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
-                                Privileged
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground">
-                                —
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-[10px] text-muted-foreground">
-                              {type}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+          <RolesTab
+            accessToken={accessToken}
+            items={rolesItems}
+            loading={rolesLoading}
+            privOnly={rolesPrivOnly}
+            onTogglePrivOnly={() => setRolesPrivOnly((v) => !v)}
+            onOpenRole={(id, name) => {
+              setSelectedRole({ id, name });
+              setRoleDetailsOpen(true);
+            }}
+          />
         )}
 
-        {activeTab === "future" && (
-          <div className="text-xs text-muted-foreground">
-            Additional configuration options will appear here in future
-            versions.
-          </div>
-        )}
+        {activeTab === "future" && <FutureTab />}
 
         {showImportModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
