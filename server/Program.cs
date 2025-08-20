@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
+using EntraRoleReaper.Api.Data.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,9 +78,17 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "RoleReaper API", Version = "v1" });
 });
+builder.Services.AddScoped<DatabaseSeeder>();
 
 var app = builder.Build();
 
 await app.ConfigureApplication(corsOrigins);
+
+// Run seeders after database is ready
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+    await seeder.SeedAsync();
+}
 
 app.Run();

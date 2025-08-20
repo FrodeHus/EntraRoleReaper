@@ -1,0 +1,5982 @@
+[
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Bulk add members to administrative unit - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Bulk remove members to administrative unit - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "started (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DeviceManagement",
+    "Activity": "Bulk add authentication devices - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DeviceManagement",
+    "Activity": "Download devices - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DeviceManagement",
+    "Activity": "started (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Bulk download hardware tokens - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Download registration and reset events - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Download role assignments - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Download service principals - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Download user registration details - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Download users - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Export summary data - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Export summary data new - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "DirectoryManagement",
+    "Activity": "started (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "GroupManagement",
+    "Activity": "Bulk import group members - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "GroupManagement",
+    "Activity": "Bulk remove group members - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "GroupManagement",
+    "Activity": "Download group members - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "GroupManagement",
+    "Activity": "Download groups - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "GroupManagement",
+    "Activity": "started (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "Policy",
+    "Activity": "Add blocked user"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "Policy",
+    "Activity": "Add bypass user"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "Policy",
+    "Activity": "Clear block on user"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "Policy",
+    "Activity": "Remove bypassed user"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "Policy",
+    "Activity": "Update Sign-In Risk Policy"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "Policy",
+    "Activity": "Update User Risk and MFA Registration Policy"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "UserManagement",
+    "Activity": "Bulk create users - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "UserManagement",
+    "Activity": "Bulk delete users - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "UserManagement",
+    "Activity": "Bulk invite users - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "UserManagement",
+    "Activity": "Bulk restore deleted users - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "UserManagement",
+    "Activity": "Download users - finished (bulk)"
+  },
+  {
+    "Service": "Microsoft Entra (AAD) Management UX",
+    "Audit category": "UserManagement",
+    "Activity": "started (bulk)"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Create program"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Link program control"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Unlink program control"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Update program"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Access review ended"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Apply decision"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Approve decision"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Bulk Approve decisions"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Bulk Deny decisions"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Bulk Reset decisions"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Bulk mark decisions as don't know"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Cancel request"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Create access review"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Create request"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Delete access review"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Delete approvals"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Deny decision"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Don't know decision"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Request expired"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Reset decision"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Update access review"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Update partner directory settings"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "Policy",
+    "Activity": "Update request"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Apply review"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Approve all requests in business flow"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Auto review"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Auto apply review"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Create business flow"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Create governance policy template"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Delete access review"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Delete business flow"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Delete governance policy template"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Deny all decisions"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Deny all requests in business flow"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Request approved"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Request denied"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Update business flow"
+  },
+  {
+    "Service": "Access reviews",
+    "Audit category": "UserManagement",
+    "Activity": "Update governance policy template"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Add provisioning configuration"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Delete provisioning configuration"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Disable/pause provisioning configuration"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Enable/restart provisioning configuration"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Enable/start provisioning configuration"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Export"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Import"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Other"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Process escrow"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Quarantine"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Synchronization rule action"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Update attribute mappings or scope"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "Update provisioning setting or credentials"
+  },
+  {
+    "Service": "Account provisioning",
+    "Audit category": "ProvisioningManagement",
+    "Activity": "User Provisioning"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "Application Management",
+    "Activity": "Add application"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "Application Management",
+    "Activity": "Delete application"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "Application Management",
+    "Activity": "Update application"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "Authentication",
+    "Activity": "Add a group to feature rollout"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "Authentication",
+    "Activity": "Create rollout policy for feature"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "Authentication",
+    "Activity": "Delete rollout policy of feature"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "Authentication",
+    "Activity": "Remove a group from feature rollout"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "Authentication",
+    "Activity": "Remove user from feature rollout"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "Authentication",
+    "Activity": "Update rollout policy of feature"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "Authorization",
+    "Activity": "User authorization for application access"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Disable Desktop Sso"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Disable Desktop Sso for a specific domain"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Disable application proxy"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Disable passthrough authentication"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Enable Desktop Sso"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Enable Desktop Sso for a specific domain"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Enable application proxy"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Enable passthrough authentication"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add connector Group"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add a Connector to Connector Group"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add application SSL certificate"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete Connector Group"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete SSL binding"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "ResourceManagement",
+    "Activity": "Register connector"
+  },
+  {
+    "Service": "Application proxy",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update Connector Group"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Assign Hardware Oath Token"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Authentication Methods Policy Reset"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Authentication Methods Policy Update"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Authentication Strength Combination Configuration Create"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Authentication Strength Combination Configuration Delete"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Authentication Strength Combination Configuration Update"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Authentication Strength Policy Create"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Authentication Strength Policy Delete"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Authentication Strength Policy Update"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Bulk upload Hardware Oath Token"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Create Hardware Oath Token"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Delete Hardware Oath Token"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "MFA Service Policy Update"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "PATCH UserAuthMethod.PatchSignInPreferencesAsync"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "PATCH UserAuthMethod.ResetQRPinAsync"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "PATCH UserAuthMethod.UpdateQRPinAsync"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "POST UserAuthMethod.SecurityInfoRegistrationCallback"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "POST UserAuthMethod.SoftwareOathProofupRegistration"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update Hardware Oath Token"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "DELETE Subscription.DeleteProviders"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "DELETE Tenant.DeleteAgentStatuses"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "DELETE Tenant.DeleteCaches"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "DELETE Tenant.DeleteGreetings"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "PATCH Tenant.Patch"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "PATCH Tenant.PatchCaches"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST SoundFile.Post"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST Subscription.CreateProvider"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST Subscription.CreateSubscription"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST Tenant.CreateBlockedUser"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST Tenant.CreateBypassedUser"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST Tenant.CreateCacheConfig"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST Tenant.CreateGreeting"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST Tenant.CreateTenant"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST Tenant.GenerateNewActivationCredentials"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST Tenant.RemoveBlockedUser"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "DirectoryManagement",
+    "Activity": "POST Tenant.RemoveBypassedUser"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "Admin deleted security info"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "Admin registered security info"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "Admin started password reset"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "Admin updated security info"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "Get passkey creation options"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "Restore multifactor authentication on all remembered devices"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "Update per-user multifactor authentication state"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "User canceled security info registration"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "User changed default security info"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "User deleted security info"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "User registered all required security info"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "User registered security info"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "User reviewed security info"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "User started password change"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "user started password reset"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "User started security info registration"
+  },
+  {
+    "Service": "Authentication Methods",
+    "Audit category": "UserManagement",
+    "Activity": "User updated security info"
+  },
+  {
+    "Service": "Microsoft Entra (Azure AD) Recommendations",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Dismiss recommendation"
+  },
+  {
+    "Service": "Microsoft Entra (Azure AD) Recommendations",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Mark recommendation as complete"
+  },
+  {
+    "Service": "Microsoft Entra (Azure AD) Recommendations",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Postpone recommendation"
+  },
+  {
+    "Service": "Microsoft Entra (Azure MFA) multifactor authentication",
+    "Audit category": "DirectoryManagement",
+    "Activity": "DeleteDataFromBackend"
+  },
+  {
+    "Service": "Microsoft Entra (Azure MFA) multifactor authentication",
+    "Audit category": "DirectoryManagement",
+    "Activity": "DeleteDataFromCosmosDb"
+  },
+  {
+    "Service": "Microsoft Entra (Azure MFA) multifactor authentication",
+    "Audit category": "DirectoryManagement",
+    "Activity": "ExportDataFromBackend"
+  },
+  {
+    "Service": "Microsoft Entra (Azure MFA) multifactor authentication",
+    "Audit category": "DirectoryManagement",
+    "Activity": "ExportDataFromCosmosDb"
+  },
+  {
+    "Service": "Microsoft Entra (Azure MFA) multifactor authentication",
+    "Audit category": "UserManagement",
+    "Activity": "Fraud reported - no action taken"
+  },
+  {
+    "Service": "Microsoft Entra (Azure MFA) multifactor authentication",
+    "Audit category": "UserManagement",
+    "Activity": "Fraud reported - user is blocked for MFA"
+  },
+  {
+    "Service": "Microsoft Entra (Azure MFA) multifactor authentication",
+    "Audit category": "UserManagement",
+    "Activity": "Suspicious activity reported"
+  },
+  {
+    "Service": "Microsoft Entra (Azure MFA) multifactor authentication",
+    "Audit category": "UserManagement",
+    "Activity": "User registered security info"
+  },
+  {
+    "Service": "Azure RBAC (Elevated Access)",
+    "Audit category": "AzureRBACRoleManagementElevateAccess",
+    "Activity": "The role assignment of User Access Administrator has been removed from the user"
+  },
+  {
+    "Service": "Azure RBAC (Elevated Access)",
+    "Audit category": "AzureRBACRoleManagementElevateAccess",
+    "Activity": "User has elevated their access to User Access Administrator for their Azure Resources"
+  },
+  {
+    "Service": "B2B Auth",
+    "Audit category": "UserManagement",
+    "Activity": "Redeem extern user invite"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "A self-service sign-up request was completed"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "An API was called as part of a user flow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Delete all available strong authentication devices"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Evaluate Conditional Access policies"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Exchange token"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Federate with an identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Get available strong authentication devices"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Issue a SAML assertion to the application"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Issue an access token to the application"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Issue an authorization code to the application"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Issue an id_token to the application"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Make phone call to verify phone number"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Register TOTP secret"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Remediate user"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Send SMS to verify phone number"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Send verification email"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Validate Client Credentials"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Validate local account credentials"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Validate user authentication"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Verify email address"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "verify one time password"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authentication",
+    "Activity": "Verify phone number"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Add v2 application permissions"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Check whether the resource name is available"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create API connector"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create Identity Provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create authenticationEventListener"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create authenticationEventsFlow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create custom identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create custom policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create customAuthenticationExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create or update a B2C directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create or update a B2C directory tenant and resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create or update a CIAM directory tenant and resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create or update a Guest Usages resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create or update localized resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create starter pack"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create user attribute"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create user flow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Create v2 application"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete API connector"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete B2C Tenant where the caller is an administrator"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete B2C directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete CIAM directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete Guest Usages resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete Identity Provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete authenticationEventlistener"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete authenticationEventsFlow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete custom policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete customAuthenticationExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete localized resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete user attribute"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete user flow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete v2 application"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Delete v2 application permission grant"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Generate key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get API connector"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get API connectors"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get B2C Tenants where the caller is an administrator"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get B2C directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get B2C directory resources in a resource group"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get B2C directory resources in a subscription"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get CIAM directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get CIAM directory resources in a resource group"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get CIAM directory resources in a subscription"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get Guest Usages resources"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get Guest Usages resources in a subscription"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get Identity Provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get Identity Providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get OnAttributeCollectionStartCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get OnAttributeCollectionSubmitCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get OnPageRenderStartCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get active key metadata from policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get age gating configuration"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get authentication flows policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get authenticationEventListener"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get authenticationEventsFlow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get authenticationEventsFlows"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get available output claims"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get configured custom identity providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get configured identity providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get configured local identity providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get custom domains"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get custom identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get custom policies"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get custom policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get custom policy metadata"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get customAuthenticationExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get customAuthenticationExtensions"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get identity provider types"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get list of tenants"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get localized resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get operation status for an async operation"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get operations of Microsoft.AzureActiveDirectory resource provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get policy keys"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get resource properties of a tenant"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get supported cultures"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get supported identity providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get supported page contracts"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get tenant details"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get tenant domains"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get the authenticationEventsPolicy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get user attribute"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get user attributes"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get user flow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get user flows"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get v1 and v2 applications"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get v1 applications"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Get v2 application"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Initialize tenant"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Move resources"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Restore policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Retrieve v2 application permissions grants"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Retrieve v2 application service principals"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update API connector"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update Identity Provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update OnAttributeCollectionStartCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update OnAttributeCollectionSubmitCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update OnPageRenderStartCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update a B2C directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update a CIAM directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update a Guest Usages resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update age gating configuration"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update authentication flows policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update authenticationEventListener"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update authenticationEventsFlow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update authenticationEventsPolicy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update custom identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update custom policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update customAuthenticationExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update local identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update subscription status"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update tenant metadata"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update user attribute"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Update user flow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Upload certificate to policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Upload key to policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Upload secret into policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Validate customExtension authenticationConfiguration"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Validate move resources"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Authorization",
+    "Activity": "Verify if tenant is B2C"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Device",
+    "Activity": "Delete pre-created device"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Device",
+    "Activity": "Pre-create device"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Device",
+    "Activity": "Recover device local administrator password"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Device",
+    "Activity": "Register device"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Device",
+    "Activity": "Unregister device"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Device",
+    "Activity": "Update device local administrator password"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Directory Management",
+    "Activity": "Get age gating configuration"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Directory Management",
+    "Activity": "Get list of tenants"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Directory Management",
+    "Activity": "Get resources properties of a tenant"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Directory Management",
+    "Activity": "Get tenant details"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Directory Management",
+    "Activity": "Get tenant domains"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Directory Management",
+    "Activity": "Initialize tenant"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Directory Management",
+    "Activity": "Update age gating configuration"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Directory Management",
+    "Activity": "Update tenant metadata"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Directory Management",
+    "Activity": "Verify if tenant is B2C"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "IdentityProtection",
+    "Activity": "Evaluate Conditional Access policies"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "IdentityProtection",
+    "Activity": "Remediate user"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Add BitLocker key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Create policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Delete BitLocker key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Delete policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Get active key metadata from policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Get policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Get policy keys"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Read BitLocker key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Restore policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Update policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Upload key to policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "KeyManagement",
+    "Activity": "Upload secret into policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Other",
+    "Activity": "Generate one time password"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "Other",
+    "Activity": "Verify one time password"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Create authenticationEventListener"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Create authenticationEventsFlow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Create customAuthenticationExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Delete authenticationEventListener"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Delete authenticationEventsFlow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Delete customAuthenticationExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Get OnAttributeCollectionStartCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Get OnAttributeCollectionSubmitCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Get OnPageRenderStartCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Get authenticationEventListener"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Get authenticationEventListeners"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Get authenticationEventsFlow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Get authenticationEventsFlows"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Get customAuthenticationExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Get customAuthenticationExtensions"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Get the authenticationEventsPolicy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update OnAttributeCollectionStartCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update OnAttributeCollectionSubmitCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update OnPageRenderStartCustomExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update authenticationEventListener"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update authenticationEventsFlow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update authenticationEventsPolicy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update customAuthenticationExtension"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "PolicyManagement",
+    "Activity": "Validate customExtension authenticationConfiguration"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Check whether the resource name is available"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create API connector"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create Identity Provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create custom identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create custom policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create or update a B2C directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create or update a B2C directory tenant and resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create or update a CIAM directory tenant and resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create or update a Guest Usages resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create or update a localized resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create user attribute"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create user flow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete API connector"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete B2C Tenant where the caller is an administrator"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete B2C directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete CIAM directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete Guest Usages resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete Identity Provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete custom policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete localized resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete user attribute"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete user flow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Generate key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get API connector"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get API connectors"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get B2C Tenant where the caller is an administrator"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get B2C directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get B2C directory resources in a resource group"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get B2C directory resources in a subscription"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get CIAM directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get CIAM directory resources in a resource group"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get CIAM directory resources in a subscription"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get Guest Usages resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get Guest Usages directory resources in a resource group"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get Guest Usages directory resources in a subscription"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get Identity Provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get Identity Providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get active key metadata from policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get authentication flows policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get available output claims"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get configured custom identity providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get configured identity providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get configured local identity providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get custom identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get custom policies"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get custom policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get custom policy metadata"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get identity provider types"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get identity providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get localized resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get operation status of an async operation"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get operations of Microsoft.AzureActiveDirectory resource provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get policy keys"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get supported cultures"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get supported identity providers"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get supported page contracts"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get user attribute"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get user attributes"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get user flow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Get user flows"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Move resources"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update API connector"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Identity Provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update B2C directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update CIAM directory resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update Guest Usages resource"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update authentication flows policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update custom identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update custom policy"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update local identity provider"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update subscription status"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update user attribute"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update user flow"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update certificate to policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update secret into policy key"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "ResourceManagement",
+    "Activity": "Validate move resources"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "UserManagement",
+    "Activity": "Add Windows Hello for Business credential"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "UserManagement",
+    "Activity": "Add passwordless phone sign-in credential"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "UserManagement",
+    "Activity": "Delete Windows Hello for Business credential"
+  },
+  {
+    "Service": "B2C",
+    "Audit category": "UserManagement",
+    "Activity": "Delete passwordless phone sign-in credential"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Add AuthenticationContextClassReference"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Add Conditional Access policy"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Add named location"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Delete AuthenticationContextClassReference"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Delete Conditional Access policy"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Delete named location"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Update AuthenticationContextClassReference"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Update Conditional Access policy"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Update continuous access evaluation"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Update named location"
+  },
+  {
+    "Service": "Conditional Access",
+    "Audit category": "Policy",
+    "Activity": "Update security defaults"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Add administrative unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Add member to administrative unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Add member to restricted management administrative unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Delete administrative unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Hard Delete administrative unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Remove member from administrative unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Remove member from restricted management administrative unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Restore administrative unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "AdministrativeUnit",
+    "Activity": "Update administrative unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Agreement",
+    "Activity": "Add agreement"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Agreement",
+    "Activity": "Delete agreement"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Agreement",
+    "Activity": "Hard delete agreement"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Agreement",
+    "Activity": "Update agreement"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add app role assignment to service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add delegated permission grant"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add owner to application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add owner to service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add policy to application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add policy to service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add service principal credentials"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Cancel application update with safe rollout"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Complete application update after safe rollout"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Consent to application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Delete application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Hard Delete application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Hard delete service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Remove app role assignment from service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Remove delegated permission grant"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Remove owner from application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Remove owner from service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Remove policy from application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Remove policy from service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Remove service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Remove service principal credentials"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Restore application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Restore service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Restore consent"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Set verified publisher"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Unset verified publisher"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update application with safe rollout"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update application - Certificates and secrets management"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update external secrets"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update service principal"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Authentication",
+    "Activity": "Test audit log"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "AuthorizationPolicy",
+    "Activity": "Update authorization policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CertBasedConfiguration",
+    "Activity": "Add CertBasedAuthConfiguration"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CertBasedConfiguration",
+    "Activity": "Hard delete CertificationBasedAuthConfiguration"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CertificateAuthorityEntity",
+    "Activity": "Create CertificateAuthorityEntity"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CertificateAuthorityEntity",
+    "Activity": "Delete CertificateAuthorityEntity"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CertificateAuthorityEntity",
+    "Activity": "Hard Delete CertificateAuthorityEntity"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CertificateAuthorityEntity",
+    "Activity": "Restore CertificateAuthorityEntity"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CertificateAuthorityEntity",
+    "Activity": "Update CertificateAuthorityEntity"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CertificateBasedAuthConfiguration",
+    "Activity": "Add CertificateBasedAuthConfiguration"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CertificateBasedAuthConfiguration",
+    "Activity": "Delete CertificateBasedAuthConfiguration"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CertificateBasedAuthConfiguration",
+    "Activity": "Update CertificateBasedAuthConfiguration"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CompanyBranding",
+    "Activity": "Create Branding Theme"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CompanyBranding",
+    "Activity": "Delete Branding Theme"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CompanyBranding",
+    "Activity": "Hard Delete Branding Theme"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CompanyBranding",
+    "Activity": "Update Branding Theme"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CompanyBrandingLocale",
+    "Activity": "Create Branding Theme Localization"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CompanyBrandingLocale",
+    "Activity": "Delete Branding Theme Localization"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CompanyBrandingLocale",
+    "Activity": "Hard Delete Branding Theme Localization"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CompanyBrandingLocale",
+    "Activity": "Update Branding Theme Localization"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Contact",
+    "Activity": "Add contact"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Contact",
+    "Activity": "Delete contact"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Contact",
+    "Activity": "Update contact"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantAccessSettings",
+    "Activity": "Add a domain-based partner to cross-tenant access setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantAccessSettings",
+    "Activity": "Add a partner to cross-tenant access setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantAccessSettings",
+    "Activity": "Delete a domain-based partner to cross-tenant access setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantAccessSettings",
+    "Activity": "Delete partner specific cross-tenant access setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantAccessSettings",
+    "Activity": "Migrated partner cross-tenant access settings to the scalable model"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantAccessSettings",
+    "Activity": "Reset the cross-tenant access default setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantAccessSettings",
+    "Activity": "Update a domain-based partner to cross-tenant access setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantAccessSettings",
+    "Activity": "Update a partner cross-tenant access setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantAccessSettings",
+    "Activity": "Update the company default cross-tenant access setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantIdentitySyncSettings",
+    "Activity": "Create a partner cross-tenant identity sync setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantIdentitySyncSettings",
+    "Activity": "Delete a partner cross-tenant identity sync setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "CrossTenantIdentitySyncSettings",
+    "Activity": "Update a partner cross-tenant identity sync setting"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DelegatedAdminServiceProviderConstraints",
+    "Activity": "Adding allowed assignable roles"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DelegatedAdminServiceProviderConstraints",
+    "Activity": "Updating allowed assignable roles"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Add device"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Add registered owner to device"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Add registered users to device"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Delete device"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Device no longer compliant"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Device no longer managed"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Hard Delete device"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Remove registered owner from device"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Remove registered users from device"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Restore device"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Device",
+    "Activity": "Update device"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DeviceConfiguration",
+    "Activity": "Add device configuration"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DeviceConfiguration",
+    "Activity": "Delete device configuration"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DeviceConfiguration",
+    "Activity": "Update device configuration"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DeviceTemplate",
+    "Activity": "Add device from DeviceTemplate"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DeviceTemplate",
+    "Activity": "Add DeviceTemplate"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DeviceTemplate",
+    "Activity": "Add owner to DeviceTemplate"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DeviceTemplate",
+    "Activity": "Delete DeviceTemplate"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Add partner to company"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Add sharedEmailDomainInvitation"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Add unverified domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Add verified domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Create Company"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Create company settings"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Delete company allowed data location"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Delete company settings"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Delete subscription"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Deleting Source Tenant subscriptions"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Demote partner"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Directory deleted"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Directory deleted permanently"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Directory scheduled for deletion (Lifecycle)"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Directory scheduled for deletion (UserRequest)"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Get cross-cloud verification code for domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Hard Delete Domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Promote company to partner"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Promote sub domain to root domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Remove partner from company"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Remove unverified domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Remove verified domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Schedule Add sharedEmailDomain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Schedule Remove sharedEmailDomain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set Company Information"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set DirSync feature"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set DirSyncEnabled flag"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set Partnership"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set accidental deletion threshold"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set company allowed data location"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set company multinational feature enabled"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set directory feature on tenant"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set domain authentication"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set federation settings on domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Set password policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Soft Delete Domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Suspending Source Tenant Subscriptions"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Update Domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Update company"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Update company settings"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Update domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Update sharedEmailDomain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Update sharedEmailDomainInvitation"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Verify domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Verify email verified domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Add app role assignment to group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Add group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Add owner to group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Assign label to group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Create group settings"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Delete group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Delete group settings"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Finish applying group based license to user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Grant contextual consent to application"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Hard Delete group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove app role assignment from group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove eligible member from group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove eligible owner from group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove label from group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove member from group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove owner from group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Restore group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Set group license"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Set group to be managed by user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Start applying group based license to users"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Trigger group license recalculation"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Update group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "GroupManagement",
+    "Activity": "Update group settings"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "KerberosDomain",
+    "Activity": "Add kerberos domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "KerberosDomain",
+    "Activity": "Delete kerberos domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "KerberosDomain",
+    "Activity": "Restore kerberos domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "KerberosDomain",
+    "Activity": "Update kerberos domain"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Label",
+    "Activity": "Add label"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Label",
+    "Activity": "Delete label"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Label",
+    "Activity": "Update label"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MicrosoftSupportAccessManagement",
+    "Activity": "Access approved"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MicrosoftSupportAccessManagement",
+    "Activity": "Access removed"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MicrosoftSupportAccessManagement",
+    "Activity": "Request approved"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MicrosoftSupportAccessManagement",
+    "Activity": "Request canceled"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MicrosoftSupportAccessManagement",
+    "Activity": "Request created"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MicrosoftSupportAccessManagement",
+    "Activity": "Request rejected"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrg",
+    "Activity": "Create a MultiTenantOrg"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrg",
+    "Activity": "Hard Delete MultiTenantOrg"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrg",
+    "Activity": "Update a MultiTenantOrg"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrgIdentitySyncPolicyUpdate",
+    "Activity": "Reset a multi tenant org identity sync policy template"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrgIdentitySyncPolicyUpdate",
+    "Activity": "Update a multi tenant org identity sync policy template"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrgPartnerConfigurationTemplate",
+    "Activity": "Reset a multi tenant org partner configuration template"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrgPartnerConfigurationTemplate",
+    "Activity": "Update a multi tenant org partner configuration template"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrgTenant",
+    "Activity": "Add MultiTenantOrg tenant"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrgTenant",
+    "Activity": "Delete MultiTenantOrg tenant"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrgTenant",
+    "Activity": "Hard Delete MultiTenantOrg tenant"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrgTenant",
+    "Activity": "Tenant joining MultiTenantOrg tenant"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "MultiTenantOrgTenant",
+    "Activity": "Update MultiTenantOrg tenant"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "OrganizationalUnitContainer",
+    "Activity": "Create OrganizationalUnit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "OrganizationalUnitContainer",
+    "Activity": "Delete OrganizationalUnit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "OrganizationalUnitContainer",
+    "Activity": "Update OrganizationalUnit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PendingExternalUserProfile",
+    "Activity": "Create PendingExternalUserProfile"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PendingExternalUserProfile",
+    "Activity": "Delete PendingExternalUserProfile"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PendingExternalUserProfile",
+    "Activity": "Hard Delete PendingExternalUserProfile"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PermissionGrantPolicy",
+    "Activity": "Add permission grant policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PermissionGrantPolicy",
+    "Activity": "Delete permission grant policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PermissionGrantPolicy",
+    "Activity": "Update permission grant policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Policy",
+    "Activity": "Add owner to policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Policy",
+    "Activity": "Add policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Policy",
+    "Activity": "Delete policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Policy",
+    "Activity": "Hard Delete policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Policy",
+    "Activity": "Remove owner from policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Policy",
+    "Activity": "Remove policy credentials"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Policy",
+    "Activity": "Restore policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "Policy",
+    "Activity": "Update policy"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PublicKeyInfrastructure",
+    "Activity": "Create PublicKeyInfrastructure"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PublicKeyInfrastructure",
+    "Activity": "Delete PublicKeyInfrastructure"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PublicKeyInfrastructure",
+    "Activity": "Hard Delete PublicKeyInfrastructure"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PublicKeyInfrastructure",
+    "Activity": "Initiate PublicKeyInfrastructure"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PublicKeyInfrastructure",
+    "Activity": "Restore PublicKeyInfrastructure"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "PublicKeyInfrastructure",
+    "Activity": "Update PublicKeyInfrastructure"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Add EligibleRoleAssignment to RoleDefinition"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Add eligible member to role"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role scoped over Restricted Management Administrative Unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Add role assignment to role definition"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Add role definition"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Add role from template"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Add scoped member to role"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Delete role definition"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove EligibleRoleAssignment from RoleDefinition"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove eligible member from role"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove member from role"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove member from role scoped over Restricted Management Administrative Unit"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove role assignment from role definition"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove scoped member from role"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Update role"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "RoleManagement",
+    "Activity": "Update role definition"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Add app role assignment to group"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Add user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Add user sponsor"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Change user license"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Change user password"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Convert federated user to managed"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Create application password for user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Delete application password for user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Delete user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Disable Strong Authentication"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Disable account"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Enable Strong Authentication"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Enable account"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Hard Delete user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Remove OrganizationalUnit assigned to a user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Remove app role assignment from user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Remove user sponsor"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Reset password"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Restore user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Set force change user password"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Set user manager"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Takeover user cloned"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Update OrganizationalUnit assigned to a user"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Update StsRefreshTokenValidFrom Timestamp"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Update external secrets"
+  },
+  {
+    "Service": "Core Directory",
+    "Audit category": "UserManagement",
+    "Activity": "Update user"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "Device",
+    "Activity": "Delete pre-created device"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "Device",
+    "Activity": "Pre-create device"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "Device",
+    "Activity": "Recover device local administrator password"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "Device",
+    "Activity": "Register device"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "Device",
+    "Activity": "Unregister device"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "Device",
+    "Activity": "Update local administrator password"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "KeyManagement",
+    "Activity": "Add BitLocker key"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "KeyManagement",
+    "Activity": "Delete BitLocker key"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "KeyManagement",
+    "Activity": "Read BitLocker key"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "Policy",
+    "Activity": "Set device registration policies"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "UserManagement",
+    "Activity": "Add Passkey (device-bound)"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "UserManagement",
+    "Activity": "Add Windows Hello for Business credential"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "UserManagement",
+    "Activity": "Add passwordless phone sign-in credential"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "UserManagement",
+    "Activity": "Add platform credential"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "UserManagement",
+    "Activity": "Delete Passkey (device-bound)"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "UserManagement",
+    "Activity": "Delete Windows Hello for Business credential"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "UserManagement",
+    "Activity": "Delete passwordless phone sign-in credential"
+  },
+  {
+    "Service": "Device Registration Service",
+    "Audit category": "UserManagement",
+    "Activity": "Delete platform credential"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Add Entitlement Management role assignment"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Administrator directly assigns user to access package"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Administrator directly removes user access package assignment"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Approval stage completed for access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Approve access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Assign user as external sponsor"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Assign user as internal sponsor"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Auto approve access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Cancel access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create access package"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create access package assignment policy"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create access package assignment user update request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create access package catalog"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create connected organization"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create custom extension"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create incompatible access package"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create incompatible group"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create resource environment"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create resource remove request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Create resource request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Delete access package"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Delete access package assignment policy"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Delete access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Delete access package assignment policy for a deleted user"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Delete access package catalog"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Delete connected organization"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Delete custom extension"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Delete incompatible access package"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Delete incompatible group"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Deny access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Entitlement Management creates access package assignment request for user"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Entitlement Management removes access package assignment request for user"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Execute custom extension"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Extend access package assignment"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Failed access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Fulfill access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Fulfill access package resource assignment"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Partially fulfill access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Ready to fulfill access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Remove Entitlement Management role assignment"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Remove access package resource assignment"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Remove user as external sponsor"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Remove user as internal sponsor"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Schedule a future access package assignment"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Update access package"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Update access package assignment policy"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Update access package assignment request"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Update access package catalog"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Update access package catalog resource"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Update connected organization"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Update custom extension"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Update request answers by approver"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "Update tenant setting"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "User requests access package assignment"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "User requests an access package assignment on behalf of service principal"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "User requests to extend access package assignment"
+  },
+  {
+    "Service": "Entitlement Management",
+    "Audit category": "EntitlementManagement",
+    "Activity": "User requests to remove access package assignment"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Create Certificate"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Delete Certificate"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update Certificate"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "ObjectManagement",
+    "Activity": "Offboarding Process Started"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "ObjectManagement",
+    "Activity": "Onboarding Process Started"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "ObjectManagement",
+    "Activity": "Update Adaptive Access Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "ObjectManagement",
+    "Activity": "Update Enriched Audit Logs Settings"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "ObjectManagement",
+    "Activity": "Update Forwarding Options Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Create Filtering Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Create Filtering Policy Profile"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Create Remote Network"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Create Security Provider Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Delete Filtering Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Delete Filtering Policy Profile"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Delete Forwarding Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Delete Private Access Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Delete Remote Network"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Delete Security Provider Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update Filtering Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update Filtering Policy Profile"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update Filtering Profile"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update Forwarding Options Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update Forwarding Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update Forwarding Profile"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update Forwarding Rule"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update Private Access Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update Remote Network"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "PolicyManagement",
+    "Activity": "Update Security Provider Policy"
+  },
+  {
+    "Service": "Global Secure Access",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create Registration of Security Provider"
+  },
+  {
+    "Service": "Hybrid Authentication",
+    "Audit category": "Authentication",
+    "Activity": "Add user to feature rollout"
+  },
+  {
+    "Service": "Hybrid Authentication",
+    "Audit category": "Authentication",
+    "Activity": "Remove user from feature rollout"
+  },
+  {
+    "Service": "Microsoft Entra ID Protection (Identity Protection)",
+    "Audit category": "IdentityProtection",
+    "Activity": "Update IdentityProtectionPolicy"
+  },
+  {
+    "Service": "Microsoft Entra ID Protection (Identity Protection)",
+    "Audit category": "IdentityProtection",
+    "Activity": "Update NotificationSettings"
+  },
+  {
+    "Service": "Microsoft Entra ID Protection (Identity Protection)",
+    "Audit category": "Other",
+    "Activity": "ConfirmAccountCompromised"
+  },
+  {
+    "Service": "Microsoft Entra ID Protection (Identity Protection)",
+    "Audit category": "Other",
+    "Activity": "ConfirmAccountSafe"
+  },
+  {
+    "Service": "Microsoft Entra ID Protection (Identity Protection)",
+    "Audit category": "Other",
+    "Activity": "ConfirmCompromised"
+  },
+  {
+    "Service": "Microsoft Entra ID Protection (Identity Protection)",
+    "Audit category": "Other",
+    "Activity": "ConfirmSafe"
+  },
+  {
+    "Service": "Microsoft Entra ID Protection (Identity Protection)",
+    "Audit category": "Other",
+    "Activity": "DismissRisk"
+  },
+  {
+    "Service": "Microsoft Entra ID Protection (Identity Protection)",
+    "Audit category": "Other",
+    "Activity": "DismissUser"
+  },
+  {
+    "Service": "Microsoft Entra ID Protection (Identity Protection)",
+    "Audit category": "Other",
+    "Activity": "confirmServicePrincipalCompromised"
+  },
+  {
+    "Service": "Microsoft Entra ID Protection (Identity Protection)",
+    "Audit category": "Other",
+    "Activity": "DismissServicePrincipal"
+  },
+  {
+    "Service": "Invited users",
+    "Audit category": "UserManagement",
+    "Activity": "Delete external user"
+  },
+  {
+    "Service": "Invited users",
+    "Audit category": "UserManagement",
+    "Activity": "Email not sent, user unsubscribed"
+  },
+  {
+    "Service": "Invited users",
+    "Audit category": "UserManagement",
+    "Activity": "Invitation Email"
+  },
+  {
+    "Service": "Invited users",
+    "Audit category": "UserManagement",
+    "Activity": "Invite external user"
+  },
+  {
+    "Service": "Invited users",
+    "Audit category": "UserManagement",
+    "Activity": "Invite external user with reset invitation status"
+  },
+  {
+    "Service": "Invited users",
+    "Audit category": "UserManagement",
+    "Activity": "Invite internal user to B2B collaboration"
+  },
+  {
+    "Service": "Invited users",
+    "Audit category": "UserManagement",
+    "Activity": "Redeem external user invite"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "Other",
+    "Activity": "Create custom task extension"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "Other",
+    "Activity": "Delete custom task extension"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "Other",
+    "Activity": "Update custom task extension"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "TaskManagement",
+    "Activity": "Add task to workflow"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "TaskManagement",
+    "Activity": "Disable task"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "TaskManagement",
+    "Activity": "Enable task"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "TaskManagement",
+    "Activity": "Remove task from workflow"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "TaskManagement",
+    "Activity": "Update task"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Add execution conditions"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Add workflow version"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Create workflow"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Delete workflow"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Disable workflow"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Disable workflow schedule"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Enable workflow"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Enable workflow schedule"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Hard delete workflow"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "On-demand workflow execution completed"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Restore workflow"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Schedule workflow execution completed"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Schedule workflow execution started"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Set workflow for on-demand execution"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Update execution conditions"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Update tenant settings"
+  },
+  {
+    "Service": "Lifecycle Workflows",
+    "Audit category": "WorkflowManagement",
+    "Activity": "Update workflow"
+  },
+  {
+    "Service": "Microsoft Identity Manager (MIM) Service",
+    "Audit category": "GroupManagement",
+    "Activity": "Add group"
+  },
+  {
+    "Service": "Microsoft Identity Manager (MIM) Service",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to group"
+  },
+  {
+    "Service": "Microsoft Identity Manager (MIM) Service",
+    "Audit category": "GroupManagement",
+    "Activity": "Add owner to group"
+  },
+  {
+    "Service": "Microsoft Identity Manager (MIM) Service",
+    "Audit category": "GroupManagement",
+    "Activity": "Delete group"
+  },
+  {
+    "Service": "Microsoft Identity Manager (MIM) Service",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove member from group"
+  },
+  {
+    "Service": "Microsoft Identity Manager (MIM) Service",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove owner from group"
+  },
+  {
+    "Service": "Microsoft Identity Manager (MIM) Service",
+    "Audit category": "GroupManagement",
+    "Activity": "Update group"
+  },
+  {
+    "Service": "Microsoft Identity Manager (MIM) Service",
+    "Audit category": "UserManagement",
+    "Activity": "User Password Registration"
+  },
+  {
+    "Service": "Microsoft Identity Manager (MIM) Service",
+    "Audit category": "UserManagement",
+    "Activity": "User Password Reset"
+  },
+  {
+    "Service": "Mobility Management",
+    "Audit category": "Authentication",
+    "Activity": "User confirmed unusual sign-in event as legitimate"
+  },
+  {
+    "Service": "Mobility Management",
+    "Audit category": "Authentication",
+    "Activity": "User reported unusual sign-in event as not legitimate"
+  },
+  {
+    "Service": "Mobility Management",
+    "Audit category": "UserManagement",
+    "Activity": "User changed default security info"
+  },
+  {
+    "Service": "Mobility Management",
+    "Audit category": "UserManagement",
+    "Activity": "User deleted security info"
+  },
+  {
+    "Service": "Mobility Management",
+    "Audit category": "UserManagement",
+    "Activity": "User registered security info"
+  },
+  {
+    "Service": "Mobility Management",
+    "Audit category": "UserManagement",
+    "Activity": "User started security info registration"
+  },
+  {
+    "Service": "MyAccess",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Create application collection"
+  },
+  {
+    "Service": "MyApps",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Create application collection"
+  },
+  {
+    "Service": "MyApps",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Delete application collection"
+  },
+  {
+    "Service": "MyApps",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update application collection"
+  },
+  {
+    "Service": "MyApps",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update application collection order"
+  },
+  {
+    "Service": "MyApps",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update preview settings"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add member to role approval requested (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add member to role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Add member to role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Approve request - direct role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ApplicationManagement",
+    "Activity": "PIM activation request expired"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ApplicationManagement",
+    "Activity": "PIM policy removed"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Remove member from role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Remove request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Role definition created"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ApplicationManagement",
+    "Activity": "Update role setting in PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add eligible member to role in PIM canceled (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add eligible member to role in PIM canceled (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add eligible member to role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add eligible member to role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add eligible member to role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add eligible member to role in PIM requested (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add eligible member to role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role approval requested (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role canceled (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role completed (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role in PIM canceled (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role in PIM canceled (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role in PIM canceled (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role in PIM requested (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role request approved (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role request denied (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Add member to role requested (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Cancel request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Cancel request for role removal"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Cancel request for role update"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Offboarded resource from PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Onboarded resource to PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "PIM activation request expired"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "PIM policy removed"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Process request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Process role removal request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove eligible member from role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove eligible member from role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove eligible member from role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove eligible member from role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove member from role (PIM activation expired)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove member from role completed (PIM deactivate)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove member from role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove member from role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove member from role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove member from role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove member from role requested (PIM deactivate)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove permanent direct role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove permanent eligible role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Remove request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Resource updated"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Restore eligible member from role in PIM completed"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Restore member from role"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Restore member from role in PIM completed"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Restore permanent direct role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Update eligible member in PIM canceled (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Update eligible member in PIM requested (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Update member in PIM approved by admin (extend/renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Update member in PIM canceled (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Update member in PIM denied by admin (extend/renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Update member in PIM requested (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "GroupManagement",
+    "Activity": "Update role setting in PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add eligible member to role in PIM canceled (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add eligible member to role in PIM canceled (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add eligible member to role in PIM canceled (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add eligible member to role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add eligible member to role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add eligible member to role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add eligible member to role in PIM requested (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add eligible member to role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role approval requested (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role canceled (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role completed (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role in PIM canceled (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role in PIM canceled (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role in PIM requested (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role outside of PIM (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role request approved (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role request denied (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Add member to role requested (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Cancel request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Cancel request for role removal"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Cancel request for role update"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Deactivate PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Disable PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Enable PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Offboarded resource from PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Onboarded resource from PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "PIM activation request expired"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "PIM policy removed"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Process request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Process role removal request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Process role update request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove eligible member from role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove eligible member from role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove eligible member from role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove eligible member from role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove member from role (PIM activation expired)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove member from role completed (PIM deactivate)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove member from role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove member from role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove member from role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove member from role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove member from role requested (PIM deactivate)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove permanent direct role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove permanent eligible role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Remove request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Resolve PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Resource updated"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Restore eligible member from role in PIM completed"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Restore member from role"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Restore member from role in PIM completed"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Restore permanent direct role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Restore permanent eligible role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Tenant offboarded from PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Triggered PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update eligible member in PIM canceled (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update eligible member in PIM requested (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update member in PIM approved by admin (extend/renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update member in PIM canceled (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update member in PIM denied by admin (extend/renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update member in PIM requested (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update role setting in PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add eligible member to role in PIM canceled (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add eligible member to role in PIM canceled (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add eligible member to role in PIM canceled (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add eligible member to role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add eligible member to role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add eligible member to role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add eligible member to role in PIM requested (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add eligible member to role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role approval requested (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role canceled (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role completed (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role in PIM canceled (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role in PIM canceled (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role in PIM requested (renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role outside of PIM (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role request approved (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role request denied (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Add member to role requested (PIM activation)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Cancel request for role removal"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Cancel request for role update"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Deactivate PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Disable PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Enable PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Offboarded resource from PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Onboarded resource from PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "PIM activation request expired"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "PIM policy removed"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Process request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Process role removal request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Process role update request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Refresh PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove eligible member from role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove eligible member from role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove eligible member from role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove eligible member from role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove member from role (PIM activation expired)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove member from role completed (PIM deactivate)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove member from role in PIM completed (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove member from role in PIM completed (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove member from role in PIM requested (permanent)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove member from role in PIM requested (timebound)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove member from role requested (PIM deactivate)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove permanent direct role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove permanent eligible role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Remove request"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Resolve PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Restore eligible member from role in PIM completed"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Restore member from role"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Restore member from role in PIM completed"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Restore permanent direct role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Restore permanent eligible role assignment"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Tenant offboarded from PIM"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Triggered PIM alert"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Update PIM alert setting"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Update eligible member in PIM canceled (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Update eligible member in PIM requested (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Update member in PIM approved by admin (extend/renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Update member in PIM canceled (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Update member in PIM denied by admin (extend/renew)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Update member in PIM requested (extend)"
+  },
+  {
+    "Service": "Privileged Identity Management (PIM)",
+    "Audit category": "RoleManagement",
+    "Activity": "Update role setting in PIM"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "ApprovalNotification_Create"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Approval_Act"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Approval_Get"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Approval_GetAll"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Approvals_Post"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Approve a pending request to join a group"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Cancel a pending request to join a group"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Create lifecycle management policy"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Delete a pending request to join a group"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Delete lifecycle management policy"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Device_Create"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Device_Delete"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Device_Get"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Device_GetAll"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Features_GetFeaturesAsync"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Features_IsFeatureEnabledAsync"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Features_UpdateFeaturesAsync"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "GroupLifecyclePolicies_Get"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "GroupLifecyclePolicies_addGroup"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "GroupLifecyclePolicies_removeGroup"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_AddMember"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_AddOwner"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_BatchValidateDynamicMembership"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_Create"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_Delete"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_Get"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_GetAll"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_GetDynamicGroupProperties"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_GetDynamicMembershipDeviceAttributes"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_GetDynamicMembershipOperators"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_GetDynamicMembershipUserBaseAttributes"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_GetExpiryNotificationDate"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_GetMembers"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_GetOwners"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_RemoveMember"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_RemoveOwner"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_Restore"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_Update"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Group_ValidateDynamicMembership"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "GroupsODataV4_Get"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "GroupsODataV4_GetgroupLifecyclePolicies"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "GroupsODataV4_evaluateDynamicMembership"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Groups_CreateLink"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Groups_Get"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "LcmPolicy_Get"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "LcmPolicy_RenewGroup"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Reject a pending request to join a group"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Renew group"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Request to join a group"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "set dynamic group properties"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Settings_GetSettingsAsync"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "Update lifecycle management policy"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "User_Create"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "User_Delete"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "User_Get"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "User_GetAll"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "User_GetMemberOf"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "GroupManagement",
+    "Activity": "User_GetOwnedObjects"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "Other",
+    "Activity": "ApprovalNotification_Create"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "UserManagement",
+    "Activity": "Updated ConvergedUXV2 feature value"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "UserManagement",
+    "Activity": "Updated MyApps feature value"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "UserManagement",
+    "Activity": "Update MyStaff feature value"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "UserManagement",
+    "Activity": "Updated SSPRConvergence feature value"
+  },
+  {
+    "Service": "Self-service group management",
+    "Audit category": "UserManagement",
+    "Activity": "Updated SignInReports feature value"
+  },
+  {
+    "Service": "Self-service password management",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Disable password writeback for directory"
+  },
+  {
+    "Service": "Self-service password management",
+    "Audit category": "DirectoryManagement",
+    "Activity": "Enable password writeback for directory"
+  },
+  {
+    "Service": "Self-service password management",
+    "Audit category": "UserManagement",
+    "Activity": "Blocked from self-service password reset"
+  },
+  {
+    "Service": "Self-service password management",
+    "Audit category": "UserManagement",
+    "Activity": "Change password (self-service)"
+  },
+  {
+    "Service": "Self-service password management",
+    "Audit category": "UserManagement",
+    "Activity": "Reset password (by admin)"
+  },
+  {
+    "Service": "Self-service password management",
+    "Audit category": "UserManagement",
+    "Activity": "Reset password (self-service)"
+  },
+  {
+    "Service": "Self-service password management",
+    "Audit category": "UserManagement",
+    "Activity": "Security info saved for self-service password reset"
+  },
+  {
+    "Service": "Self-service password management",
+    "Audit category": "UserManagement",
+    "Activity": "Self-service password reset flow activity progress"
+  },
+  {
+    "Service": "Self-service password management",
+    "Audit category": "UserManagement",
+    "Activity": "Unlock user account (self-service)"
+  },
+  {
+    "Service": "Terms of use",
+    "Audit category": "Policy",
+    "Activity": "Accept Terms Of Use"
+  },
+  {
+    "Service": "Terms of use",
+    "Audit category": "Policy",
+    "Activity": "Create Terms Of Use"
+  },
+  {
+    "Service": "Terms of use",
+    "Audit category": "Policy",
+    "Activity": "Decline Terms Of Use"
+  },
+  {
+    "Service": "Terms of use",
+    "Audit category": "Policy",
+    "Activity": "Delete Consent"
+  },
+  {
+    "Service": "Terms of use",
+    "Audit category": "Policy",
+    "Activity": "Delete Terms Of Use"
+  },
+  {
+    "Service": "Terms of use",
+    "Audit category": "Policy",
+    "Activity": "Edit Terms Of Use"
+  },
+  {
+    "Service": "Terms of use",
+    "Audit category": "Policy",
+    "Activity": "Publish Terms Of Use"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create authority"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create authorization policy"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create contract"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Create issuance policy"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Delete issuance policy"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Process POST /authorities/:issuerId/didInfo/signingKeys/rotate request"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Process POST /authorities/:issuerId/didInfo/signingKeys/synchronizeWithDidDocument request"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Revoke credential"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Rotate signing key"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Tenant onboarding"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Tenant opt-out"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update MyAccount settings"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update authority"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update contract"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update issuance policy"
+  },
+  {
+    "Service": "Verified ID",
+    "Audit category": "ResourceManagement",
+    "Activity": "Update linked domains"
+  }
+]

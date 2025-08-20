@@ -8,6 +8,9 @@ public class Activity : Entity
 {
     [MaxLength(255)]
     public required string Name { get; init; }
+    [MaxLength(255)]
+    public string? AuditCategory { get; set; }
+    public string? Service { get; set; }
     public bool IsExcluded { get; set; }
 
     public virtual ICollection<ActivityProperty> Properties { get; init; } = [];

@@ -8,19 +8,30 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
     public async Task<Activity> AddAsync(Activity activity)
     {
         ArgumentNullException.ThrowIfNull(activity);
-        var existing = await dbContext.Activities.Include(a => a.Properties).Include(a => a.MappedResourceActions)
+        var existing = await dbContext
+            .Activities.Include(a => a.Properties)
+            .Include(a => a.MappedResourceActions)
             .FirstOrDefaultAsync(a => activity.Name == a.Name);
         if (existing != null)
         {
             existing.UpdatedUtc = DateTime.UtcNow;
             existing.IsExcluded = activity.IsExcluded;
-            var newProperties = activity.Properties.Where(x =>
-                    existing.Properties.Any(e => e.Name.Equals(x.Name, StringComparison.InvariantCultureIgnoreCase)))
+            existing.AuditCategory = activity.AuditCategory;
+            existing.Service = activity.Service;
+            var newProperties = activity
+                .Properties.Where(x =>
+                    existing.Properties.Any(e =>
+                        e.Name.Equals(x.Name, StringComparison.InvariantCultureIgnoreCase)
+                    )
+                )
                 .ToList();
             newProperties.ForEach(p => existing.Properties.Add(p));
 
-            var newMappedActions = activity.MappedResourceActions
-                .Where(x => existing.MappedResourceActions.All(e => e.Id != x.Id)).ToList();
+            var newMappedActions = activity
+                .MappedResourceActions.Where(x =>
+                    existing.MappedResourceActions.All(e => e.Id != x.Id)
+                )
+                .ToList();
             newMappedActions.ForEach(a => existing.MappedResourceActions.Add(a));
             dbContext.Activities.Update(existing);
             await dbContext.SaveChangesAsync();
@@ -35,13 +46,15 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
 
     public async Task<Activity?> GetByNameAsync(string name)
     {
-        return await dbContext.Activities.Include(x => x.Properties).FirstOrDefaultAsync(x => x.Name == name);
+        return await dbContext
+            .Activities.Include(x => x.Properties)
+            .FirstOrDefaultAsync(x => x.Name == name);
     }
 
     public async Task<IEnumerable<Activity>> GetAllActivitiesAsync()
     {
-        return await dbContext.Activities
-            .Include(x => x.Properties)
+        return await dbContext
+            .Activities.Include(x => x.Properties)
             .Include(x => x.MappedResourceActions)
             .OrderBy(x => x.Name)
             .ToListAsync();
@@ -55,19 +68,27 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
 
     public async Task<Activity?> GetByIdAsync(Guid id)
     {
-        return await dbContext.Activities.Include(x => x.Properties).FirstOrDefaultAsync(x => x.Id == id);
+        return await dbContext
+            .Activities.Include(x => x.Properties)
+            .FirstOrDefaultAsync(x => x.Id == id);
     }
 
     public async Task DeletePropertyMapAsync(string activityName, string propertyName)
     {
         if (string.IsNullOrWhiteSpace(activityName))
         {
-            throw new ArgumentException("Activity name cannot be null or empty.", nameof(activityName));
+            throw new ArgumentException(
+                "Activity name cannot be null or empty.",
+                nameof(activityName)
+            );
         }
 
         if (string.IsNullOrWhiteSpace(propertyName))
         {
-            throw new ArgumentException("Property name cannot be null or empty.", nameof(propertyName));
+            throw new ArgumentException(
+                "Property name cannot be null or empty.",
+                nameof(propertyName)
+            );
         }
 
         var activity = await GetByNameAsync(activityName);
@@ -80,24 +101,31 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
         }
     }
 
-    public async Task AddPropertyMapToActivityAsync(string activityName, string propertyName,
-        IEnumerable<Guid> resourceActionIds)
+    public async Task AddPropertyMapToActivityAsync(
+        string activityName,
+        string propertyName,
+        IEnumerable<Guid> resourceActionIds
+    )
     {
         if (string.IsNullOrWhiteSpace(activityName))
         {
-            throw new ArgumentException("Activity name cannot be null or empty.", nameof(activityName));
+            throw new ArgumentException(
+                "Activity name cannot be null or empty.",
+                nameof(activityName)
+            );
         }
 
         if (string.IsNullOrWhiteSpace(propertyName))
         {
-            throw new ArgumentException("Property name cannot be null or empty.", nameof(propertyName));
+            throw new ArgumentException(
+                "Property name cannot be null or empty.",
+                nameof(propertyName)
+            );
         }
 
-        var activity = await GetByNameAsync(activityName) ?? new Activity
-        {
-            Name = activityName,
-            Properties = new List<ActivityProperty>()
-        };
+        var activity =
+            await GetByNameAsync(activityName)
+            ?? new Activity { Name = activityName, Properties = new List<ActivityProperty>() };
 
         var property = activity.Properties.FirstOrDefault(p => p.Name == propertyName);
         if (property is null)
@@ -109,7 +137,10 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
         foreach (var resourceActionId in resourceActionIds)
         {
             var resourceAction = await dbContext.ResourceActions.FindAsync(resourceActionId);
-            if (resourceAction is not null && property.MappedResourceActions.All(a => a.Id != resourceActionId))
+            if (
+                resourceAction is not null
+                && property.MappedResourceActions.All(a => a.Id != resourceActionId)
+            )
             {
                 property.MappedResourceActions.Add(resourceAction);
             }
@@ -134,15 +165,20 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
         return await dbContext.Activities.Where(x => x.IsExcluded).ToListAsync();
     }
 
-    public async Task<IEnumerable<Activity>> GetActivitiesByNamesAsync(IEnumerable<string> activityNames, bool includeExcluded = false)
+    public async Task<IEnumerable<Activity>> GetActivitiesByNamesAsync(
+        IEnumerable<string> activityNames,
+        bool includeExcluded = false
+    )
     {
         if (activityNames?.Any() != true)
         {
             return [];
         }
 
-        return await dbContext.Activities
-            .Where(x => activityNames.Contains(x.Name) || (includeExcluded && x.IsExcluded))
+        return await dbContext
+            .Activities.Where(x =>
+                activityNames.Contains(x.Name) || (includeExcluded && x.IsExcluded)
+            )
             .Include(x => x.Properties)
             .Include(x => x.MappedResourceActions)
             .ToListAsync();
