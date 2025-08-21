@@ -14,9 +14,18 @@ public class GetTenant : IEndpoint
             .RequireAuthorization();
     }
 
-    private static async Task<Ok<Tenant>> Handle(HttpContext context, [FromServices] ITenantService tenantService)
+    private static async Task<Ok<TenantInformation>> Handle(HttpContext context, [FromServices] ITenantService tenantService)
     {
         var tenant = await tenantService.GetCurrentTenantAsync();
-        return TypedResults.Ok(tenant);
+        var info = new TenantInformation(tenant?.Id, tenant?.Name, tenant?.TenantDomain, 0);
+        
+        return TypedResults.Ok(info);
     }
+    
+    private record TenantInformation(
+        Guid? Id,
+        string? Name,
+        string? Domain,
+        int CustomRoleCount
+    );
 }
