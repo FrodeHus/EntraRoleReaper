@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../../components/ui/button";
+import { Switch } from "../../../components/ui/switch";
 import {
   Table,
   TableBody,
@@ -80,14 +81,15 @@ export function RolesTab({
     <div className="space-y-4">
       <div className="flex items-center gap-2 justify-between">
         <h3 className="text-sm font-medium">Role definitions</h3>
-        <Button
-          size="sm"
-          variant={privOnly ? "default" : "outline"}
-          onClick={() => setPrivOnly((v) => !v)}
-          disabled={!accessToken || loading}
-        >
-          {privOnly ? "Showing privileged" : "Privileged only"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Privileged only</span>
+          <Switch
+            checked={privOnly}
+            onCheckedChange={(v) => setPrivOnly(Boolean(v))}
+            disabled={!accessToken || loading}
+            aria-label="Filter to privileged roles only"
+          />
+        </div>
       </div>
       <div className="border rounded h-[55vh] overflow-auto">
         <Table className="text-xs">

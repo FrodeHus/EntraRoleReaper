@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/u
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import { RefreshCw } from "lucide-react";
+import { Switch } from "../../components/ui/switch";
 
 interface MappingAction {
   id: string; // Guid
@@ -367,22 +368,24 @@ export function OperationMappingSheet({
           <div className="mt-4 space-y-3 text-sm">
             {error && <div className="text-red-600 text-xs">{error}</div>}
             {data && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <input
                   placeholder="Filter actions"
                   className="border rounded px-2 py-1 text-xs w-full bg-background"
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                 />
-                <Button
-                  variant={showMappedOnly ? "default" : "outline"}
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => setShowMappedOnly((s) => !s)}
-                  title="Toggle showing only currently mapped actions"
-                >
-                  {showMappedOnly ? "Mapped only" : "All"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    Mapped only
+                  </span>
+                  <Switch
+                    checked={showMappedOnly}
+                    onCheckedChange={(v) => setShowMappedOnly(Boolean(v))}
+                    aria-label="Show only currently mapped actions"
+                    disabled={loading}
+                  />
+                </div>
                 {filter && (
                   <Button
                     variant="outline"

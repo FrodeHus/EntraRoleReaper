@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Switch } from "../../../components/ui/switch";
 import {
   Table,
   TableBody,
@@ -34,6 +36,8 @@ export function MappingsTab({
 }) {
   const [items, setItems] = useState<MappingItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [mappedOnly, setMappedOnly] = useState(false);
   // Optional metadata lookup map: name -> { category, service }
   const [meta, setMeta] = useState<
     Record<string, { category?: string; service?: string }>
@@ -141,6 +145,24 @@ export function MappingsTab({
         >
           Create mapping
         </Button>
+        <div className="mt-2 flex items-center gap-3 max-w-xl">
+          <div className="flex-1 max-w-sm">
+            <Input
+              placeholder="Search activities…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Mapped only</span>
+            <Switch
+              checked={mappedOnly}
+              onCheckedChange={(v) => setMappedOnly(Boolean(v))}
+              disabled={!accessToken}
+              aria-label="Show only activities that have mappings"
+            />
+          </div>
+        </div>
         <p className="text-xs text-muted-foreground mt-1">
           Download current activity and property-level mappings. Legacy
           activities without property mappings export as an array; those with
@@ -180,46 +202,80 @@ export function MappingsTab({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((m) => {
-                  const propKeys = Object.keys(m.properties || {});
-                  const baseCount = m.actions.length;
-                  const propMapCount = propKeys.reduce(
-                    (acc, k) => acc + (m.properties?.[k]?.length ?? 0),
-                    0
-                  );
-                  const totalCount = baseCount + propMapCount;
-                  return (
-                    <TableRow
-                      key={m.name}
-                      className="cursor-pointer"
-                      onClick={() => onEditBase(m.name)}
-                      title="Edit base mapping"
-                    >
-                      <TableCell className="font-mono break-all">
-                        {m.name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {m.category ?? "-"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {m.service ?? "-"}
-                      </TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center gap-1">
-                          <span className="px-1 rounded border bg-muted text-muted-foreground">
-                            {totalCount}
+                {items
+                  .filter((m) =>
+                    search.trim()
+                      ? m.name.toLowerCase().includes(search.toLowerCase())
+                      : true
+                  )
+                  .filter((m) => {
+                    if (!mappedOnly) return true;
+                    const base = m.actions.length;
+                    const props = Object.keys(m.properties || {}).reduce(
+                      (acc, k) => acc + (m.properties?.[k]?.length ?? 0),
+                      0
+                    );
+                    return base + props > 0;
+                  })
+                  .map((m) => {
+                    const propKeys = Object.keys(m.properties || {});
+                    const baseCount = m.actions.length;
+                    const propMapCount = propKeys.reduce(
+                      (acc, k) => acc + (m.properties?.[k]?.length ?? 0),
+                      0
+                    );
+                    const totalCount = baseCount + propMapCount;
+                    return (
+                      <TableRow
+                        key={m.name}
+                        className="cursor-pointer"
+                        onClick={() => onEditBase(m.name)}
+                        title="Edit base mapping"
+                      >
+                        <TableCell className="font-mono break-all">
+                          {m.name}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {m.category ?? "-"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {m.service ?? "-"}
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center gap-1">
+                            <span className="px-1 rounded border bg-muted text-muted-foreground">
+                              {totalCount}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              ({baseCount} base, {propMapCount} props)
+                            </span>
                           </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            ({baseCount} base, {propMapCount} props)
-                          </span>
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
               </TableBody>
             </Table>
           )}
+          {!loading &&
+            items.length > 0 &&
+            items.filter(
+              (m) =>
+                (search.trim()
+                  ? m.name.toLowerCase().includes(search.toLowerCase())
+                  : true) &&
+                (!mappedOnly ||
+                  m.actions.length +
+                    Object.keys(m.properties || {}).reduce(
+                      (acc, k) => acc + (m.properties?.[k]?.length ?? 0),
+                      0
+                    ) >
+                    0)
+            ).length === 0 && (
+              <div className="p-2 text-muted-foreground text-xs">
+                No matching mappings.
+              </div>
+            )}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/ui/sheet";
 import { Button } from "../../components/ui/button";
+import { Switch } from "../../components/ui/switch";
 import type { RoleDetails } from "./types";
 
 export function RoleDetailsSheet({
@@ -75,20 +76,20 @@ export function RoleDetailsSheet({
                         role.name}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={onlyRequiredPerms ? "default" : "outline"}
-                      size="sm"
-                      className="h-8"
-                      onClick={() => setOnlyRequiredPerms((v) => !v)}
-                      title={
-                        onlyRequiredPerms
-                          ? "Show all permissions"
-                          : "Show only required and covering"
-                      }
-                    >
-                      {onlyRequiredPerms ? "Show all" : "Required only"}
-                    </Button>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        Required only
+                      </span>
+                      <Switch
+                        checked={onlyRequiredPerms}
+                        onCheckedChange={(v) =>
+                          setOnlyRequiredPerms(Boolean(v))
+                        }
+                        aria-label="Show only required and covering permissions"
+                        disabled={loading}
+                      />
+                    </div>
                     {details.rolePermissions &&
                       details.rolePermissions.length > 1 && (
                         <Button
@@ -198,7 +199,6 @@ export function RoleDetailsSheet({
                                   });
                                 }}
                                 className="inline-flex items-center gap-1 px-1 py-0.5 rounded border bg-muted/40 hover:bg-muted transition-colors"
-                                aria-expanded={!collapsed}
                                 aria-controls={`perm-set-${gi}`}
                               >
                                 <span className="text-[10px]">

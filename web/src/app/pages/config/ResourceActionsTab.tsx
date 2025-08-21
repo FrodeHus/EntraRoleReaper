@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Checkbox } from "../../../components/ui/checkbox";
+import { Switch } from "../../../components/ui/switch";
 import {
   Table,
   TableBody,
@@ -177,15 +178,17 @@ export function ResourceActionsTab({
             <option value="roles">Role count</option>
             <option value="privileged">Privileged</option>
           </select>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onToggleDir}
-            disabled={loading}
-            title="Toggle sort direction"
-          >
-            {dir === "asc" ? "Asc" : "Desc"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground">
+              {dir === "asc" ? "Asc" : "Desc"}
+            </span>
+            <Switch
+              checked={dir === "desc"}
+              onCheckedChange={() => onToggleDir()}
+              disabled={loading}
+              aria-label="Toggle sort direction"
+            />
+          </div>
           <select
             className="border rounded px-1 py-1 bg-background"
             value={privFilter}
