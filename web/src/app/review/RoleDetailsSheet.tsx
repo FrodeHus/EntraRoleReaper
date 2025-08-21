@@ -206,6 +206,27 @@ export function RoleDetailsSheet({
                                 </span>
                                 <span>Set {gi + 1}</span>
                               </button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7"
+                                onClick={() => {
+                                  const ids = all
+                                    .map((p) => (p as any).id || (p as any).Id)
+                                    .filter(Boolean);
+                                  window.dispatchEvent(
+                                    new CustomEvent("open-op-mapping", {
+                                      detail: {
+                                        mapActivity: true,
+                                        preselectedActionIds: ids,
+                                      },
+                                    })
+                                  );
+                                }}
+                                title="Map these actions to an activity"
+                              >
+                                Map
+                              </Button>
                               {grp.condition && (
                                 <span
                                   className="text-[10px] px-1 py-0.5 rounded border bg-muted/40"

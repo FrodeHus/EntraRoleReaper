@@ -105,10 +105,55 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
   useEffect(() => {
     const openHandler = (e: Event) => {
       try {
-        const detail = (e as CustomEvent).detail as { operationName?: string };
+        const detail = (e as CustomEvent).detail as {
+          operationName?: string;
+          mapActivity?: boolean;
+          preselectedActionNames?: string[];
+          preselectedActionIds?: string[];
+        };
         if (detail?.operationName) {
           setOpSheetOperationName(detail.operationName);
           setOpSheetOpen(true);
+        }
+        if (detail?.mapActivity) {
+          (async () => {
+            try {
+              // Prefer IDs if provided; else resolve names
+              let ids: string[] = detail.preselectedActionIds ?? [];
+              if ((!ids || ids.length === 0) && detail.preselectedActionNames) {
+                const names = detail.preselectedActionNames;
+                ids = [];
+                for (const name of names) {
+                  const url = new URL(`/api/resourceaction/search`, apiBase);
+                  url.searchParams.set("q", name);
+                  url.searchParams.set("limit", "50");
+                  const res = await fetch(url, {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                  });
+                  if (!res.ok) continue;
+                  const arr = (await res.json()) as Array<{
+                    id: string;
+                    action: string;
+                    isPrivileged: boolean;
+                  }>;
+                  const match = arr.find(
+                    (a) => a.action.toLowerCase() === name.toLowerCase()
+                  );
+                  if (match) ids.push(match.id);
+                }
+              }
+              setMappingModalMode("create");
+              setMappingModalName(null);
+              setPreselectedActionIds(ids);
+              setMappingModalOpen(true);
+            } catch {
+              // Fallback to opening without preselection
+              setMappingModalMode("create");
+              setMappingModalName(null);
+              setPreselectedActionIds(null);
+              setMappingModalOpen(true);
+            }
+          })();
         }
       } catch {
         /* ignore */
@@ -490,7 +535,9 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         open={mappingModalOpen}
         onOpenChange={(o) => {
           setMappingModalOpen(o);
-          if (!o) setPreselectedActionIds(null);
+          if (!o) {
+            setPreselectedActionIds(null);
+          }
         }}
         accessToken={accessToken}
         apiBase={apiBase}

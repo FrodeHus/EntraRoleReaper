@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
+import { Switch } from "../../components/ui/switch";
 import {
   Table,
   TableBody,
@@ -480,13 +481,15 @@ export function ActivityMappingModal({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <label className="inline-flex items-center gap-2 text-xs">
-              <Checkbox
+            <div className="inline-flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Privileged only</span>
+              <Switch
                 checked={privOnly}
-                onCheckedChange={() => setPrivOnly((v) => !v)}
+                onCheckedChange={(v) => setPrivOnly(Boolean(v))}
+                aria-label="Filter list to privileged actions only"
+                disabled={loading}
               />
-              Is privileged (filter list)
-            </label>
+            </div>
             <input
               className="border rounded px-2 py-1 text-xs bg-background flex-1"
               placeholder="Filter actions"

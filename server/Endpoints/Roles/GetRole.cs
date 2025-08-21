@@ -34,7 +34,7 @@ public class GetRole : IEndpoint
                         a => a.Action,
                         StringComparer.OrdinalIgnoreCase
                     )
-                    .Select(a => new RolePermissionActionResponse(a.Action, a.IsPrivileged))
+                    .Select(a => new RolePermissionActionResponse(a.Id, a.Action, a.IsPrivileged))
                     .ToList())
             ).ToList();
 
@@ -62,6 +62,7 @@ public class GetRole : IEndpoint
     );
 
     private record RolePermissionActionResponse(
+        Guid Id,
         string Action,
         bool Privileged
     );

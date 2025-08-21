@@ -42,6 +42,6 @@ export type RoleDetails = {
   resourceScopesDetailed?: { value: string; description: string }[];
   rolePermissions: {
     condition?: string | null;
-    actions: { action: string; privileged: boolean }[];
+  actions: { id: string; action: string; privileged: boolean }[];
   }[];
 } | null;
