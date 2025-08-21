@@ -11,7 +11,7 @@ Full-stack app to perform access reviews of Entra ID users.
 
 Entra Role Reaper uses Entra audit log to find actual activities performed by user(s) and using mappings determine which least privilege roles the user actually should have.
 
-See [Wiki](https://github.com/FrodeHus/EntraRoleReaper.wiki)
+See [Wiki](https://github.com/FrodeHus/EntraRoleReaper/wiki)
 
 ## Prereqs
 
