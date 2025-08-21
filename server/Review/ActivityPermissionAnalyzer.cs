@@ -1,4 +1,5 @@
-﻿using EntraRoleReaper.Api.Data.Models;
+﻿using System.Runtime.ExceptionServices;
+using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Dto;
@@ -12,7 +13,8 @@ public sealed class ActivityPermissionAnalyzer(IGraphService graphService)
         var relevantRoles = FindRelevantRoles(activity, availableRoles);
         var conditionsMetRoles = await GetRolesMatchingCondition(userId, activity, target, relevantRoles);
         var filteredRoles = FilterOnCondition(conditionsMetRoles);
-        return ArrangeByLeastPrivilegedResourceActions(filteredRoles);
+        var orderedRoles = OrderRolesByRelevance(filteredRoles, activity);
+        return ArrangeByLeastPrivilegedResourceActions(orderedRoles);
     }
 
     private static IEnumerable<RoleGrant> ArrangeByLeastPrivilegedResourceActions(IEnumerable<RoleGrant> roleGrants)
@@ -59,6 +61,49 @@ public sealed class ActivityPermissionAnalyzer(IGraphService graphService)
         return rolesWithConditionsMet;
     }
 
+    private IEnumerable<RoleGrant> OrderRolesByRelevance(IEnumerable<RoleGrant> roleDefinitions, Activity activity)
+    {
+        var ordered = new Dictionary<double, List<RoleGrant>>();
+        var namespaceAndResources = activity.MappedResourceActions.Select(a => a.Action[..a.Action.IndexOf('/', a.Action.IndexOf('/', 1) + 1)])
+            .Distinct();
+        foreach (var roleGrant in roleDefinitions)
+        {
+            var permissionSet = roleGrant.Condition switch
+            {
+                "$SubjectIsOwner" => roleGrant.Role.PermissionSets.FirstOrDefault(ps =>
+                    ps.Condition == "$SubjectIsOwner"),
+                "$ResourceIsSelf" => roleGrant.Role.PermissionSets.FirstOrDefault(ps =>
+                    ps.Condition == "$ResourceIsSelf"),
+                "$Tenant" => roleGrant.Role.PermissionSets.FirstOrDefault(ps => ps.Condition == null),
+                _ => null
+            };
+            if (permissionSet is null)
+            {
+                continue;
+            }
+            
+            var actionCountByResource = GetActionCountByResource(permissionSet);
+            var totalRelevantCounts = actionCountByResource.Where(ac =>
+                    namespaceAndResources.Contains(ac.Key, StringComparer.OrdinalIgnoreCase))
+                .Sum(ac => ac.Value);
+            var relevanceScore = (double)totalRelevantCounts / (permissionSet.ResourceActions ?? []).Count;
+            if (ordered.TryGetValue(relevanceScore, out List<RoleGrant>? value))
+            {
+                value.Add(roleGrant);
+            }
+            else
+            {
+                ordered.Add(relevanceScore, [roleGrant]);  
+            }
+        }
+        if(ordered.Count == 0)
+        {
+            return [];
+        }
+        
+        return ordered.OrderByDescending(kvp => kvp.Key).FirstOrDefault().Value;
+    }
+
     private async Task<(bool granted, string condition)> PermissionSetFulfillsRequiredActions(string userId, PermissionSetDto set, IEnumerable<string> resourceActions, ReviewTargetResource target)
     {
         var hasRequiredActions = set.ResourceActions?.Any(ra => resourceActions.Any(raAction => raAction.Equals(ra.Action, StringComparison.OrdinalIgnoreCase))) ?? false;
@@ -68,6 +113,23 @@ public sealed class ActivityPermissionAnalyzer(IGraphService graphService)
             "$ResourceIsSelf" => (hasRequiredActions && userId.Equals(target.Id, StringComparison.InvariantCultureIgnoreCase), "$ResourceIsSelf"),
             _ => (hasRequiredActions, "$Tenant")
         };
+    }
+
+    private Dictionary<string, int> GetActionCountByResource(PermissionSetDto set)
+    {
+        var resourceActions = new Dictionary<string, int>();
+        foreach (var resource in from action in set.ResourceActions ?? []
+                 select action.Action.Split('/')
+                 into data
+                 select data.Length > 1 ? $"{data[0]}/{data[1]}" : "default")
+        {
+            if (!resourceActions.TryAdd(resource, 1))
+            {
+                resourceActions[resource]++;
+            }
+        }
+
+        return resourceActions;
     }
 }
 
