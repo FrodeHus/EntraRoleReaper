@@ -11,6 +11,8 @@ const apiBase = import.meta.env.VITE_API_URL as string;
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { OnboardPage } from "./pages/OnboardPage";
 import { TenantPage } from "./pages/TenantPage";
+import { RolesPage } from "./pages/RolesPage";
+import { MappingsPage } from "./pages/MappingsPage";
 
 // apiBase constant retained for passing to components expecting explicit base.
 
@@ -106,9 +108,21 @@ export default function App() {
                   }
                 />
                 <Route
+                  path="/mappings"
+                  element={
+                    <MappingsPage accessToken={accessToken} apiBase={apiBase} />
+                  }
+                />
+                <Route
                   path="/config"
                   element={
                     <ConfigPage accessToken={accessToken} apiBase={apiBase} />
+                  }
+                />
+                <Route
+                  path="/roles"
+                  element={
+                    <RolesPage accessToken={accessToken} apiBase={apiBase} />
                   }
                 />
                 <Route path="/tenant" element={<TenantPage />} />

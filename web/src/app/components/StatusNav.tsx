@@ -38,6 +38,12 @@ export function StatusNav({ authed, reviewerName, tenantDomain, accessToken, api
           <NavLink to="/" className={linkClass} end>
             Review
           </NavLink>
+          <NavLink to="/mappings" className={linkClass}>
+            Mappings
+          </NavLink>
+          <NavLink to="/roles" className={linkClass}>
+            Roles
+          </NavLink>
           <NavLink to="/config" className={linkClass}>
             Configuration
           </NavLink>
@@ -62,6 +68,12 @@ export function StatusNav({ authed, reviewerName, tenantDomain, accessToken, api
         <div className="mx-auto max-w-7xl px-4 sm:px-6 h-10 flex items-center gap-2">
           <NavLink to="/" className={linkClass} end>
             Review
+          </NavLink>
+          <NavLink to="/mappings" className={linkClass}>
+            Mappings
+          </NavLink>
+          <NavLink to="/roles" className={linkClass}>
+            Roles
           </NavLink>
           <NavLink to="/config" className={linkClass}>
             Configuration

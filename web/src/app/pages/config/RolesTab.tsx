@@ -34,6 +34,7 @@ export function RolesTab({
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [privOnly, setPrivOnly] = useState(false);
+  const [customOnly, setCustomOnly] = useState(false);
 
   const load = useCallback(async () => {
     if (!accessToken) {
@@ -58,7 +59,12 @@ export function RolesTab({
             (ra: any) => ra.isPrivileged === true || ra.IsPrivileged === true
           )
         );
-      const filtered = privOnly ? list.filter(isRolePrivileged) : list;
+      let filtered = privOnly ? list.filter(isRolePrivileged) : list;
+      if (customOnly) {
+        filtered = filtered.filter((r: any) =>
+          r.isBuiltIn === true ? false : true
+        );
+      }
       filtered.sort((a: any, b: any) =>
         String(a.displayName || a.DisplayName || "")
           .toLowerCase()
@@ -72,7 +78,7 @@ export function RolesTab({
     } finally {
       setLoading(false);
     }
-  }, [accessToken, apiBase, privOnly]);
+  }, [accessToken, apiBase, privOnly, customOnly]);
 
   useEffect(() => {
     void load();
@@ -81,13 +87,22 @@ export function RolesTab({
     <div className="space-y-4">
       <div className="flex items-center gap-2 justify-between">
         <h3 className="text-sm font-medium">Role definitions</h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">Privileged only</span>
           <Switch
             checked={privOnly}
             onCheckedChange={(v) => setPrivOnly(Boolean(v))}
             disabled={!accessToken || loading}
             aria-label="Filter to privileged roles only"
+          />
+          <span className="text-xs text-muted-foreground">
+            Only custom roles
+          </span>
+          <Switch
+            checked={customOnly}
+            onCheckedChange={(v) => setCustomOnly(Boolean(v))}
+            disabled={!accessToken || loading}
+            aria-label="Filter to custom roles only"
           />
         </div>
       </div>

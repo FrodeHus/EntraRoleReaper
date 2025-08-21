@@ -22,9 +22,9 @@ export function TenantPage() {
         throw new Error("Please sign in to view tenant information.");
       }
       const res = await fetch(
-        new URL("/api/onboarding/verify", import.meta.env.VITE_API_URL),
+        new URL("/api/onboarding/", import.meta.env.VITE_API_URL),
         {
-          method: "POST",
+          method: "GET",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,

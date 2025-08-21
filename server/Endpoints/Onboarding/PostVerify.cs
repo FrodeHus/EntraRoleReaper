@@ -8,7 +8,7 @@ public class PostVerify : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder builder)
     {
-        builder.MapPost("/api/onboarding/verify", Handle)
+        builder.MapPost("/verify", Handle)
             .WithSummary("Verifies the onboarding process")
             .RequireAuthorization();
     }

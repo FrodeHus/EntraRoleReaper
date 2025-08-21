@@ -1,15 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { toast } from "sonner";
-import { RoleDetailsSheet } from "../review/RoleDetailsSheet";
-import type { RoleDetails } from "../review/types";
-import ActivityMappingModal from "../review/ActivityMappingModal";
-import { OperationMappingSheet } from "../review/OperationMappingSheet";
 import { CacheTab } from "./config/CacheTab";
-import { MappingsTab } from "./config/MappingsTab";
 import { ExclusionsTab } from "./config/ExclusionsTab";
 import { ResourceActionsTab } from "./config/ResourceActionsTab";
-import { RolesTab } from "./config/RolesTab";
 import { FutureTab } from "./config/FutureTab";
 
 // Simple tab primitives (could be replaced with a UI lib tabs in future)
@@ -19,9 +14,7 @@ interface TabConfig {
 }
 const tabs: TabConfig[] = [
   { key: "cache", label: "Cache" },
-  { key: "mappings", label: "Mappings" },
   { key: "exclusions", label: "Exclusions" },
-  { key: "roles", label: "Roles" },
   { key: "actions", label: "Resource Actions" },
   { key: "future", label: "Upcoming" },
 ];
@@ -32,6 +25,7 @@ interface ConfigPageProps {
 }
 
 export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
+  const navigate = useNavigate();
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
@@ -52,29 +46,9 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
   >("all");
   const pageSize = 25;
 
-  // Roles tab state moved into RolesTab
-  const [selectedRole, setSelectedRole] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
-  const [roleDetailsOpen, setRoleDetailsOpen] = useState(false);
-  const [roleDetailsLoading, setRoleDetailsLoading] = useState(false);
-  const [roleDetails, setRoleDetails] = useState<RoleDetails | null>(null);
   // Exclusions tab state moved into ExclusionsTab
 
-  // Mappings tab state
-  const [mappingModalOpen, setMappingModalOpen] = useState(false);
-  const [mappingModalMode, setMappingModalMode] = useState<"create" | "edit">(
-    "create"
-  );
-  const [mappingModalName, setMappingModalName] = useState<string | null>(null);
-  const [preselectedActionIds, setPreselectedActionIds] = useState<
-    string[] | null
-  >(null);
-  const [opSheetOpen, setOpSheetOpen] = useState(false);
-  const [opSheetOperationName, setOpSheetOperationName] = useState<
-    string | null
-  >(null);
+  // Mappings moved to dedicated page
 
   const deletePropertyMap = useCallback(
     async (activityName: string, propertyName: string) => {
@@ -100,69 +74,9 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     [accessToken, apiBase]
   );
 
-  // Mappings list is now owned by MappingsTab
+  // Mappings list moved to MappingsPage
 
-  useEffect(() => {
-    const openHandler = (e: Event) => {
-      try {
-        const detail = (e as CustomEvent).detail as {
-          operationName?: string;
-          mapActivity?: boolean;
-          preselectedActionNames?: string[];
-          preselectedActionIds?: string[];
-        };
-        if (detail?.operationName) {
-          setOpSheetOperationName(detail.operationName);
-          setOpSheetOpen(true);
-        }
-        if (detail?.mapActivity) {
-          (async () => {
-            try {
-              // Prefer IDs if provided; else resolve names
-              let ids: string[] = detail.preselectedActionIds ?? [];
-              if ((!ids || ids.length === 0) && detail.preselectedActionNames) {
-                const names = detail.preselectedActionNames;
-                ids = [];
-                for (const name of names) {
-                  const url = new URL(`/api/resourceaction/search`, apiBase);
-                  url.searchParams.set("q", name);
-                  url.searchParams.set("limit", "50");
-                  const res = await fetch(url, {
-                    headers: { Authorization: `Bearer ${accessToken}` },
-                  });
-                  if (!res.ok) continue;
-                  const arr = (await res.json()) as Array<{
-                    id: string;
-                    action: string;
-                    isPrivileged: boolean;
-                  }>;
-                  const match = arr.find(
-                    (a) => a.action.toLowerCase() === name.toLowerCase()
-                  );
-                  if (match) ids.push(match.id);
-                }
-              }
-              setMappingModalMode("create");
-              setMappingModalName(null);
-              setPreselectedActionIds(ids);
-              setMappingModalOpen(true);
-            } catch {
-              // Fallback to opening without preselection
-              setMappingModalMode("create");
-              setMappingModalName(null);
-              setPreselectedActionIds(null);
-              setMappingModalOpen(true);
-            }
-          })();
-        }
-      } catch {
-        /* ignore */
-      }
-    };
-    window.addEventListener("open-op-mapping", openHandler as any);
-    return () =>
-      window.removeEventListener("open-op-mapping", openHandler as any);
-  }, []);
+  // open-op-mapping listeners moved to Roles/Mappings pages
   // Exclusions list is now owned by ExclusionsTab
 
   const manualRefresh = async () => {
@@ -250,33 +164,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
     }
   }, [activeTab, actionsSearch, loadActions]);
 
-  // Roles list is now owned by RolesTab
-
-  // Fetch role details when a role is selected (opened)
-  useEffect(() => {
-    const fetchDetails = async () => {
-      if (!selectedRole || !roleDetailsOpen || !accessToken) return;
-      try {
-        setRoleDetailsLoading(true);
-        setRoleDetails(null);
-        const res = await fetch(
-          new URL(`/api/roles/${encodeURIComponent(selectedRole.id)}`, apiBase),
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }
-        );
-        if (!res.ok) throw new Error();
-        const json = await res.json();
-        setRoleDetails(json as RoleDetails);
-      } catch {
-        toast.error("Failed to load role details");
-        setRoleDetails(null);
-      } finally {
-        setRoleDetailsLoading(false);
-      }
-    };
-    fetchDetails();
-  }, [selectedRole, roleDetailsOpen, accessToken, apiBase]);
+  // Roles moved to dedicated page
 
   // Debounce the search input so we don't fetch for every keystroke and avoid focus loss due to rapid loading state flips
   useEffect(() => {
@@ -317,56 +205,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
           />
         )}
 
-        {activeTab === "mappings" && (
-          <div className="grid gap-4 text-sm">
-            <div>
-              <form onSubmit={(e) => e.preventDefault()} className="space-y-2">
-                <label className="text-xs font-medium">
-                  Import activity/property mappings
-                </label>
-                <input
-                  type="file"
-                  accept="application/json,.json"
-                  className="block text-xs"
-                  disabled={!accessToken}
-                  aria-label="Import activity mappings JSON file"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file || !accessToken) return;
-                    setPendingImportFile(file);
-                    setShowImportModal(true);
-                    e.target.value = "";
-                  }}
-                />
-                <p className="text-xs text-muted-foreground space-y-1">
-                  <span>
-                    All existing mappings (including property mappings) will be
-                    replaced.
-                  </span>
-                </p>
-              </form>
-            </div>
-            <MappingsTab
-              accessToken={accessToken}
-              apiBase={apiBase}
-              onCreate={() => {
-                setMappingModalMode("create");
-                setMappingModalName(null);
-                setMappingModalOpen(true);
-              }}
-              onEditBase={(name) => {
-                setMappingModalMode("edit");
-                setMappingModalName(name);
-                setMappingModalOpen(true);
-              }}
-              onEditProperty={(op, prop) => {
-                setOpSheetOperationName(`${op}::${prop}`);
-                setOpSheetOpen(true);
-              }}
-              onDeleteProperty={(op, prop) => deletePropertyMap(op, prop)}
-            />
-          </div>
-        )}
+        {/* Mappings tab removed; see MappingsPage */}
 
         {activeTab === "exclusions" && (
           <ExclusionsTab accessToken={accessToken} apiBase={apiBase} />
@@ -390,24 +229,20 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
             parseActionParts={parseActionParts}
             onMapSelected={(ids) => {
               if (!ids || ids.length === 0) return;
-              setMappingModalMode("create");
-              setMappingModalName(null);
-              setPreselectedActionIds(ids);
-              setMappingModalOpen(true);
+              // Navigate to Mappings page and open modal there
+              navigate("/mappings");
+              setTimeout(() => {
+                window.dispatchEvent(
+                  new CustomEvent("open-op-mapping", {
+                    detail: { mapActivity: true, preselectedActionIds: ids },
+                  })
+                );
+              }, 0);
             }}
           />
         )}
 
-        {activeTab === "roles" && (
-          <RolesTab
-            accessToken={accessToken}
-            apiBase={apiBase}
-            onOpenRole={(id, name) => {
-              setSelectedRole({ id, name });
-              setRoleDetailsOpen(true);
-            }}
-          />
-        )}
+        {/* Roles tab removed; see RolesPage */}
 
         {activeTab === "future" && <FutureTab />}
 
@@ -501,54 +336,7 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
           </div>
         )}
       </section>
-      <RoleDetailsSheet
-        open={roleDetailsOpen}
-        onOpenChange={(o) => {
-          setRoleDetailsOpen(o);
-          if (!o) {
-            setSelectedRole(null);
-            setRoleDetails(null);
-          }
-        }}
-        role={
-          selectedRole ? { name: selectedRole.name, requiredPerms: [] } : null
-        }
-        details={
-          roleDetails ||
-          ({
-            name: selectedRole?.name || "",
-            description: "",
-            resourceScopes: [],
-            resourceScopesDetailed: [],
-            rolePermissions: [],
-          } as any)
-        }
-        loading={roleDetailsLoading}
-      />
-      <ActivityMappingModal
-        open={mappingModalOpen}
-        onOpenChange={(o) => {
-          setMappingModalOpen(o);
-          if (!o) {
-            setPreselectedActionIds(null);
-          }
-        }}
-        accessToken={accessToken}
-        apiBase={apiBase}
-        initialActivityName={mappingModalName}
-        mode={mappingModalMode}
-        preselectedIds={preselectedActionIds ?? undefined}
-        onSaved={() => {
-          window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
-        }}
-      />
-      <OperationMappingSheet
-        open={opSheetOpen}
-        onOpenChange={(o) => setOpSheetOpen(o)}
-        operationName={opSheetOperationName}
-        accessToken={accessToken}
-        apiBase={apiBase}
-      />
+      {/* RoleDetailsSheet removed; lives on RolesPage; mapping modals live on Mappings/Roles pages */}
     </>
   );
 }
