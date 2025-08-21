@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Switch } from "../../components/ui/switch";
@@ -109,11 +110,22 @@ export function ActivityMappingModal({
       const rawAll: any[] = Array.isArray(json.allActions)
         ? json.allActions
         : [];
-      const actions: MappingAction[] = rawAll.map((a) => ({
+      let actions: MappingAction[] = rawAll.map((a) => ({
         id: String(a.id ?? a.Id ?? a.ID),
         action: String(a.action ?? a.Action),
         isPrivileged: Boolean(a.isPrivileged ?? a.IsPrivileged),
       }));
+      // If preselectedIds are provided (e.g., opening from RoleDetails permission set),
+      // show only those actions in the list.
+      if (
+        mode === "create" &&
+        preselectedIds &&
+        Array.isArray(preselectedIds) &&
+        preselectedIds.length > 0
+      ) {
+        const idSet = new Set(preselectedIds.map(String));
+        actions = actions.filter((a) => idSet.has(a.id));
+      }
       setAll(actions);
       // Determine initial selection
       let sel = new Set<string>();
@@ -273,8 +285,8 @@ export function ActivityMappingModal({
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={() => !saving && onOpenChange(false)}
@@ -563,7 +575,8 @@ export function ActivityMappingModal({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

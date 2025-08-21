@@ -31,11 +31,7 @@ public class RoleDefinitionDto
                 Id = ps.Id,
                 Name = ps.Name,
                 Condition = ps.Condition,
-                ResourceActions = ps.ResourceActions?.Select(ra => new ResourceActionDto
-                {
-                    Action = ra.Action,
-                    IsPrivileged = ra.IsPrivileged
-                }).ToList() ?? new List<ResourceActionDto>()
+                ResourceActions = ps.ResourceActions?.Select(ResourceActionDto.FromResourceAction).ToList() ?? []
             }).ToList(),
             TenantId = role.TenantId
         };
