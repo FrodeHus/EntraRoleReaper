@@ -339,12 +339,6 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
                   }}
                 />
                 <p className="text-xs text-muted-foreground space-y-1">
-                  <span>Upload JSON. Accepted formats:</span>
-                  <br />
-                  <code className="bg-muted px-1 py-0.5 rounded text-[10px] inline-block">{`{"Activity": ["action"]}`}</code>
-                  <span className="mx-1">or</span>
-                  <code className="bg-muted px-1 py-0.5 rounded text-[10px] inline-block">{`{"Activity": {"actions": ["action"], "properties": {"Prop": ["action"]}}}`}</code>
-                  <br />
                   <span>
                     All existing mappings (including property mappings) will be
                     replaced.

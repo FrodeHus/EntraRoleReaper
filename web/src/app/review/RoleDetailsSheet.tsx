@@ -214,14 +214,18 @@ export function RoleDetailsSheet({
                                   const ids = all
                                     .map((p) => (p as any).id || (p as any).Id)
                                     .filter(Boolean);
-                                  window.dispatchEvent(
-                                    new CustomEvent("open-op-mapping", {
-                                      detail: {
-                                        mapActivity: true,
-                                        preselectedActionIds: ids,
-                                      },
-                                    })
-                                  );
+                                  // Close the sheet first, then open the modal on the next tick
+                                  onOpenChange(false);
+                                  setTimeout(() => {
+                                    window.dispatchEvent(
+                                      new CustomEvent("open-op-mapping", {
+                                        detail: {
+                                          mapActivity: true,
+                                          preselectedActionIds: ids,
+                                        },
+                                      })
+                                    );
+                                  }, 0);
                                 }}
                                 title="Map these actions to an activity"
                               >
