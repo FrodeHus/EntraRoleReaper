@@ -4,9 +4,8 @@ using Microsoft.EntityFrameworkCore;
 namespace EntraRoleReaper.Api.Data.Models;
 
 [Index(nameof(Id), nameof(DisplayName), IsUnique = true)]
-public class RoleDefinition : Entity
+public class RoleDefinition : TenantEntity
 {
-    public Guid? TenantId { get; set; }
     [MaxLength(100)]
     public string DisplayName { get; set; } = string.Empty;
     [MaxLength(255)]

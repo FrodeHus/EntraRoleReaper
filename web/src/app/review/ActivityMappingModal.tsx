@@ -50,13 +50,52 @@ export function ActivityMappingModal({
   const [properties, setProperties] = useState<Record<string, number>>({});
   const [newPropName, setNewPropName] = useState<string>("");
 
+  // Activities dropdown state (create mode)
+  const [activities, setActivities] = useState<string[]>([]);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [activityQuery, setActivityQuery] = useState("");
+
+  // Fetch all activities from API (GetAllActivities endpoint)
+  useEffect(() => {
+    if (!open || !accessToken) return;
+    (async () => {
+      try {
+        const res = await fetch(new URL("/api/activity", apiBase), {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        const arr: string[] = Array.isArray(json)
+          ? json
+              .map((a: any) =>
+                typeof a === "string"
+                  ? a
+                  : String(
+                      a?.activityName ??
+                        a?.ActivityName ??
+                        a?.name ??
+                        a?.Name ??
+                        ""
+                    )
+              )
+              .filter(Boolean)
+          : [];
+        setActivities(arr);
+      } catch {
+        setActivities([]);
+      }
+    })();
+  }, [open, accessToken, apiBase]);
+
   // Load list of all actions and existing mapping (if edit)
   const load = useCallback(async () => {
     if (!accessToken) return;
     try {
       setLoading(true);
       setError(null);
-      const opName = name || "__new__"; // any string works for fetching all actions
+      // Use a constant name in create mode so typing does not trigger reload/reset
+      const opName =
+        mode === "edit" ? initialActivityName || name || "__edit__" : "__new__";
       const url = new URL(
         `/api/activity/mapping/${encodeURIComponent(opName)}`,
         apiBase
@@ -100,41 +139,6 @@ export function ActivityMappingModal({
       }
       setSelected(sel);
       setOriginalSelected(new Set(sel));
-      // Load properties list (only meaningful when we have a real activity name)
-      const act = (mode === "edit" ? initialActivityName : name)?.trim();
-      if (act) {
-        try {
-          const expRes = await fetch(new URL(`/api/activity/export`, apiBase), {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          if (expRes.ok) {
-            const expJson = await expRes.json();
-            const arr: any[] = Array.isArray(expJson)
-              ? expJson
-              : typeof expJson === "object" && expJson
-              ? Object.values(expJson as any)
-              : [];
-            const match = arr.find(
-              (x) =>
-                String(x.name ?? x.Name ?? "").toLowerCase() ===
-                act.toLowerCase()
-            );
-            const props = (match?.properties ?? match?.Properties) || {};
-            const mapped: Record<string, number> = {};
-            Object.keys(props).forEach((k) => {
-              const v = props[k] as any[];
-              mapped[k] = Array.isArray(v) ? v.length : 0;
-            });
-            setProperties(mapped);
-          } else {
-            setProperties({});
-          }
-        } catch {
-          setProperties({});
-        }
-      } else {
-        setProperties({});
-      }
     } catch (e: any) {
       setError(e.message || "Failed to load");
       setAll([]);
@@ -144,7 +148,7 @@ export function ActivityMappingModal({
     } finally {
       setLoading(false);
     }
-  }, [accessToken, apiBase, name, mode, initialActivityName, preselectedIds]);
+  }, [accessToken, apiBase, mode, initialActivityName, preselectedIds]);
 
   useEffect(() => {
     if (open) {
@@ -156,7 +160,53 @@ export function ActivityMappingModal({
       // Load immediately (uses placeholder name for create to get 'all')
       load();
     }
-  }, [open, initialActivityName, load]);
+  }, [open, initialActivityName]);
+  // When open or relevant inputs change that do not include live-typed name for create, load once
+  useEffect(() => {
+    if (!open) return;
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, accessToken, apiBase, mode, initialActivityName]);
+
+  // Load properties for the current activity name without resetting action list or selection
+  useEffect(() => {
+    if (!open || !accessToken) return;
+    const act = (mode === "edit" ? initialActivityName : name)?.trim();
+    if (!act) {
+      setProperties({});
+      return;
+    }
+    (async () => {
+      try {
+        const expRes = await fetch(new URL(`/api/activity/export`, apiBase), {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!expRes.ok) {
+          setProperties({});
+          return;
+        }
+        const expJson = await expRes.json();
+        const arr: any[] = Array.isArray(expJson)
+          ? expJson
+          : typeof expJson === "object" && expJson
+          ? Object.values(expJson as any)
+          : [];
+        const match = arr.find(
+          (x) =>
+            String(x.name ?? x.Name ?? "").toLowerCase() === act.toLowerCase()
+        );
+        const props = (match?.properties ?? match?.Properties) || {};
+        const mapped: Record<string, number> = {};
+        Object.keys(props).forEach((k) => {
+          const v = props[k] as any[];
+          mapped[k] = Array.isArray(v) ? v.length : 0;
+        });
+        setProperties(mapped);
+      } catch {
+        setProperties({});
+      }
+    })();
+  }, [open, accessToken, apiBase, mode, initialActivityName, name]);
 
   const hasChanges = useMemo(() => {
     if (mode === "create") return selected.size > 0 && !!name.trim();
@@ -258,15 +308,90 @@ export function ActivityMappingModal({
             <span className="text-[11px] text-muted-foreground">
               Activity name
             </span>
-            <input
-              className="border rounded px-2 py-1 text-xs bg-background"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={mode === "edit"}
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="e.g., Reset user password"
-            />
+            {mode === "edit" ? (
+              <input
+                className="border rounded px-2 py-1 text-xs bg-background w-full"
+                value={name}
+                disabled
+                readOnly
+              />
+            ) : (
+              <div className="relative">
+                <button
+                  type="button"
+                  className="w-full border rounded px-2 py-1 text-xs bg-background text-left flex items-center justify-between"
+                  onClick={() => setActivityOpen((v) => !v)}
+                  aria-haspopup="listbox"
+                >
+                  <span className="truncate">
+                    {name ? name : "Select or type an activity…"}
+                  </span>
+                  <span className="ml-2 text-muted-foreground">▾</span>
+                </button>
+                {activityOpen && (
+                  <div className="absolute z-20 mt-1 w-full rounded border bg-popover text-popover-foreground shadow">
+                    <div className="p-2">
+                      <input
+                        className="w-full border rounded px-2 py-1 text-xs bg-background"
+                        placeholder="Search or enter new…"
+                        value={activityQuery}
+                        onChange={(e) => setActivityQuery(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+                    <div
+                      className="max-h-60 overflow-auto"
+                      role="listbox"
+                      aria-label="Activities"
+                    >
+                      {activities
+                        .filter((a) =>
+                          activityQuery
+                            ? a
+                                .toLowerCase()
+                                .includes(activityQuery.toLowerCase())
+                            : true
+                        )
+                        .map((a) => (
+                          <div
+                            key={a}
+                            role="option"
+                            data-selected={name === a ? "true" : "false"}
+                            className="px-2 py-1 text-xs hover:bg-muted cursor-pointer"
+                            onMouseDown={() => {
+                              setName(a);
+                              setActivityQuery("");
+                              setActivityOpen(false);
+                            }}
+                          >
+                            {a}
+                          </div>
+                        ))}
+                      {activityQuery.trim() &&
+                        activities.every(
+                          (a) =>
+                            a.toLowerCase() !==
+                            activityQuery.trim().toLowerCase()
+                        ) && (
+                          <div className="border-t p-2">
+                            <Button
+                              size="sm"
+                              className="w-full justify-start"
+                              variant="secondary"
+                              onMouseDown={() => {
+                                setName(activityQuery.trim());
+                                setActivityOpen(false);
+                              }}
+                            >
+                              Use “{activityQuery.trim()}”
+                            </Button>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </label>
           <div className="space-y-2">
             <div className="flex items-center gap-2">

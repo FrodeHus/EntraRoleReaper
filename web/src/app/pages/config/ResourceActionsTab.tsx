@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../../components/ui/button";
+import { Checkbox } from "../../../components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -28,7 +29,7 @@ export function ResourceActionsTab({
   onToggleDir,
   onSort,
   onPrivFilter,
-  parseActionParts: _parseActionParts,
+  parseActionParts,
   onMapSelected,
 }: {
   accessToken: string | null;
@@ -49,6 +50,13 @@ export function ResourceActionsTab({
   onMapSelected?: (ids: string[]) => void;
 }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [openFilter, setOpenFilter] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<Set<string>>(
+    new Set()
+  );
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
+    new Set()
+  );
   const currentIds = useMemo(() => new Set(items.map((i) => i.id)), [items]);
 
   useEffect(() => {
@@ -76,6 +84,73 @@ export function ResourceActionsTab({
     onMapSelected(Array.from(selectedIds));
   };
 
+  // Build distinct Service and Category values from current items
+  const { services, categories } = useMemo(() => {
+    const s = new Set<string>();
+    const c = new Set<string>();
+    for (const it of items) {
+      const parts = parseActionParts(it.action);
+      const service = (parts.namespace || "").trim();
+      const category = (parts.resourceType || "").trim();
+      if (service) s.add(service);
+      if (category) c.add(category);
+    }
+    return {
+      services: Array.from(s).sort((a, b) => a.localeCompare(b)),
+      categories: Array.from(c).sort((a, b) => a.localeCompare(b)),
+    };
+  }, [items, parseActionParts]);
+
+  // Apply filters to items for rendering
+  const filteredItems = useMemo(() => {
+    const hasServiceFilter = selectedServices.size > 0;
+    const hasCategoryFilter = selectedCategories.size > 0;
+    if (!hasServiceFilter && !hasCategoryFilter) return items;
+    return items.filter((it) => {
+      const parts = parseActionParts(it.action);
+      const service = (parts.namespace || "").trim();
+      const category = (parts.resourceType || "").trim();
+      if (hasServiceFilter && !selectedServices.has(service)) return false;
+      if (hasCategoryFilter && !selectedCategories.has(category)) return false;
+      return true;
+    });
+  }, [items, selectedServices, selectedCategories, parseActionParts]);
+
+  const toggleService = (name: string) => {
+    setSelectedServices((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+  const toggleCategory = (name: string) => {
+    setSelectedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+  const clearFilters = () => {
+    setSelectedServices(new Set());
+    setSelectedCategories(new Set());
+  };
+  const removeService = (name: string) => {
+    setSelectedServices((prev) => {
+      const next = new Set(prev);
+      next.delete(name);
+      return next;
+    });
+  };
+  const removeCategory = (name: string) => {
+    setSelectedCategories((prev) => {
+      const next = new Set(prev);
+      next.delete(name);
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
@@ -90,7 +165,7 @@ export function ResourceActionsTab({
             aria-label="Search actions or roles"
           />
         </div>
-        <div className="flex gap-2 items-center text-[10px]">
+        <div className="flex gap-2 items-center text-[10px] relative">
           <select
             className="border rounded px-1 py-1 bg-background"
             value={sort}
@@ -122,6 +197,82 @@ export function ResourceActionsTab({
             <option value="priv">Privileged</option>
             <option value="nonpriv">Non-privileged</option>
           </select>
+          <div className="relative">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={loading}
+              onClick={() => setOpenFilter((v) => !v)}
+              title="Filter by Service/Category"
+            >
+              Filter
+              {selectedServices.size + selectedCategories.size > 0 && (
+                <span className="ml-1 px-1 rounded border bg-muted text-muted-foreground text-[10px]">
+                  {selectedServices.size + selectedCategories.size}
+                </span>
+              )}
+            </Button>
+            {openFilter && (
+              <div className="absolute right-0 mt-1 z-20 w-72 max-h-80 overflow-auto border rounded bg-popover text-popover-foreground shadow">
+                <div className="p-2 border-b text-[11px] font-medium">
+                  Service
+                </div>
+                <div className="p-2 space-y-1">
+                  {services.length === 0 && (
+                    <div className="text-muted-foreground text-[11px]">
+                      No services
+                    </div>
+                  )}
+                  {services.map((s) => (
+                    <label
+                      key={s}
+                      className="flex items-center gap-2 text-[11px] cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedServices.has(s)}
+                        onCheckedChange={() => toggleService(s)}
+                      />
+                      <span className="truncate" title={s}>
+                        {s}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <div className="p-2 border-t border-b text-[11px] font-medium">
+                  Category
+                </div>
+                <div className="p-2 space-y-1">
+                  {categories.length === 0 && (
+                    <div className="text-muted-foreground text-[11px]">
+                      No categories
+                    </div>
+                  )}
+                  {categories.map((c) => (
+                    <label
+                      key={c}
+                      className="flex items-center gap-2 text-[11px] cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedCategories.has(c)}
+                        onCheckedChange={() => toggleCategory(c)}
+                      />
+                      <span className="truncate" title={c}>
+                        {c}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <div className="p-2 flex gap-2 justify-end border-t">
+                  <Button size="sm" variant="ghost" onClick={clearFilters}>
+                    Clear
+                  </Button>
+                  <Button size="sm" onClick={() => setOpenFilter(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
           <Button
             size="sm"
             onClick={handleMap}
@@ -132,6 +283,45 @@ export function ResourceActionsTab({
           </Button>
         </div>
       </div>
+      {selectedServices.size + selectedCategories.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-[10px]">
+          {Array.from(selectedServices).map((s) => (
+            <span
+              key={`svc:${s}`}
+              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 bg-muted text-muted-foreground"
+            >
+              <span className="font-medium text-foreground/80">Service:</span>
+              <span className="font-mono">{s}</span>
+              <button
+                className="ml-1 hover:text-foreground"
+                aria-label={`Remove service filter ${s}`}
+                onClick={() => removeService(s)}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+          {Array.from(selectedCategories).map((c) => (
+            <span
+              key={`cat:${c}`}
+              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 bg-muted text-muted-foreground"
+            >
+              <span className="font-medium text-foreground/80">Category:</span>
+              <span className="font-mono">{c}</span>
+              <button
+                className="ml-1 hover:text-foreground"
+                aria-label={`Remove category filter ${c}`}
+                onClick={() => removeCategory(c)}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+          <Button size="sm" variant="ghost" onClick={clearFilters}>
+            Clear filters
+          </Button>
+        </div>
+      )}
       <div className="border rounded h-[55vh] overflow-auto">
         <Table className="text-xs">
           <TableHeader className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-[backdrop-filter]:bg-muted/60">
@@ -155,7 +345,7 @@ export function ResourceActionsTab({
                 </TableCell>
               </TableRow>
             )}
-            {!loading && items.length === 0 && (
+            {!loading && filteredItems.length === 0 && (
               <TableRow>
                 <TableCell colSpan={3} className="text-muted-foreground">
                   No actions found.
@@ -163,8 +353,8 @@ export function ResourceActionsTab({
               </TableRow>
             )}
             {!loading &&
-              items.length > 0 &&
-              items.map((a) => {
+              filteredItems.length > 0 &&
+              filteredItems.map((a) => {
                 return (
                   <TableRow key={a.id}>
                     <TableCell className="align-top">

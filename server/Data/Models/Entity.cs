@@ -1,6 +1,6 @@
 namespace EntraRoleReaper.Api.Data.Models;
 
-public class Entity
+public abstract class Entity
 {
     public Guid Id { get; set; }
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;

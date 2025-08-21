@@ -69,6 +69,7 @@ public static class EndpointMapper
         var group = app.MapGroup("/api/activity")
             .WithTags("Activities");
         group
+            .MapEndpoint<GetAllActivities>()
             .MapEndpoint<GetExport>()
             .MapEndpoint<PostImport>()
             .MapEndpoint<PutActivityMapping>()

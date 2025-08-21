@@ -12,7 +12,7 @@ public interface IActivityService
     Task DeletePropertyMapAsync(string activityName, string propertyName);
     Task SetExclusionAsync(string activityName, bool isExcluded);
     Task<IEnumerable<Activity>> GetExcludedActivitiesAsync();
-    Task<IEnumerable<Activity>> GetActivitesAsync(IEnumerable<string> activityNames);
+    Task<IEnumerable<Activity>> GetActivitesAsync(List<string>? activityNames = null);
     Task<Activity?> AddAsync(Activity activity);
     Task<Activity?> GetActivityById(Guid activityId);
 }
@@ -121,8 +121,12 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
         return activityRepository.GetExcludedActivitiesAsync();
     }
 
-    public Task<IEnumerable<Activity>> GetActivitesAsync(IEnumerable<string> activityNames)
+    public Task<IEnumerable<Activity>> GetActivitesAsync(List<string>? activityNames = null)
     {
+        if (activityNames == null || activityNames.Count == 0)
+        {
+            return activityRepository.GetAllActivitiesAsync();
+        }
         return activityRepository.GetActivitiesByNamesAsync(activityNames);
     }
 
