@@ -7,13 +7,19 @@ import App from "./app/App";
 import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 
+// Compute a redirect URI that works behind reverse proxies or subpaths
+const computedRedirectUri =
+  (import.meta.env.VITE_REDIRECT_URI as string) ||
+  `${window.location.origin}${import.meta.env.BASE_URL || "/"}`;
+
 const pca = new PublicClientApplication({
   auth: {
     clientId: import.meta.env.VITE_AAD_CLIENT_ID,
     authority: `https://login.microsoftonline.com/${
       import.meta.env.VITE_AAD_TENANT_ID
     }`,
-    redirectUri: "/",
+    redirectUri: computedRedirectUri,
+    navigateToLoginRequestUrl: false,
   },
   cache: { cacheLocation: "localStorage" },
 });
@@ -36,22 +42,23 @@ pca.addEventCallback((e) => {
     if (/user_cancelled|access_denied|cancelled/i.test(msg)) {
       window.dispatchEvent(new CustomEvent("msal:userCancelled"));
     }
+    if (/interaction_in_progress/i.test(msg)) {
+      // Ignore transient interaction_in_progress errors likely due to double navigation or proxy redirects
+      console.debug("MSAL: interaction_in_progress detected; ignoring transient state.");
+    }
   }
 });
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <MsalProvider instance={pca}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-      <Toaster
-        position="top-right"
-        richColors
-        closeButton
-        expand
-        visibleToasts={3}
-      />
-    </MsalProvider>
-  </React.StrictMode>
-);
+// Ensure MSAL initializes before rendering to avoid interaction state issues
+pca.initialize().finally(() => {
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <MsalProvider instance={pca}>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <App />
+        </BrowserRouter>
+        <Toaster position="top-right" richColors closeButton expand visibleToasts={3} />
+      </MsalProvider>
+    </React.StrictMode>
+  );
+});

@@ -13,4 +13,6 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  // If served from a subpath behind a reverse proxy, set base via VITE_BASE_URL
+  // and ensure VITE_REDIRECT_URI matches the externally visible redirect URL
 });
