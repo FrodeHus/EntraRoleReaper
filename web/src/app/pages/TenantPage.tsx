@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { useAccessToken } from "../hooks/useAccessToken";
 
 type TenantInfo = {
-  tenantId: string;
-  name?: string;
-  domain?: string;
+  id?: string | null;
+  name?: string | null;
+  domain?: string | null;
+  customRoleCount?: number | null;
 };
 
 export function TenantPage() {
@@ -37,7 +44,9 @@ export function TenantPage() {
           const prob = await res.json();
           detail = prob?.detail || prob?.title || "";
         } catch {}
-        throw new Error(detail || `Failed to load tenant (HTTP ${res.status}).`);
+        throw new Error(
+          detail || `Failed to load tenant (HTTP ${res.status}).`
+        );
       }
       const json = (await res.json()) as TenantInfo;
       setTenant(json);
@@ -57,7 +66,12 @@ export function TenantPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Tenant</h1>
-        <Button onClick={load} disabled={loading} aria-busy={loading} variant="outline">
+        <Button
+          onClick={load}
+          disabled={loading}
+          aria-busy={loading}
+          variant="outline"
+        >
           {loading ? "Refreshing…" : "Refresh"}
         </Button>
       </div>
@@ -66,28 +80,54 @@ export function TenantPage() {
           {error}
         </div>
       )}
-      <div className="border rounded-lg bg-card text-card-foreground shadow-sm p-4">
-        {tenant ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div>
-              <div className="text-muted-foreground">Tenant ID</div>
-              <div className="font-mono break-all">{tenant.tenantId}</div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium tracking-wide">
+            Tenant information
+          </CardTitle>
+          {tenant?.customRoleCount != null && (
+            <span
+              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border bg-muted text-muted-foreground"
+              title="Custom role count"
+            >
+              <span className="font-medium text-foreground/80">
+                Custom roles:
+              </span>
+              <span className="tabular-nums">{tenant.customRoleCount}</span>
+            </span>
+          )}
+        </CardHeader>
+        <CardContent>
+          {!tenant ? (
+            <div className="text-sm text-muted-foreground">
+              {loading
+                ? "Loading tenant information…"
+                : "No tenant information available."}
             </div>
-            <div>
-              <div className="text-muted-foreground">Name</div>
-              <div>{tenant.name || "-"}</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="text-muted-foreground">Tenant ID</div>
+                <div className="font-mono break-all">{tenant.id || "-"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Name</div>
+                <div>{tenant.name || "-"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Primary domain</div>
+                <div>{tenant.domain || "-"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Custom roles</div>
+                <div className="tabular-nums">
+                  {tenant.customRoleCount ?? 0}
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="text-muted-foreground">Primary domain</div>
-              <div>{tenant.domain || "-"}</div>
-            </div>
-          </div>
-        ) : (
-          <div className="text-sm text-muted-foreground">
-            {loading ? "Loading tenant information…" : "No tenant information available."}
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

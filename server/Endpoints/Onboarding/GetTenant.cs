@@ -1,5 +1,6 @@
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Services;
+using EntraRoleReaper.Api.Services.Dto;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,19 +14,10 @@ public class GetTenant : IEndpoint
             .WithSummary("Gets the tenant information")
             .RequireAuthorization();
     }
-
-    private static async Task<Ok<TenantInformation>> Handle(HttpContext context, [FromServices] ITenantService tenantService)
+    private static async Task<Ok<TenantMetadataDto>> Handle(HttpContext context, [FromServices] ITenantService tenantService)
     {
-        var tenant = await tenantService.GetCurrentTenantAsync();
-        var info = new TenantInformation(tenant?.Id, tenant?.Name, tenant?.TenantDomain, 0);
+        var tenant = await tenantService.GetCurrentTenantMetadataAsync();
         
-        return TypedResults.Ok(info);
+        return TypedResults.Ok(tenant);
     }
-    
-    private record TenantInformation(
-        Guid? Id,
-        string? Name,
-        string? Domain,
-        int CustomRoleCount
-    );
 }

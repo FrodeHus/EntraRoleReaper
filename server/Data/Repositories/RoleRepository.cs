@@ -5,9 +5,16 @@ namespace EntraRoleReaper.Api.Data.Repositories;
 
 public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository resourceActionRepository, ILogger<RoleRepository> logger) : IRoleRepository
 {
-    public Task<int> GetRoleCountAsync()
+    public Task<int> GetRoleCountAsync(bool customRolesOnly = false)
     {
-        return dbContext.RoleDefinitions.CountAsync();
+        if (customRolesOnly)
+        {
+            return dbContext.RoleDefinitions.CountAsync(r => !r.IsBuiltIn);
+        }
+
+        {
+            return dbContext.RoleDefinitions.CountAsync();
+        }
     }
 
     public Task ClearAsync()
@@ -74,7 +81,6 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
             }
             dbContext.RoleDefinitions.Add(role);
             await dbContext.SaveChangesAsync();
-            return;
         }
         catch (DbUpdateException ex)
         {

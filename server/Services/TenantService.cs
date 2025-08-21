@@ -1,10 +1,12 @@
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Api.Services;
 
 public class TenantService(
     ITenantRepository tenantRepository,
+    IRoleRepository roleRepository,
     IGraphService graphService,
     IHttpContextAccessor httpContextAccessor,
     ILogger<TenantService> logger)
@@ -76,10 +78,21 @@ public class TenantService(
         return null;
     }
     
-   
+    public async Task<TenantMetadataDto> GetCurrentTenantMetadataAsync(CancellationToken ct = default)
+    {
+        var tenant = await GetCurrentTenantAsync(false, ct);
+        if (tenant == null)
+        {
+            return new TenantMetadataDto(Guid.Empty, "(no tenant)", "(no domain)", 0);
+        }
+
+        var customRoles = await roleRepository.GetRoleCountAsync(true);
+        return new TenantMetadataDto(tenant.Id, tenant.Name ?? "(no name)", tenant.TenantDomain ?? "(no primary domain)", customRoles);
+    }
 }
 
 public interface ITenantService
 {
     Task<Tenant?> GetCurrentTenantAsync(bool refresh = false, CancellationToken ct = default);
+    Task<TenantMetadataDto> GetCurrentTenantMetadataAsync(CancellationToken ct = default);
 }
