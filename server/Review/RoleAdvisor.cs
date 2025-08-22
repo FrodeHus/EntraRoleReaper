@@ -26,7 +26,7 @@ public class RoleAdvisor(ActivityPermissionAnalyzer permissionAnalyzer, IRoleSer
                 .Distinct()];
         }
 
-        var suggestedRoles = allSuggestedRoles.Select(grant => grant.Role).Distinct();
+        var suggestedRoles = allSuggestedRoles.Select(grant => grant.Role).Distinct(new RoleComparer());
         return [.. suggestedRoles];
     }
 
@@ -82,5 +82,22 @@ public class RoleAdvisor(ActivityPermissionAnalyzer permissionAnalyzer, IRoleSer
                            ps.ResourceActions.Any(ra => ra.Action.Split('/')[1] == resourceGroup &&
                                                         requiredActions.Any(ra2 => ra2.Action == ra.Action))));
 
+    }
+
+    private class RoleComparer : IEqualityComparer<RoleDefinitionDto>
+    {
+        public bool Equals(RoleDefinitionDto? x, RoleDefinitionDto? y)
+        {
+            if (ReferenceEquals(x, y)) return true;
+            if (x is null) return false;
+            if (y is null) return false;
+            if (x.GetType() != y.GetType()) return false;
+            return x.Id.Equals(y.Id);
+        }
+
+        public int GetHashCode(RoleDefinitionDto obj)
+        {
+            return obj.Id.GetHashCode();
+        }
     }
 }
