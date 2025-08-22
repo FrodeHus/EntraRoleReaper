@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import { useAccessToken } from "../hooks/useAccessToken";
+import { JobQueue } from "../JobQueue";
 
 type TenantInfo = {
   id?: string | null;
@@ -75,6 +76,11 @@ export function TenantPage() {
           {loading ? "Refreshing…" : "Refresh"}
         </Button>
       </div>
+      <JobQueue
+        accessToken={accessToken}
+        defaultCollapsed={true}
+        title="Background jobs"
+      />
       {error && (
         <div className="rounded-md border border-amber-500/30 bg-amber-50 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200 p-3 text-sm">
           {error}

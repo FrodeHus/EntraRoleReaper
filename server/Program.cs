@@ -59,7 +59,7 @@ builder.Services.AddDbContext<ReaperDbContext>(opt =>
         opt.EnableDetailedErrors();
     }
 });
-builder.Services.AddSingleton<IGraphServiceFactory, GraphServiceFactory>();
+builder.Services.AddScoped<IGraphServiceFactory, GraphServiceFactory>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IResourceActionRepository, ResourceActionRepository>();
@@ -69,6 +69,7 @@ builder.Services.AddScoped<IUserSearchService, UserSearchService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IGraphService, GraphService>();
 builder.Services.AddScoped<ICacheService, CacheService>();
+builder.Services.AddScoped<AccessTokenContext>();
 builder.Services.AddScoped<ActivityPermissionAnalyzer>();
 builder.Services.AddScoped<RoleAdvisor>();
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
@@ -79,6 +80,11 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "RoleReaper API", Version = "v1" });
 });
 builder.Services.AddScoped<DatabaseSeeder>();
+
+// Review queue & background processing
+builder.Services.Configure<ReviewOptions>(builder.Configuration.GetSection("Review"));
+builder.Services.AddSingleton<IReviewCoordinator, ReviewCoordinator>();
+builder.Services.AddHostedService<ReviewWorker>();
 
 var app = builder.Build();
 

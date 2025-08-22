@@ -21,6 +21,7 @@ import {
   TableHead,
   TableCell,
 } from "../components/ui/table";
+import { JobQueue } from "./JobQueue";
 
 export function ReviewPanel({
   accessToken,
@@ -65,6 +66,8 @@ export function ReviewPanel({
       : timeRanges[timeRanges.length - 1].getFrom();
   }, [selectedRange]);
   const [report, setReport] = useState<UserReview[] | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<string | null>(null);
   const [selection, setSelection] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"ops" | "name">("ops");
   const [sortAsc, setSortAsc] = useState<boolean>(true);
@@ -176,6 +179,9 @@ export function ReviewPanel({
     const payload: ReviewRequest = { usersOrGroups: selectedIds, from, to };
     try {
       setLoading(true);
+      setReport(null);
+      setJobId(null);
+      setJobStatus(null);
       const res = await fetch(
         new URL("/api/review", import.meta.env.VITE_API_URL),
         {
@@ -188,27 +194,78 @@ export function ReviewPanel({
         }
       );
       if (!res.ok) return;
-      const raw: any = await res.json();
-      const results: any[] = (raw?.results ?? raw?.Results ?? []) as any[];
-      // Normalize to legacy frontend shape: promote currentActiveRoles/currentEligiblePimRoles to top-level
-      const normalized = results.map((r: any) => {
-        const activeRoles = Array.isArray(r.activeRoles)
-          ? r.activeRoles
-          : r.user?.currentActiveRoles ?? [];
-        const eligiblePimRoles = Array.isArray(r.eligiblePimRoles)
-          ? r.eligiblePimRoles
-          : r.user?.currentEligiblePimRoles ?? [];
-        return {
-          ...r,
-          activeRoles,
-          eligiblePimRoles,
-        };
-      }) as unknown as UserReview[];
-      setReport(normalized);
+      const json: any = await res.json();
+      const id = json?.id as string | undefined;
+      const status = (json?.status as string | undefined) ?? null;
+      if (id) {
+        setJobId(id);
+        setJobStatus(status);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Poll job status when we have a job id until completed/failed
+  useEffect(() => {
+    if (!accessToken || !jobId) return;
+    let aborted = false;
+    let timer: number | undefined;
+    const poll = async () => {
+      try {
+        const url = new URL(
+          `/api/review/${jobId}/status`,
+          import.meta.env.VITE_API_URL
+        );
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) return;
+        const s: any = await res.json();
+        if (aborted) return;
+        const status = (s?.status as string) ?? null;
+        setJobStatus(status);
+        if (status === "Completed") {
+          // fetch result
+          const rurl = new URL(
+            `/api/review/${jobId}/result`,
+            import.meta.env.VITE_API_URL
+          );
+          const rres = await fetch(rurl, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (rres.ok) {
+            const raw: any = await rres.json();
+            const results: any[] = (raw?.results ??
+              raw?.Results ??
+              []) as any[];
+            const normalized = results.map((r: any) => {
+              const activeRoles = Array.isArray(r.activeRoles)
+                ? r.activeRoles
+                : r.user?.currentActiveRoles ?? [];
+              const eligiblePimRoles = Array.isArray(r.eligiblePimRoles)
+                ? r.eligiblePimRoles
+                : r.user?.currentEligiblePimRoles ?? [];
+              return { ...r, activeRoles, eligiblePimRoles };
+            }) as unknown as UserReview[];
+            setReport(normalized);
+          }
+          return; // stop polling
+        }
+        if (status === "Failed" || status === "Cancelled") {
+          return; // stop polling
+        }
+        timer = window.setTimeout(poll, 1500);
+      } catch {
+        timer = window.setTimeout(poll, 2000);
+      }
+    };
+    poll();
+    return () => {
+      aborted = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [accessToken, jobId]);
 
   // Fetch mapping counts for all operations once report loads (align with current API)
   useEffect(() => {
@@ -411,7 +468,13 @@ export function ReviewPanel({
         </div>
         <Button
           onClick={run}
-          disabled={loading || selectedIds.length === 0}
+          disabled={
+            loading ||
+            selectedIds.length === 0 ||
+            (!!jobId &&
+              !!jobStatus &&
+              !["Completed", "Failed", "Cancelled"].includes(jobStatus))
+          }
           aria-busy={loading || undefined}
         >
           {loading && (
@@ -420,10 +483,44 @@ export function ReviewPanel({
               aria-hidden
             />
           )}
-          <span>{loading ? "Running…" : "Run review"}</span>
+          <span>
+            {jobId && jobStatus && jobStatus !== "Completed"
+              ? `Queued: ${jobStatus}`
+              : loading
+              ? "Running…"
+              : "Run review"}
+          </span>
           <span className="sr-only">{loading ? "Preparing report" : ""}</span>
         </Button>
       </div>
+
+      {/* Small job queue widget */}
+      <JobQueue
+        accessToken={accessToken}
+        onOpenResult={async (id) => {
+          if (!accessToken) return;
+          const url = new URL(
+            `/api/review/${id}/result`,
+            import.meta.env.VITE_API_URL
+          );
+          const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (!res.ok) return;
+          const raw: any = await res.json();
+          const results: any[] = (raw?.results ?? raw?.Results ?? []) as any[];
+          const normalized = results.map((r: any) => {
+            const activeRoles = Array.isArray(r.activeRoles)
+              ? r.activeRoles
+              : r.user?.currentActiveRoles ?? [];
+            const eligiblePimRoles = Array.isArray(r.eligiblePimRoles)
+              ? r.eligiblePimRoles
+              : r.user?.currentEligiblePimRoles ?? [];
+            return { ...r, activeRoles, eligiblePimRoles };
+          }) as unknown as UserReview[];
+          setReport(normalized);
+        }}
+      />
 
       {report && (
         <div className="space-y-3">

@@ -34,7 +34,12 @@ public static class EndpointMapper
     {
         var group = app.MapGroup("/api/review")
             .WithTags("Review");
-        group.MapEndpoint<PostReview>();
+        group
+            .MapEndpoint<PostReview>()
+            .MapEndpoint<GetReviewStatus>()
+            .MapEndpoint<GetReviewResult>()
+            .MapEndpoint<GetReviewJobs>()
+            .MapEndpoint<PostCancelReview>();
     }
 
     private static void MapSearchEndpoints(this IEndpointRouteBuilder app)
