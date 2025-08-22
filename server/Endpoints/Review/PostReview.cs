@@ -2,6 +2,7 @@ using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace EntraRoleReaper.Api.Endpoints.Review;
 
@@ -10,13 +11,70 @@ public class PostReview : IEndpoint
     public static void Map(IEndpointRouteBuilder builder)
     {
         builder.MapPost("/", Handle)
-            .WithSummary("Performs a role review")
+            .WithSummary("Queues a role review job and returns the job id")
             .RequireAuthorization();
     }
 
-    private static async Task<Ok<ReviewResponse>> Handle(ReviewRequest request, [FromServices] IReviewService reviewService)
+    private static IResult Handle(
+        ReviewRequest request,
+        ClaimsPrincipal user,
+        [FromServices] IReviewCoordinator coordinator,
+        HttpRequest httpRequest,
+        HttpContext httpContext
+    )
     {
-        var report = await reviewService.ReviewAsync(request);
-        return TypedResults.Ok(report);
+        var tenantId = httpContext.Items["TenantId"] as Guid?;
+        if (tenantId is null)
+        {
+            return TypedResults.BadRequest(new { error = "TenantId is required" });
+        }
+        // Identify requester (prefer stable object id, fall back to name/UPN)
+        string requestedBy =
+            user.FindFirst("oid")?.Value
+            ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? user.FindFirst("preferred_username")?.Value
+            ?? user.Identity?.Name
+            ?? "anonymous";
+
+        // If there is already an identical queued/running job for this user and same targets, reuse it
+        var targets = new HashSet<string>(
+            request.UsersOrGroups ?? [],
+            StringComparer.OrdinalIgnoreCase
+        );
+        var dup = coordinator
+            .List(tenantId)
+            .FirstOrDefault(j =>
+                j.RequestedBy.Equals(requestedBy, StringComparison.OrdinalIgnoreCase)
+                && (j.Status is ReviewJobStatus.Queued or ReviewJobStatus.Running)
+                && new HashSet<string>(
+                    j.Request.UsersOrGroups ?? [],
+                    StringComparer.OrdinalIgnoreCase
+                ).SetEquals(targets)
+            );
+        if (dup is not null)
+        {
+            return TypedResults.Ok(
+                new
+                {
+                    id = dup.Id,
+                    status = dup.Status.ToString(),
+                    duplicate = true,
+                }
+            );
+        }
+
+        var auth = httpRequest.Headers.Authorization.ToString();
+        var token = auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? auth.Substring(7)
+            : null;
+    var id = coordinator.Enqueue(tenantId.Value, requestedBy, request, token);
+        return TypedResults.Ok(
+            new
+            {
+                id,
+                status = ReviewJobStatus.Queued.ToString(),
+                duplicate = false,
+            }
+        );
     }
 }

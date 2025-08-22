@@ -4,7 +4,10 @@ using Microsoft.Graph;
 
 namespace EntraRoleReaper.Api.Services;
 
-public class GraphServiceFactory(IConfiguration config, IHttpContextAccessor accessor)
+public class GraphServiceFactory(
+    IConfiguration config,
+    IHttpContextAccessor accessor,
+    AccessTokenContext tokenContext)
     : IGraphServiceFactory
 {
     public async Task<GraphServiceClient> CreateForUserAsync()
@@ -22,6 +25,8 @@ public class GraphServiceFactory(IConfiguration config, IHttpContextAccessor acc
         var token = accessor
             .HttpContext?.Request.Headers.Authorization.ToString()
             ?.Replace("Bearer ", "");
+        if (string.IsNullOrEmpty(token))
+            token = tokenContext.UserAccessToken;
         if (string.IsNullOrEmpty(token))
             throw new UnauthorizedAccessException("Authorization token is missing.");
 
