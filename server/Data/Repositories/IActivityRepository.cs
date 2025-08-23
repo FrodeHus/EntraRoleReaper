@@ -4,7 +4,7 @@ namespace EntraRoleReaper.Api.Data.Repositories;
 
 public interface IActivityRepository
 {
-    Task<Activity> AddAsync(Activity activity);
+    Task<Activity> AddAsync(Activity activity, bool allowUpdate = true);
     Task<Activity?> GetByIdAsync(Guid id);
     Task<Activity?> GetByNameAsync(string name);
     Task<IEnumerable<Activity>> GetAllActivitiesAsync();

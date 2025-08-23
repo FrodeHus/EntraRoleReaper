@@ -5,7 +5,7 @@ namespace EntraRoleReaper.Api.Data.Repositories;
 
 public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
 {
-    public async Task<Activity> AddAsync(Activity activity)
+    public async Task<Activity> AddAsync(Activity activity, bool allowUpdate = true)
     {
         ArgumentNullException.ThrowIfNull(activity);
         var existing = await dbContext
@@ -14,6 +14,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
             .FirstOrDefaultAsync(a => activity.Name == a.Name);
         if (existing != null)
         {
+            if (!allowUpdate) return existing;
             existing.UpdatedUtc = DateTime.UtcNow;
             existing.IsExcluded = activity.IsExcluded;
             existing.AuditCategory = activity.AuditCategory;

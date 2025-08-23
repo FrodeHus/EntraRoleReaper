@@ -1,9 +1,6 @@
-using System.Text.Json;
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace EntraRoleReaper.Api.Data.Seed;
 
@@ -18,37 +15,53 @@ public class DatabaseSeeder(
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
+        await SeedActivitiesAsync(cancellationToken);
+        await SeedMappings(cancellationToken);
+    }
+
+    private string ResolvePath(string fileName)
+    {
+        var baseSeedPath = configuration.GetValue<string>("Database:Seed:Path");
+        var candidates = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(baseSeedPath))
+        {
+            var resolved = Path.IsPathRooted(baseSeedPath)
+                ? baseSeedPath
+                : Path.GetFullPath(Path.Combine(env.ContentRootPath, baseSeedPath));
+            candidates.Add(Path.Combine(resolved, fileName));
+        }
+        candidates.Add(Path.Combine(env.ContentRootPath, "seed", fileName));
+        candidates.Add(Path.Combine(env.ContentRootPath, "..", "seed", fileName));
+        candidates.Add(Path.Combine(AppContext.BaseDirectory, "seed", fileName));
+
+        var path = candidates.FirstOrDefault(File.Exists);
+        if (path is null)
+        {
+            logger.LogInformation(
+                "Seed file not found. Skipping seeding. Searched: {Candidates}",
+                candidates
+            );
+            return string.Empty;
+        }
+        return path;
+    }
+
+    private async Task SeedMappings(CancellationToken cancellationToken = default)
+    {
+        const string fileName = "rolereaper_mappings.json";
+        var path = ResolvePath(fileName);
+        // Implement mapping seeding if needed
+        await Task.CompletedTask;
+    }
+
+    private async Task SeedActivitiesAsync(CancellationToken cancellationToken = default)
+    {
         try
         {
-            // Resolve base seed directory and file location
-            var baseSeedPath = configuration.GetValue<string>("Database:Seed:Path");
-            var candidates = new List<string>();
-            var fileName = "entra_audit_activities.json";
+            const string fileName = "entra_audit_activities.json";
 
-
-            // 2) Base seed directory (new config). Accept absolute or relative to ContentRootPath
-            if (!string.IsNullOrWhiteSpace(baseSeedPath))
-            {
-                var resolved = Path.IsPathRooted(baseSeedPath)
-                    ? baseSeedPath
-                    : Path.GetFullPath(Path.Combine(env.ContentRootPath, baseSeedPath));
-                candidates.Add(Path.Combine(resolved, fileName));
-            }
-
-            // 3) Fallback common locations during dev/container runs
-            candidates.Add(Path.Combine(env.ContentRootPath, "seed", fileName));
-            candidates.Add(Path.Combine(env.ContentRootPath, "..", "seed", fileName));
-            candidates.Add(Path.Combine(AppContext.BaseDirectory, "seed", fileName));
-
-            var path = candidates.FirstOrDefault(File.Exists);
-            if (path is null)
-            {
-                logger.LogInformation(
-                    "Seed file not found. Skipping seeding. Searched: {Candidates}",
-                    candidates
-                );
-                return;
-            }
+            var path = ResolvePath(fileName);
 
             logger.LogInformation("Seeding activities from {Path}", path);
             await using var stream = File.OpenRead(path);
@@ -69,7 +82,7 @@ public class DatabaseSeeder(
                 }
                 try
                 {
-                    await activityRepository.AddAsync(new Activity { Name = name, AuditCategory = item.AuditCategory, Service = item.Service});
+                    await activityRepository.AddAsync(new Activity { Name = name, AuditCategory = item.AuditCategory, Service = item.Service}, false);
                     added++;
                 }
                 catch (Exception ex)
