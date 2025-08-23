@@ -14,6 +14,8 @@ export interface RoleItem {
   id: string;
   displayName: string;
   isBuiltIn?: boolean;
+  description?: string;
+  Description?: string;
   permissionSets?: Array<{
     resourceActions?: Array<{ isPrivileged?: boolean }>;
   }>;
@@ -141,6 +143,15 @@ export function RolesTab({
               items.map((r: any) => {
                 const id = r.id || r.Id;
                 const name = r.displayName || r.DisplayName;
+                const desc: string = (
+                  r.description ||
+                  r.Description ||
+                  ""
+                ).toString();
+                const isDeprecated = /deprecated/i.test(desc);
+                const isInternalOnly = /not intended for general use/i.test(
+                  desc
+                );
                 const isPriv = (
                   (r.permissionSets || r.PermissionSets) ??
                   []
@@ -156,13 +167,27 @@ export function RolesTab({
                 return (
                   <TableRow key={id}>
                     <TableCell className="max-w-0">
-                      <button
-                        className="font-semibold text-left hover:underline truncate"
-                        title={name}
-                        onClick={() => onOpenRole(id, name)}
-                      >
-                        {name}
-                      </button>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <button
+                          className="font-semibold text-left hover:underline truncate"
+                          title={name}
+                          onClick={() => onOpenRole(id, name)}
+                        >
+                          {name}
+                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isDeprecated && (
+                            <span className="text-[10px] px-1 rounded border bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-700 dark:text-red-300">
+                              Deprecated
+                            </span>
+                          )}
+                          {isInternalOnly && (
+                            <span className="text-[10px] px-1 rounded border bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-900/20 dark:border-slate-700 dark:text-slate-300">
+                              Internal only
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {isPriv ? (
