@@ -88,9 +88,9 @@ public class ReviewService(
                 CurrentActiveRoles = [.. roles.Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))],
                 CurrentEligiblePimRoles = [.. pimRoles.Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))]
             };
-            consolidatedRoles = consolidatedRoles.Where(r => roles.All(role => role?.Id != r.Id) || pimRoles.Any(pimRole => pimRole?.Id == r.Id)).ToList();
-            var removedRoles = roles.Where(r => !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
-            removedRoles = pimRoles.Where(r => !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
+            consolidatedRoles = [.. consolidatedRoles.Distinct(new RoleComparer()).Where(r => roles.All(role => role?.Id != r.Id) || pimRoles.Any(pimRole => pimRole?.Id == r.Id))];
+            var removedRoles = roles.Where(r => r is not null && !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
+            removedRoles = pimRoles.Where(r => r is not null && !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
 
             var review = new UserReview(user, reviewedActivities, consolidatedRoles.ConvertAll(r => new SimpleRole
             (

@@ -1,6 +1,5 @@
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -19,20 +18,18 @@ public class PostReview : IEndpoint
         ReviewRequest request,
         ClaimsPrincipal user,
         [FromServices] IReviewCoordinator coordinator,
-        HttpRequest httpRequest,
-        HttpContext httpContext
+        IHttpContextAccessor httpContextAccessor
     )
     {
-        var tenantId = httpContext.Items["TenantId"] as Guid?;
+        var tenantId = httpContextAccessor.HttpContext?.Items["TenantId"] as Guid?;
         if (tenantId is null)
         {
             return TypedResults.BadRequest(new { error = "TenantId is required" });
         }
         // Identify requester (prefer stable object id, fall back to name/UPN)
         string requestedBy =
-            user.FindFirst("oid")?.Value
+            user.FindFirst(ClaimTypes.Upn)?.Value
             ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? user.FindFirst("preferred_username")?.Value
             ?? user.Identity?.Name
             ?? "anonymous";
 
@@ -63,16 +60,14 @@ public class PostReview : IEndpoint
             );
         }
 
-        var auth = httpRequest.Headers.Authorization.ToString();
-        var token = auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
-            ? auth.Substring(7)
-            : null;
-    var id = coordinator.Enqueue(tenantId.Value, requestedBy, request, token);
+        var auth = httpContextAccessor.HttpContext?.Request.Headers.Authorization.ToString();
+        var token = (auth?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ?? false) ? auth[7..] : null;
+        var id = coordinator.Enqueue(tenantId.Value, requestedBy, request, token);
         return TypedResults.Ok(
             new
             {
                 id,
-                status = ReviewJobStatus.Queued.ToString(),
+                status = nameof(ReviewJobStatus.Queued),
                 duplicate = false,
             }
         );

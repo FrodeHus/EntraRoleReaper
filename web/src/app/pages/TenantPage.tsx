@@ -76,16 +76,6 @@ export function TenantPage() {
           {loading ? "Refreshing…" : "Refresh"}
         </Button>
       </div>
-      <JobQueue
-        accessToken={accessToken}
-        defaultCollapsed={true}
-        title="Background jobs"
-      />
-      {error && (
-        <div className="rounded-md border border-amber-500/30 bg-amber-50 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200 p-3 text-sm">
-          {error}
-        </div>
-      )}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-sm font-medium tracking-wide">
@@ -134,6 +124,16 @@ export function TenantPage() {
           )}
         </CardContent>
       </Card>
+      <JobQueue
+        accessToken={accessToken}
+        defaultCollapsed={true}
+        title="Background jobs"
+      />
+      {error && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-50 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200 p-3 text-sm">
+          {error}
+        </div>
+      )}
     </div>
   );
 }

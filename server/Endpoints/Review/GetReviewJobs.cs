@@ -18,9 +18,8 @@ public class GetReviewJobs : IEndpoint
         var tenantId = httpContext.Items["TenantId"] as Guid?;
         if (tenantId is null) return Results.BadRequest(new { error = "TenantId is required" });
         string requestedBy =
-            user.FindFirst("oid")?.Value
+            user.FindFirst(ClaimTypes.Upn)?.Value
             ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? user.FindFirst("preferred_username")?.Value
             ?? user.Identity?.Name
             ?? "anonymous";
 
