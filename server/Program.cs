@@ -36,6 +36,7 @@ builder.Services.AddCors();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddDataProtection();
 
 // SQLite cache path is configurable via Cache:SqliteConnection or Cache:SqlitePath
 var sqliteConn = builder.Configuration.GetValue<string>("Database:SqliteConnection");
@@ -74,6 +75,8 @@ builder.Services.AddScoped<ActivityPermissionAnalyzer>();
 builder.Services.AddScoped<RoleAdvisor>();
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddScoped<ITenantService, TenantService>();
+builder.Services.AddDataProtection();
+builder.Services.AddSingleton<ITokenProtector, DataProtectionTokenProtector>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

@@ -26,7 +26,7 @@ public class PostReview : IEndpoint
         {
             return TypedResults.BadRequest(new { error = "TenantId is required" });
         }
-        // Identify requester (prefer stable object id, fall back to name/UPN)
+  
         string requestedBy =
             user.FindFirst(ClaimTypes.Upn)?.Value
             ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value

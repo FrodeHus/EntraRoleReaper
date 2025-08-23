@@ -14,19 +14,22 @@ public class ReviewCoordinator : IReviewCoordinator
     private readonly SemaphoreSlim _semaphore;
     private readonly ConcurrentQueue<Guid> _queue = new();
     private readonly string CacheKeyPrefix = "ReviewJob:";
+    private readonly ITokenProtector _tokenProtector;
 
-    public ReviewCoordinator(IMemoryCache cache, IServiceScopeFactory scopeFactory, IOptions<ReviewOptions> options, ILogger<ReviewCoordinator> logger)
+    public ReviewCoordinator(IMemoryCache cache, IServiceScopeFactory scopeFactory, IOptions<ReviewOptions> options, ILogger<ReviewCoordinator> logger, ITokenProtector tokenProtector)
     {
         _cache = cache;
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _tokenProtector = tokenProtector;
         var max = Math.Max(1, options.Value.MaxConcurrent);
         _semaphore = new SemaphoreSlim(max, max);
     }
 
     public Guid Enqueue(Guid tenantId, string requestedBy, ReviewRequest request, string? userAccessToken = null)
     {
-        var job = new ReviewJob(Guid.NewGuid(), requestedBy, request, tenantId, DateTimeOffset.UtcNow, userAccessToken);
+        var protectedToken = _tokenProtector.Protect(userAccessToken);
+        var job = new ReviewJob(Guid.NewGuid(), requestedBy, request, tenantId, DateTimeOffset.UtcNow, protectedToken);
         SetJob(job);
         _queue.Enqueue(job.Id);
         _logger.LogInformation("Enqueued review job {JobId} by {User} with {Count} subjects", job.Id, requestedBy, request.UsersOrGroups?.Count ?? 0);
@@ -93,12 +96,14 @@ public class ReviewCoordinator : IReviewCoordinator
             using var scope = _scopeFactory.CreateScope();
             // Flow the user's access token into this scope for GraphServiceFactory
             var tokenCtx = scope.ServiceProvider.GetRequiredService<AccessTokenContext>();
-            tokenCtx.UserAccessToken = job.UserAccessToken;
+            tokenCtx.UserAccessToken = _tokenProtector.Unprotect(job.UserAccessToken);
             var reviewService = scope.ServiceProvider.GetRequiredService<IReviewService>();
             var result = await reviewService.ReviewAsync(job.Request);
             job.Result = result;
             job.Status = ReviewJobStatus.Completed;
             job.CompletedAt = DateTimeOffset.UtcNow;
+            // clear token after successful completion
+            job = job with { UserAccessToken = null };
             SetJob(job);
             _logger.LogInformation("Completed review job {JobId}", job.Id);
         }
@@ -107,6 +112,8 @@ public class ReviewCoordinator : IReviewCoordinator
             job.Status = ReviewJobStatus.Failed;
             job.Error = ex.Message;
             job.CompletedAt = DateTimeOffset.UtcNow;
+            // clear token on failure too
+            job = job with { UserAccessToken = null };
             SetJob(job);
             _logger.LogError(ex, "Review job {JobId} failed", job.Id);
         }
@@ -133,6 +140,8 @@ public class ReviewCoordinator : IReviewCoordinator
 
         job.Status = ReviewJobStatus.Cancelled;
         job.CompletedAt = DateTimeOffset.UtcNow;
+        // clear token on cancel
+        job = job with { UserAccessToken = null };
         SetJob(job);
         _logger.LogInformation("Cancelled review job {JobId}", job.Id);
         return (true, null);
