@@ -740,35 +740,6 @@ export function ReviewPanel({
             roleNameLookup={(id) => roleNameCache[id] ?? id}
             openRoleDetails={openRoleDetails}
           />
-          {selection.length > 0 && (
-            <div className="mt-2">
-              <Button className="bg-emerald-600 hover:bg-emerald-600/90">
-                Remediate
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {selection.length > 0 && remediation.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="font-semibold">Remediation summary</h3>
-          <div className="border rounded p-3 bg-card text-card-foreground">
-            {remediation.map((r) => (
-              <div key={r.user.id} className="py-2 border-b last:border-0">
-                <div className="font-medium">{r.user.displayName}</div>
-                <div className="text-sm text-muted-foreground">
-                  Add:{" "}
-                  {r.addedRoles.map((a) => a.displayName).join(", ") || "None"}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Remove:{" "}
-                  {r.removedRoles.map((a) => a.displayName).join(", ") ||
-                    "None"}
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>
