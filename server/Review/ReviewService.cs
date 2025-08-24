@@ -10,7 +10,6 @@ namespace EntraRoleReaper.Api.Review;
 public class ReviewService(
     IGraphService graphService,
     RoleAdvisor roleAdvisor,
-    IRoleService roleService,
     IActivityService activityService,
     ICacheService cache
 ) : IReviewService
