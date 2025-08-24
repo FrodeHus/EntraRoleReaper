@@ -36,8 +36,6 @@ public class RoleService(
 
         try
         {
-            await roleRepository.ClearAsync();
-
             var roles = await graphService.GetAllRoleDefinitions();
             if (roles == null || !roles.Any())
             {
@@ -181,7 +179,7 @@ public class RoleService(
 
         try
         {
-            var roles =  await roleRepository.SearchRolesAsync(searchTerm, privilegedOnly, limit);
+            var roles = await roleRepository.SearchRolesAsync(searchTerm, privilegedOnly, limit);
             return roles.Select(RoleDefinitionDto.FromRoleDefinition).ToList();
         }
         catch (Exception ex)

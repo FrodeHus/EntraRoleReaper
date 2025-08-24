@@ -22,7 +22,7 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
         dbContext.RoleDefinitions.RemoveRange(dbContext.RoleDefinitions);
         return dbContext.SaveChangesAsync();
     }
-    
+
     public Task<List<RoleDefinition>> GetTenantCustomRolesAsync(Guid tenantId)
     {
         return dbContext.RoleDefinitions
@@ -43,11 +43,17 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
         {
             foreach (var role in roleDefinitions)
             {
+                var existing = await dbContext.FindAsync<RoleDefinition>(role.Id);
+                if (existing is not null)
+                {
+                    continue; // Skip existing roles
+                }
                 dbContext.RoleDefinitions.Add(role);
             }
 
             await dbContext.SaveChangesAsync();
-        }catch (DbUpdateException ex)
+        }
+        catch (DbUpdateException ex)
         {
             // Handle specific database update exceptions if needed
             logger.LogError(ex, "Failed to trying to add roles.");
