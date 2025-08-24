@@ -1,6 +1,7 @@
 using EntraRoleReaper.Api;
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Data.Seed;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
@@ -8,7 +9,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
-using EntraRoleReaper.Api.Data.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -97,7 +97,7 @@ await app.ConfigureApplication(corsOrigins);
 using (var scope = app.Services.CreateScope())
 {
     var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-    await seeder.SeedActivitiesAsync();
+    await seeder.SeedAsync();
 }
 
 app.Run();

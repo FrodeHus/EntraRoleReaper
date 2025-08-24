@@ -15,7 +15,7 @@ services:
       AzureAd__Domain: "${AZUREAD_DOMAIN}"
       Cors__AllowedOrigins__0: "http://localhost:5173"
       Database__SqlitePath: "/cache/rolereaper_cache.sqlite"
-      Database__Seed__Path: "/cache/seed"
+      Database__Seed__Path: "/seed"
     expose:
       - "8080"
     security_opt:
@@ -26,7 +26,8 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev
     volumes:
-      - /Users/frode.hus/rolereaper:/cache
+      - rolereaper-cache:/cache
+      - ./seed:/seed:ro
     networks:
       - appnet
 
