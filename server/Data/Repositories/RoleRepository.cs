@@ -41,15 +41,7 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
 
         try
         {
-            foreach (var role in roleDefinitions)
-            {
-                var existing = await dbContext.FindAsync<RoleDefinition>(role.Id);
-                if (existing is not null)
-                {
-                    continue; // Skip existing roles
-                }
-                dbContext.RoleDefinitions.Add(role);
-            }
+            dbContext.RoleDefinitions.AddRange(roleDefinitions);
 
             await dbContext.SaveChangesAsync();
         }
