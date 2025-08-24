@@ -19,13 +19,46 @@ public class GetActivityMapping : IEndpoint
 
     private static async Task<Results<Ok<ActivityMappingResponse>, BadRequest>> Handle(
         string operationName,
+        [FromQuery(Name = "q")] string? q,
+        [FromQuery(Name = "namespace")] string? @namespace,
+        [FromQuery] string? namespaces,
+        [FromQuery] string? resourceGroups,
+        [FromQuery] bool? priv,
         [FromServices] IActivityRepository activityRepository,
         [FromServices] IResourceActionRepository resourceActionRepository)
     {
         if (string.IsNullOrWhiteSpace(operationName))
             return TypedResults.BadRequest();
         var activities = await activityRepository.GetByNameAsync(operationName);
-        var allActions = await resourceActionRepository.GetAllAsync();
+        // Build optional filters
+        List<string>? nsFilter = null;
+        if (!string.IsNullOrWhiteSpace(@namespace))
+        {
+            nsFilter = [@namespace!];
+        }
+        else if (!string.IsNullOrWhiteSpace(namespaces))
+        {
+            nsFilter = namespaces!
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+        }
+        List<string>? rgFilter = null;
+        if (!string.IsNullOrWhiteSpace(resourceGroups))
+        {
+            rgFilter = resourceGroups!
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+        }
+        var allActions =
+            (nsFilter is null && rgFilter is null && priv is null && string.IsNullOrWhiteSpace(q))
+                ? await resourceActionRepository.GetAllAsync()
+                : await resourceActionRepository.SearchResourceActionsAsync(
+                    q,
+                    nsFilter,
+                    rgFilter,
+                    priv,
+                    200
+                );
         return TypedResults.Ok(
             new ActivityMappingResponse
             (

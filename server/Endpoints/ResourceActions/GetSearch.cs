@@ -13,18 +13,50 @@ public class GetSearch : IEndpoint
             .RequireAuthorization();
     }
 
-    private static async Task<Ok<ResourceActionSearchResponse[]>> Handle(string q, int? limit, [FromServices] IResourceActionRepository resourceActionRepository)
+    private static async Task<Ok<ResourceActionSearchResponse[]>> Handle(
+        string? q,
+        string? @namespace,
+        string? namespaces,
+        string? resourceGroups,
+        bool? priv,
+        int? limit,
+        [FromServices] IResourceActionRepository resourceActionRepository
+    )
     {
-        if (string.IsNullOrWhiteSpace(q))
-            return TypedResults.Ok(Array.Empty<ResourceActionSearchResponse>());
-        var term = q.Trim();
         var take = limit.GetValueOrDefault(30);
         if (take < 1)
             take = 1;
         if (take > 200)
             take = 200;
 
-        var items = await resourceActionRepository.SearchResourceActionsAsync(term, take);
+        // Accept either single namespace via "namespace" or comma-separated list via "namespaces"
+        List<string>? nsFilter = null;
+        if (!string.IsNullOrWhiteSpace(@namespace))
+        {
+            nsFilter = [@namespace!];
+        }
+        else if (!string.IsNullOrWhiteSpace(namespaces))
+        {
+            nsFilter = namespaces!
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+        }
+
+        List<string>? rgFilter = null;
+        if (!string.IsNullOrWhiteSpace(resourceGroups))
+        {
+            rgFilter = resourceGroups!
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+        }
+
+        var items = await resourceActionRepository.SearchResourceActionsAsync(
+            q,
+            nsFilter,
+            rgFilter,
+            priv,
+            take
+        );
         return TypedResults.Ok(items.Select(x => new ResourceActionSearchResponse(x.Id, x.Action, x.IsPrivileged)).ToArray());
     }
 

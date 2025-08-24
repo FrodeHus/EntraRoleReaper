@@ -9,6 +9,13 @@ public interface IResourceActionRepository
     Task<ResourceAction?> GetResourceActionByIdAsync(Guid id);
     Task<ResourceAction?> GetResourceActionByNameAsync(string name);
     Task<IEnumerable<ResourceAction>> SearchResourceActionsAsync(string searchTerm, int limit = 100);
+    Task<ICollection<ResourceActionDto>> SearchResourceActionsAsync(
+        string? q,
+        IEnumerable<string>? namespaces,
+        IEnumerable<string>? resourceGroups,
+        bool? privOnly,
+        int limit = 100
+    );
 
     Task<ICollection<ResourceAction>> GetResourceActionsByIdsAsync(Guid[] resourceActionIds);
     Task<ICollection<ResourceAction>> GetResourceActionsByNamesAsync(IEnumerable<string> allResourceActions);

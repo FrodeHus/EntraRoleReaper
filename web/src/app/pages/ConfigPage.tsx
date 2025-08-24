@@ -15,8 +15,6 @@ interface TabConfig {
 const tabs: TabConfig[] = [
   { key: "cache", label: "Cache" },
   { key: "exclusions", label: "Exclusions" },
-  { key: "actions", label: "Resource Actions" },
-  { key: "future", label: "Upcoming" },
 ];
 
 interface ConfigPageProps {
@@ -210,41 +208,6 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
         {activeTab === "exclusions" && (
           <ExclusionsTab accessToken={accessToken} apiBase={apiBase} />
         )}
-
-        {activeTab === "actions" && (
-          <ResourceActionsTab
-            accessToken={accessToken}
-            searchInput={actionsSearchInput}
-            loading={actionsLoading}
-            items={actionsItems}
-            sort={actionsSort}
-            dir={actionsDir}
-            privFilter={actionsPrivFilter}
-            onSearchInput={(v) => setActionsSearchInput(v)}
-            onToggleDir={() =>
-              setActionsDir((d) => (d === "asc" ? "desc" : "asc"))
-            }
-            onSort={(v) => setActionsSort(v)}
-            onPrivFilter={(v) => setActionsPrivFilter(v)}
-            parseActionParts={parseActionParts}
-            onMapSelected={(ids) => {
-              if (!ids || ids.length === 0) return;
-              // Navigate to Mappings page and open modal there
-              navigate("/mappings");
-              setTimeout(() => {
-                window.dispatchEvent(
-                  new CustomEvent("open-op-mapping", {
-                    detail: { mapActivity: true, preselectedActionIds: ids },
-                  })
-                );
-              }, 0);
-            }}
-          />
-        )}
-
-        {/* Roles tab removed; see RolesPage */}
-
-        {activeTab === "future" && <FutureTab />}
 
         {showImportModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

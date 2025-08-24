@@ -112,4 +112,71 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
             .OrderBy(x => x.Action)
             .ToListAsync()).ConvertAll(ResourceActionDto.FromResourceAction);
     }
+
+    public async Task<ICollection<ResourceActionDto>> SearchResourceActionsAsync(
+        string? q,
+        IEnumerable<string>? namespaces,
+        IEnumerable<string>? resourceGroups,
+        bool? privOnly,
+        int limit = 100
+    )
+    {
+        var take = Math.Clamp(limit, 1, 200);
+        IQueryable<ResourceAction> query = dbContext.ResourceActions.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var term = q!.Trim();
+            var like = term.Contains('*') ? term.Replace('*', '%').ToLowerInvariant() : $"%{term}%";
+            query = query.Where(x => EF.Functions.Like(x.Action, like));
+        }
+
+        if (privOnly == true)
+        {
+            query = query.Where(x => x.IsPrivileged);
+        }
+
+        // Filter by namespace/resource group using Action parsing since those fields are derived in DTO
+        if (namespaces != null)
+        {
+            var nsList = namespaces
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .ToList();
+            if (nsList.Count > 0)
+            {
+                query = query.Where(x => nsList.Contains(GetNamespace(x.Action)));
+            }
+        }
+        if (resourceGroups != null)
+        {
+            var rgList = resourceGroups
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .ToList();
+            if (rgList.Count > 0)
+            {
+                query = query.Where(x => rgList.Contains(GetResourceGroup(x.Action)));
+            }
+        }
+
+        var results = await query.OrderBy(x => x.Action).Take(take).ToListAsync();
+        return results.ConvertAll(ResourceActionDto.FromResourceAction);
+    }
+
+    private static string GetNamespace(string action)
+    {
+        var parts = (action ?? string.Empty).Split('/');
+        if (parts.Length > 1)
+            return string.Join('/', parts[..^1]);
+        return string.Empty;
+    }
+
+    private static string GetResourceGroup(string action)
+    {
+        var parts = (action ?? string.Empty).Split('/');
+        if (parts.Length > 2)
+            return parts[^2];
+        return string.Empty;
+    }
 }

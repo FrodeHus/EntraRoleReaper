@@ -4,6 +4,15 @@ import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Switch } from "../../components/ui/switch";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
+import {
   Table,
   TableBody,
   TableCell,
@@ -17,6 +26,8 @@ interface MappingAction {
   id: string; // Guid
   action: string;
   isPrivileged: boolean;
+  namespace: string;
+  resourceGroup: string;
 }
 
 export function ActivityMappingModal({
@@ -51,6 +62,14 @@ export function ActivityMappingModal({
   const [privOnly, setPrivOnly] = useState(false);
   const [properties, setProperties] = useState<Record<string, number>>({});
   const [newPropName, setNewPropName] = useState<string>("");
+  // Namespace/ResourceGroup filters
+  const [selectedNamespaces, setSelectedNamespaces] = useState<Set<string>>(
+    new Set()
+  );
+  const [selectedResourceGroups, setSelectedResourceGroups] = useState<
+    Set<string>
+  >(new Set());
+  // menus are managed by Radix DropdownMenu, no manual open/close state needed
 
   // Activities dropdown state (create mode)
   const [activities, setActivities] = useState<string[]>([]);
@@ -102,6 +121,22 @@ export function ActivityMappingModal({
         `/api/activity/mapping/${encodeURIComponent(opName)}`,
         apiBase
       );
+      // Apply server-side filters when available
+      if (selectedNamespaces.size > 0) {
+        url.searchParams.set(
+          "namespaces",
+          Array.from(selectedNamespaces).join(",")
+        );
+      }
+      if (selectedResourceGroups.size > 0) {
+        url.searchParams.set(
+          "resourceGroups",
+          Array.from(selectedResourceGroups).join(",")
+        );
+      }
+      if (privOnly) {
+        url.searchParams.set("priv", "true");
+      }
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -110,11 +145,27 @@ export function ActivityMappingModal({
       const rawAll: any[] = Array.isArray(json.allActions)
         ? json.allActions
         : [];
-      let actions: MappingAction[] = rawAll.map((a) => ({
-        id: String(a.id ?? a.Id ?? a.ID),
-        action: String(a.action ?? a.Action),
-        isPrivileged: Boolean(a.isPrivileged ?? a.IsPrivileged),
-      }));
+      const derive = (full: string) => {
+        const parts = String(full || "").split("/");
+        const ns = parts.length > 1 ? parts[0] : "";
+        const rg = parts.length > 2 ? parts[1] : "";
+        return { ns, rg };
+      };
+      let actions: MappingAction[] = rawAll.map((a) => {
+        const action = String(a.action ?? a.Action ?? "");
+        const { ns, rg } = derive(action);
+        const namespace = String(a.namespace ?? a.Namespace ?? ns ?? "");
+        const resourceGroup = String(
+          a.resourceGroup ?? a.ResourceGroup ?? rg ?? ""
+        );
+        return {
+          id: String(a.id ?? a.Id ?? a.ID),
+          action,
+          isPrivileged: Boolean(a.isPrivileged ?? a.IsPrivileged),
+          namespace,
+          resourceGroup,
+        };
+      });
       // If preselectedIds are provided (e.g., opening from RoleDetails permission set),
       // show only those actions in the list.
       if (
@@ -161,7 +212,16 @@ export function ActivityMappingModal({
     } finally {
       setLoading(false);
     }
-  }, [accessToken, apiBase, mode, initialActivityName, preselectedIds]);
+  }, [
+    accessToken,
+    apiBase,
+    mode,
+    initialActivityName,
+    preselectedIds,
+    selectedNamespaces,
+    selectedResourceGroups,
+    privOnly,
+  ]);
 
   useEffect(() => {
     if (open) {
@@ -170,10 +230,13 @@ export function ActivityMappingModal({
       setPrivOnly(false);
       setSelected(new Set());
       setOriginalSelected(new Set());
+      setSelectedNamespaces(new Set());
+      setSelectedResourceGroups(new Set());
       // Load immediately (uses placeholder name for create to get 'all')
       load();
     }
   }, [open, initialActivityName]);
+  // DropdownMenu handles click-outside automatically
   // When open or relevant inputs change that do not include live-typed name for create, load once
   useEffect(() => {
     if (!open) return;
@@ -228,10 +291,55 @@ export function ActivityMappingModal({
     return false;
   }, [selected, originalSelected, mode, name]);
 
+  // Build filter option lists
+  const namespaceOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of all) {
+      if (a.namespace) set.add(a.namespace);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [all]);
+
+  const resourceGroupOptions = useMemo(() => {
+    let base = all;
+    if (selectedNamespaces.size > 0) {
+      base = base.filter(
+        (a) => a.namespace && selectedNamespaces.has(a.namespace)
+      );
+    }
+    const set = new Set<string>();
+    for (const a of base) {
+      if (a.resourceGroup) set.add(a.resourceGroup);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [all, selectedNamespaces]);
+
+  // Prune resource group selections that are no longer valid after namespace change
+  useEffect(() => {
+    if (selectedResourceGroups.size === 0) return;
+    const valid = new Set(resourceGroupOptions);
+    const next = new Set(
+      Array.from(selectedResourceGroups).filter((rg) => valid.has(rg))
+    );
+    if (next.size !== selectedResourceGroups.size) {
+      setSelectedResourceGroups(next);
+    }
+  }, [resourceGroupOptions]);
+
   const filtered = useMemo(() => {
     const t = filter.trim().toLowerCase();
     let list = all;
     if (privOnly) list = list.filter((a) => a.isPrivileged);
+    if (selectedNamespaces.size > 0) {
+      list = list.filter(
+        (a) => a.namespace && selectedNamespaces.has(a.namespace)
+      );
+    }
+    if (selectedResourceGroups.size > 0) {
+      list = list.filter(
+        (a) => a.resourceGroup && selectedResourceGroups.has(a.resourceGroup)
+      );
+    }
     if (t) list = list.filter((a) => a.action.toLowerCase().includes(t));
     // Deterministic order: selected first, then by name
     return list.slice().sort((a, b) => {
@@ -240,7 +348,39 @@ export function ActivityMappingModal({
       if (as !== bs) return as - bs;
       return a.action.localeCompare(b.action);
     });
-  }, [all, filter, privOnly, selected]);
+  }, [
+    all,
+    filter,
+    privOnly,
+    selected,
+    selectedNamespaces,
+    selectedResourceGroups,
+  ]);
+
+  // If any filter is active, drop selection for items not in the filtered result
+  useEffect(() => {
+    const anyFilterActive =
+      privOnly ||
+      selectedNamespaces.size > 0 ||
+      selectedResourceGroups.size > 0 ||
+      filter.trim().length > 0;
+    if (!anyFilterActive || selected.size === 0) return;
+    const visible = new Set(filtered.map((a) => a.id));
+    let changed = false;
+    const next = new Set<string>();
+    selected.forEach((id) => {
+      if (visible.has(id)) next.add(id);
+      else changed = true;
+    });
+    if (changed) setSelected(next);
+  }, [
+    filtered,
+    privOnly,
+    selectedNamespaces,
+    selectedResourceGroups,
+    filter,
+    selected,
+  ]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -329,81 +469,80 @@ export function ActivityMappingModal({
                 readOnly
               />
             ) : (
-              <div className="relative">
-                <button
-                  type="button"
-                  className="w-full border rounded px-2 py-1 text-xs bg-background text-left flex items-center justify-between"
-                  onClick={() => setActivityOpen((v) => !v)}
-                  aria-haspopup="listbox"
-                >
-                  <span className="truncate">
-                    {name ? name : "Select or type an activity…"}
-                  </span>
-                  <span className="ml-2 text-muted-foreground">▾</span>
-                </button>
-                {activityOpen && (
-                  <div className="absolute z-20 mt-1 w-full rounded border bg-popover text-popover-foreground shadow">
-                    <div className="p-2">
-                      <input
-                        className="w-full border rounded px-2 py-1 text-xs bg-background"
-                        placeholder="Search or enter new…"
-                        value={activityQuery}
-                        onChange={(e) => setActivityQuery(e.target.value)}
-                        autoFocus
-                      />
-                    </div>
-                    <div
-                      className="max-h-60 overflow-auto"
-                      role="listbox"
-                      aria-label="Activities"
-                    >
-                      {activities
-                        .filter((a) =>
-                          activityQuery
-                            ? a
-                                .toLowerCase()
-                                .includes(activityQuery.toLowerCase())
-                            : true
-                        )
-                        .map((a) => (
-                          <div
-                            key={a}
-                            role="option"
-                            data-selected={name === a ? "true" : "false"}
-                            className="px-2 py-1 text-xs hover:bg-muted cursor-pointer"
-                            onMouseDown={() => {
-                              setName(a);
-                              setActivityQuery("");
+              <DropdownMenu
+                open={activityOpen}
+                onOpenChange={(o) => {
+                  setActivityOpen(o);
+                  if (!o) setActivityQuery("");
+                }}
+              >
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full border rounded px-2 py-1 text-xs bg-background text-left flex items-center justify-between"
+                    aria-haspopup="listbox"
+                  >
+                    <span className="truncate">
+                      {name ? name : "Select or type an activity…"}
+                    </span>
+                    <span className="ml-2 text-muted-foreground">▾</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="z-[90] w-[--radix-dropdown-menu-trigger-width] min-w-[16rem]">
+                  <div className="p-2">
+                    <input
+                      className="w-full border rounded px-2 py-1 text-xs bg-background"
+                      placeholder="Search or enter new…"
+                      value={activityQuery}
+                      onChange={(e) => setActivityQuery(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-60 overflow-auto">
+                    {activities
+                      .filter((a) =>
+                        activityQuery
+                          ? a
+                              .toLowerCase()
+                              .includes(activityQuery.toLowerCase())
+                          : true
+                      )
+                      .map((a) => (
+                        <DropdownMenuItem
+                          key={a}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setName(a);
+                            setActivityQuery("");
+                            setActivityOpen(false);
+                          }}
+                          className="text-xs"
+                        >
+                          {a}
+                        </DropdownMenuItem>
+                      ))}
+                    {activityQuery.trim() &&
+                      activities.every(
+                        (a) =>
+                          a.toLowerCase() !== activityQuery.trim().toLowerCase()
+                      ) && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              setName(activityQuery.trim());
                               setActivityOpen(false);
                             }}
+                            className="text-xs"
                           >
-                            {a}
-                          </div>
-                        ))}
-                      {activityQuery.trim() &&
-                        activities.every(
-                          (a) =>
-                            a.toLowerCase() !==
-                            activityQuery.trim().toLowerCase()
-                        ) && (
-                          <div className="border-t p-2">
-                            <Button
-                              size="sm"
-                              className="w-full justify-start"
-                              variant="secondary"
-                              onMouseDown={() => {
-                                setName(activityQuery.trim());
-                                setActivityOpen(false);
-                              }}
-                            >
-                              Use “{activityQuery.trim()}”
-                            </Button>
-                          </div>
-                        )}
-                    </div>
+                            Use “{activityQuery.trim()}”
+                          </DropdownMenuItem>
+                        </>
+                      )}
                   </div>
-                )}
-              </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </label>
           <div className="space-y-2">
@@ -497,11 +636,143 @@ export function ActivityMappingModal({
               <span className="text-muted-foreground">Privileged only</span>
               <Switch
                 checked={privOnly}
-                onCheckedChange={(v) => setPrivOnly(Boolean(v))}
+                onCheckedChange={(v: boolean) => setPrivOnly(Boolean(v))}
                 aria-label="Filter list to privileged actions only"
                 disabled={loading}
               />
             </div>
+            {/* Namespace filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="border rounded px-2 py-1 text-xs bg-background min-w-[10rem] text-left flex items-center justify-between"
+                  aria-haspopup="listbox"
+                >
+                  <span className="truncate">
+                    {selectedNamespaces.size > 0
+                      ? `${selectedNamespaces.size} namespace${
+                          selectedNamespaces.size > 1 ? "s" : ""
+                        }`
+                      : "All namespaces"}
+                  </span>
+                  <span className="ml-2 text-muted-foreground">▾</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="z-[90] w-[26rem]">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Namespaces
+                </DropdownMenuLabel>
+                <div className="max-h-64 overflow-auto p-1">
+                  {namespaceOptions.length === 0 && (
+                    <div className="text-[11px] text-muted-foreground px-2 py-1">
+                      No namespaces
+                    </div>
+                  )}
+                  {namespaceOptions.map((ns) => {
+                    const checked = selectedNamespaces.has(ns);
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={ns}
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          const val = Boolean(v);
+                          setSelectedNamespaces((prev) => {
+                            const next = new Set(prev);
+                            if (val) next.add(ns);
+                            else next.delete(ns);
+                            return next;
+                          });
+                        }}
+                        onSelect={(e) => e.preventDefault()}
+                        className="text-xs"
+                      >
+                        <span className="truncate font-mono">{ns}</span>
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+                </div>
+                <DropdownMenuSeparator />
+                <div className="p-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedNamespaces(new Set())}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {/* Resource group filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="border rounded px-2 py-1 text-xs bg-background min-w-[10rem] text-left flex items-center justify-between disabled:opacity-50"
+                  aria-haspopup="listbox"
+                  disabled={resourceGroupOptions.length === 0}
+                  title={
+                    selectedNamespaces.size > 0
+                      ? "Filtered by selected namespaces"
+                      : "All namespaces"
+                  }
+                >
+                  <span className="truncate">
+                    {selectedResourceGroups.size > 0
+                      ? `${selectedResourceGroups.size} group${
+                          selectedResourceGroups.size > 1 ? "s" : ""
+                        }`
+                      : "All resource groups"}
+                  </span>
+                  <span className="ml-2 text-muted-foreground">▾</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="z-[90] w-64">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Resource groups
+                </DropdownMenuLabel>
+                <div className="max-h-64 overflow-auto p-1">
+                  {resourceGroupOptions.length === 0 && (
+                    <div className="text-[11px] text-muted-foreground px-2 py-1">
+                      No resource groups
+                    </div>
+                  )}
+                  {resourceGroupOptions.map((rg) => {
+                    const checked = selectedResourceGroups.has(rg);
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={rg}
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          const val = Boolean(v);
+                          setSelectedResourceGroups((prev) => {
+                            const next = new Set(prev);
+                            if (val) next.add(rg);
+                            else next.delete(rg);
+                            return next;
+                          });
+                        }}
+                        onSelect={(e) => e.preventDefault()}
+                        className="text-xs"
+                      >
+                        <span className="truncate font-mono">{rg}</span>
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+                </div>
+                <DropdownMenuSeparator />
+                <div className="p-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedResourceGroups(new Set())}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <input
               className="border rounded px-2 py-1 text-xs bg-background flex-1"
               placeholder="Filter actions"
