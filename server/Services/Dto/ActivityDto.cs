@@ -2,9 +2,9 @@ using EntraRoleReaper.Api.Data.Models;
 
 namespace EntraRoleReaper.Api.Services.Dto;
 
-public record ActivityDto(Guid Id, string ActivityName, string? Category = null, string? Service = null, ICollection<ActivityPropertyDto>? Properties = null)
+public record ActivityDto(Guid Id, string ActivityName, string? Category = null, string? Service = null, ICollection<TargetResourceDto>? TargetResources = null)
 {
-    
+
     public static ActivityDto FromActivity(Activity activity, bool includeProperties = false)
     {
         var dto = new ActivityDto(
@@ -16,9 +16,9 @@ public record ActivityDto(Guid Id, string ActivityName, string? Category = null,
 
         if (includeProperties)
         {
-            return dto with 
+            return dto with
             {
-                Properties = activity.Properties.Select(ActivityPropertyDto.FromActivityProperty).ToList()
+                TargetResources = activity.TargetResources?.Select(TargetResourceDto.FromTargetResource).ToList()
             };
         }
         return dto;

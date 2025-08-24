@@ -13,6 +13,6 @@ public class Activity : Entity
     public string? Service { get; set; }
     public bool IsExcluded { get; set; }
 
-    public virtual ICollection<ActivityProperty> Properties { get; init; } = [];
+    public virtual ICollection<TargetResource> TargetResources { get; init; } = [];
     public virtual ICollection<ResourceAction> MappedResourceActions { get; init; } = [];
 }

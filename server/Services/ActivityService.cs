@@ -30,8 +30,8 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
             Name = activity.Name,
             Category = activity.AuditCategory ?? string.Empty,
             Service = activity.Service ?? string.Empty,
-            Properties = (activity.Properties ?? []).ToDictionary(p => p.Name,
-                    p => (p.MappedResourceActions ?? []).Select(a => a.Action)),
+            TargetResources = (activity.TargetResources ?? []).ToDictionary(p => p.ResourceType,
+                    p => (p.Properties ?? []).Select(a => a.DisplayName)),
             MappedResourceActions = activity.MappedResourceActions.Select(ra => ra.Action)
         });
 
@@ -87,17 +87,6 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
             ImportedActivities = importedCount,
             ErrorMessage = null
         };
-    }
-
-    public async Task AddPropertyMapToActivityAsync(string activityName, string propertyName,
-        IEnumerable<Guid> resourceActionIds)
-    {
-        await activityRepository.AddPropertyMapToActivityAsync(activityName, propertyName, resourceActionIds);
-    }
-
-    public async Task DeletePropertyMapAsync(string activityName, string propertyName)
-    {
-        await activityRepository.DeletePropertyMapAsync(activityName, propertyName);
     }
 
     public async Task SetExclusionAsync(string activityName, bool isExcluded)
