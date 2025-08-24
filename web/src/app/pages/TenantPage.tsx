@@ -114,12 +114,6 @@ export function TenantPage() {
                 <div className="text-muted-foreground">Primary domain</div>
                 <div>{tenant.domain || "-"}</div>
               </div>
-              <div>
-                <div className="text-muted-foreground">Custom roles</div>
-                <div className="tabular-nums">
-                  {tenant.customRoleCount ?? 0}
-                </div>
-              </div>
             </div>
           )}
         </CardContent>
