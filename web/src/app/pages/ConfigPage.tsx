@@ -4,8 +4,6 @@ import { Button } from "../../components/ui/button";
 import { toast } from "sonner";
 import { CacheTab } from "./config/CacheTab";
 import { ExclusionsTab } from "./config/ExclusionsTab";
-import { ResourceActionsTab } from "./config/ResourceActionsTab";
-import { FutureTab } from "./config/FutureTab";
 
 // Simple tab primitives (could be replaced with a UI lib tabs in future)
 interface TabConfig {
@@ -23,59 +21,10 @@ interface ConfigPageProps {
 }
 
 export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
-  const navigate = useNavigate();
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("cache");
-  const [actionsPage, setActionsPage] = useState(1);
-  const [actionsTotalPages, setActionsTotalPages] = useState(1);
-  const [actionsItems, setActionsItems] = useState<any[]>([]);
-  const [actionsLoading, setActionsLoading] = useState(false);
-  // actionsSearchInput is the immediate text the user is typing; actionsSearch is the debounced committed query
-  const [actionsSearchInput, setActionsSearchInput] = useState("");
-  const [actionsSearch, setActionsSearch] = useState("");
-  const [actionsSort, setActionsSort] = useState<
-    "action" | "roles" | "privileged"
-  >("action");
-  const [actionsDir, setActionsDir] = useState<"asc" | "desc">("asc");
-  const [actionsPrivFilter, setActionsPrivFilter] = useState<
-    "all" | "priv" | "nonpriv"
-  >("all");
-  const pageSize = 25;
-
-  // Exclusions tab state moved into ExclusionsTab
-
-  // Mappings moved to dedicated page
-
-  const deletePropertyMap = useCallback(
-    async (activityName: string, propertyName: string) => {
-      if (!accessToken) return;
-      try {
-        const res = await fetch(new URL("/api/activity/property", apiBase), {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ activityName, propertyName }),
-        });
-        if (!res.ok) throw new Error();
-        toast.success("Property mapping deleted", {
-          description: `${activityName}::${propertyName}`,
-        });
-        window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
-      } catch {
-        toast.error("Failed to delete property mapping");
-      }
-    },
-    [accessToken, apiBase]
-  );
-
-  // Mappings list moved to MappingsPage
-
-  // open-op-mapping listeners moved to Roles/Mappings pages
-  // Exclusions list is now owned by ExclusionsTab
 
   const manualRefresh = async () => {
     if (!accessToken) return;
@@ -91,88 +40,6 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
       toast.error("Failed to trigger cache refresh");
     }
   };
-
-  const loadActions = useCallback(
-    async (page: number, search: string) => {
-      if (!accessToken) {
-        setActionsItems([]);
-        setActionsTotalPages(1);
-        return;
-      }
-      try {
-        setActionsLoading(true);
-        const term = search.trim();
-        // Use wildcard to request a default list on empty search
-        const q = term.length === 0 ? "*" : term;
-        const url = new URL("/api/resourceaction/search", apiBase);
-        url.searchParams.set("q", q);
-        url.searchParams.set("limit", "100");
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        if (!res.ok) throw new Error();
-        const arr = (await res.json()) as Array<{
-          id: string;
-          action: string;
-          isPrivileged: boolean;
-        }>;
-        let items = arr;
-        if (actionsPrivFilter === "priv")
-          items = items.filter((a) => a.isPrivileged);
-        if (actionsPrivFilter === "nonpriv")
-          items = items.filter((a) => !a.isPrivileged);
-        // Sort client-side
-        items.sort((a, b) => {
-          if (actionsSort === "privileged") {
-            const av = a.isPrivileged ? 1 : 0;
-            const bv = b.isPrivileged ? 1 : 0;
-            return actionsDir === "asc" ? av - bv : bv - av;
-          }
-          // action or roles (roles not available; fall back to action)
-          return actionsDir === "asc"
-            ? a.action.localeCompare(b.action)
-            : b.action.localeCompare(a.action);
-        });
-        setActionsItems(items);
-        setActionsTotalPages(1);
-      } catch {
-        setActionsItems([]);
-        setActionsTotalPages(1);
-      } finally {
-        setActionsLoading(false);
-      }
-    },
-    [accessToken, apiBase, actionsSort, actionsDir, actionsPrivFilter]
-  );
-
-  // Helper to parse the action into Namespace and Resource Type columns
-  const parseActionParts = (
-    action: string
-  ): { namespace: string; resourceType: string } => {
-    const parts = String(action || "").split("/");
-    return {
-      namespace: parts[0] || "",
-      resourceType: parts[1] || "",
-    };
-  };
-
-  useEffect(() => {
-    if (activeTab === "actions") {
-      loadActions(1, actionsSearch);
-    }
-  }, [activeTab, actionsSearch, loadActions]);
-
-  // Roles moved to dedicated page
-
-  // Debounce the search input so we don't fetch for every keystroke and avoid focus loss due to rapid loading state flips
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      setActionsSearch((prev) =>
-        prev !== actionsSearchInput ? actionsSearchInput : prev
-      );
-    }, 400); // 400ms debounce
-    return () => clearTimeout(handle);
-  }, [actionsSearchInput]);
 
   return (
     <>
@@ -202,8 +69,6 @@ export function ConfigPage({ accessToken, apiBase }: ConfigPageProps) {
             onRefresh={manualRefresh}
           />
         )}
-
-        {/* Mappings tab removed; see MappingsPage */}
 
         {activeTab === "exclusions" && (
           <ExclusionsTab accessToken={accessToken} apiBase={apiBase} />
