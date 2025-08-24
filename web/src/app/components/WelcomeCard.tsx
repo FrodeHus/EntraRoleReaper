@@ -1,4 +1,5 @@
 import { Button } from "../../components/ui/button";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import {
   Card,
   CardContent,
@@ -53,12 +54,22 @@ export function WelcomeCard({ onSignIn }: WelcomeCardProps) {
             </Button>
           </div>
         </CardContent>
-        <CardFooter>
-          <div className="text-xs text-muted-foreground">
-            <p>
-              Source code available here:
-              <a href="https://github.com/FrodeHus/EntraRoleReaper">Github</a>
-            </p>
+        <CardFooter className="justify-center">
+          <div className="w-full flex justify-center">
+            <div className="text-xs text-muted-foreground rounded-md border bg-muted/30 px-3 py-2">
+              <p className="flex items-center gap-2 justify-center">
+                <span>Source code available here:</span>
+                <a
+                  href="https://github.com/FrodeHus/EntraRoleReaper"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-primary font-medium hover:underline"
+                >
+                  <GitHubLogoIcon className="h-4 w-4" aria-hidden="true" />
+                  <span>GitHub</span>
+                </a>
+              </p>
+            </div>
           </div>
         </CardFooter>
       </Card>
