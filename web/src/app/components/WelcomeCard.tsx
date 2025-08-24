@@ -33,8 +33,15 @@ export function WelcomeCard({ onSignIn }: WelcomeCardProps) {
           </div>
           <CardTitle className="text-2xl">Welcome</CardTitle>
           <CardDescription>
-            Sign in to start reviewing access for users and groups in your
-            tenant.
+            <p>
+              Sign in to start reviewing access for users and groups in your
+              tenant.
+            </p>
+            <p>
+              Using this application requires that you log in with an Entra ID
+              account that has been granted the necessary permissions to read
+              directory data such as Security Reader.
+            </p>
           </CardDescription>
         </CardHeader>
         <CardContent>
