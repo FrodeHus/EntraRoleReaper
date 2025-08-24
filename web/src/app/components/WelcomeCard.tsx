@@ -3,6 +3,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "../../components/ui/card";
@@ -52,6 +53,14 @@ export function WelcomeCard({ onSignIn }: WelcomeCardProps) {
             </Button>
           </div>
         </CardContent>
+        <CardFooter>
+          <div className="text-xs text-muted-foreground">
+            <p>
+              Source code available here:
+              <a href="https://github.com/FrodeHus/EntraRoleReaper">Github</a>
+            </p>
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );
