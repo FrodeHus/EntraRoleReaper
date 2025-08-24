@@ -21,7 +21,7 @@ export function JobQueue({
   accessToken,
   onOpenResult,
   collapsible = true,
-  defaultCollapsed = false,
+  defaultCollapsed = true,
   title = "Job queue",
   onInProgressChange,
 }: {
