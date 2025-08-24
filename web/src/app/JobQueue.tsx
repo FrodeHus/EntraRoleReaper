@@ -24,6 +24,7 @@ export function JobQueue({
   defaultCollapsed = true,
   title = "Job queue",
   onInProgressChange,
+  onCountChange,
 }: {
   accessToken: string | null;
   onOpenResult?: (id: string) => void;
@@ -31,6 +32,7 @@ export function JobQueue({
   defaultCollapsed?: boolean;
   title?: string;
   onInProgressChange?: (inProgress: boolean) => void;
+  onCountChange?: (count: number) => void;
 }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,6 +73,11 @@ export function JobQueue({
     );
     onInProgressChange?.(anyInProgress);
   }, [jobs, onInProgressChange]);
+
+  // Notify parent about total count so it can decide to hide/show the widget
+  useEffect(() => {
+    onCountChange?.(jobs.length);
+  }, [jobs, onCountChange]);
 
   const canCancel = (j: Job) => j.status === "Queued";
 
