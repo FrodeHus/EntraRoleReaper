@@ -3,13 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Data.Repositories;
 
-public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
+public class ActivityRepository(ReaperDbContext dbContext) : Repository<Activity>(dbContext), IActivityRepository
 {
     public async Task<Activity> AddAsync(Activity activity, bool allowUpdate = true)
     {
         ArgumentNullException.ThrowIfNull(activity);
-        var existing = await dbContext
-            .Activities.Include(a => a.TargetResources)
+        var existing = await dbSet.Include(a => a.TargetResources)
             .Include(a => a.MappedResourceActions)
             .FirstOrDefaultAsync(a => activity.Name == a.Name);
         if (existing != null)
@@ -31,39 +30,30 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
             return existing;
         }
 
-        dbContext.Activities.Add(activity);
-
-        await dbContext.SaveChangesAsync();
+        Add(activity);
         return activity;
     }
 
     public async Task<Activity?> GetByNameAsync(string name)
     {
-        return await dbContext
-            .Activities.Include(x => x.TargetResources)
+        return await dbSet
+            .Include(x => x.TargetResources)
             .FirstOrDefaultAsync(x => x.Name == name);
     }
 
     public async Task<IEnumerable<Activity>> GetAllActivitiesAsync()
     {
-        return await dbContext
-            .Activities.Include(x => x.TargetResources)
-            .Include(x => x.MappedResourceActions)
-            .OrderBy(x => x.Name)
-            .ToListAsync();
+        return await Get(null, x => x.OrderBy(a => a.Name), "TargetResources,MappedResourceActions");
     }
 
-    public Task ClearAsync()
+    public async Task ClearAsync()
     {
-        dbContext.Activities.RemoveRange(dbContext.Activities);
-        return dbContext.SaveChangesAsync();
+        dbContext.Activities.RemoveRange(await GetAllActivitiesAsync());
     }
 
     public async Task<Activity?> GetByIdAsync(Guid id)
     {
-        return await dbContext
-            .Activities.Include(x => x.TargetResources)
-            .FirstOrDefaultAsync(x => x.Id == id);
+        return await GetById(id);
     }
 
 
@@ -75,13 +65,12 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
         if (activity is null)
             return;
         activity.IsExcluded = isExcluded;
-        dbContext.Activities.Update(activity);
-        await dbContext.SaveChangesAsync();
+        Update(activity);
     }
 
     public async Task<IEnumerable<Activity>> GetExcludedActivitiesAsync()
     {
-        return await dbContext.Activities.Where(x => x.IsExcluded).ToListAsync();
+        return await dbSet.Where(x => x.IsExcluded).ToListAsync();
     }
 
     public async Task<IEnumerable<Activity>> GetActivitiesByNamesAsync(
@@ -94,18 +83,6 @@ public class ActivityRepository(ReaperDbContext dbContext) : IActivityRepository
             return [];
         }
 
-        return await dbContext
-            .Activities.Where(x =>
-                activityNames.Contains(x.Name) || (includeExcluded && x.IsExcluded)
-            )
-            .Include(x => x.TargetResources)
-            .Include(x => x.MappedResourceActions)
-            .ToListAsync();
-    }
-
-    public Task UpdateAsync(Activity existing)
-    {
-        dbContext.Activities.Update(existing);
-        return dbContext.SaveChangesAsync();
+        return await Get(x => activityNames.Contains(x.Name) || (includeExcluded && x.IsExcluded), null, "TargetResources,MappedResourceActions");
     }
 }

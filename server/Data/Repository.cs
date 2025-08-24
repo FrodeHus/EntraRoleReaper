@@ -6,7 +6,7 @@ namespace EntraRoleReaper.Api.Data;
 
 public class Repository<TEntity>(ReaperDbContext dbContext) where TEntity : Entity
 {
-    internal DbSet<TEntity> dbSet => dbContext.Set<TEntity>();
+    protected DbSet<TEntity> dbSet => dbContext.Set<TEntity>();
     public void Add(TEntity entity)
     {
         dbSet.Add(entity);
@@ -61,5 +61,8 @@ public class Repository<TEntity>(ReaperDbContext dbContext) where TEntity : Enti
         dbContext.Entry(entity).State = EntityState.Modified;
     }
 
-
+    public Task SaveAsync()
+    {
+        return dbContext.SaveChangesAsync();
+    }
 }

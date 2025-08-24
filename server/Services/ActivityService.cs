@@ -1,3 +1,4 @@
+using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
 using JetBrains.Annotations;
@@ -8,8 +9,6 @@ public interface IActivityService
 {
     Task<IEnumerable<ActivityExport>> ExportActivitiesAsync();
     Task<ImportResult> ImportAsync(IEnumerable<ActivityExport> importedData);
-    Task AddPropertyMapToActivityAsync(string activityName, string propertyName, IEnumerable<Guid> resourceActionIds);
-    Task DeletePropertyMapAsync(string activityName, string propertyName);
     Task SetExclusionAsync(string activityName, bool isExcluded);
     Task<IEnumerable<Activity>> GetExcludedActivitiesAsync();
     Task<IEnumerable<Activity>> GetActivitesAsync(List<string>? activityNames = null);
@@ -18,12 +17,17 @@ public interface IActivityService
 }
 
 [UsedImplicitly]
-public class ActivityService(IActivityRepository activityRepository, IResourceActionRepository resourceActionRepository)
+public class ActivityService(ReaperDbContext dbContext)
     : IActivityService
 {
+    private readonly ActivityRepository activityRepository = new(dbContext);
+    private readonly Repository<ResourceAction> resourceActionRepository = new(dbContext);
+    private readonly Repository<TargetResource> targetResourceRepository = new(dbContext);
+    private readonly Repository<TargetResourceProperty> targetResourcePropertyRepository = new(dbContext);
+
     public async Task<IEnumerable<ActivityExport>> ExportActivitiesAsync()
     {
-        var activities = await activityRepository.GetAllActivitiesAsync();
+        var activities = await activityRepository.Get(null, a => a.OrderBy(x => x.Name), "MappedResourceActions";
         var exportData = activities.Select(activity => new
             ActivityExport
         {

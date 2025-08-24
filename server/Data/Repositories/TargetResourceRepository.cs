@@ -2,10 +2,8 @@
 
 namespace EntraRoleReaper.Api.Data.Repositories;
 
-public class TargetResourceRepository(ReaperDbContext context)
+public class TargetResourceRepository(ReaperDbContext context) : Repository<TargetResource>(context)
 {
-    public Repository<TargetResource> TargetResources = new(context);
-    public Repository<TargetResourceProperty> TargetResourceProperties = new(context);
 
     public Task Save() => context.SaveChangesAsync();
 }
