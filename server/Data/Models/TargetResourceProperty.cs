@@ -8,4 +8,5 @@ public class TargetResourceProperty : Entity
     public string? Description { get; set; }
     public Guid TargetResourceId { get; set; }
     public TargetResource? TargetResource { get; set; }
+    public virtual ICollection<ResourceAction> MappedResourceActions { get; set; } = [];
 }
