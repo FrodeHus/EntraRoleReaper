@@ -99,7 +99,6 @@ export function ReviewPanel({
   const [roleDetails, setRoleDetails] = useState<RoleDetails>(null);
   const [loadingRole, setLoadingRole] = useState<boolean>(false);
   const [queueInProgress, setQueueInProgress] = useState<boolean>(false);
-  const [jobCount, setJobCount] = useState<number>(0);
   // Role details cache (id -> details); name-only lookups deprecated now that id always provided
   const roleDetailsCache = useRef<Map<string, RoleDetails>>(new Map());
   // Role changes sheet removed (added/removed shown inline)
@@ -491,47 +490,44 @@ export function ReviewPanel({
         </Button>
       </div>
 
-      {/* Small job queue widget (hidden when empty) */}
-      {jobCount > 0 && (
-        <div className="relative">
-          {/* Inline progress bar when any job is queued or running */}
-          {queueInProgress && (
-            <div className="absolute left-0 right-0 -top-2">
-              <Progress value={undefined as any} />
-            </div>
-          )}
-          <JobQueue
-            accessToken={accessToken}
-            onOpenResult={async (id) => {
-              if (!accessToken) return;
-              const url = new URL(
-                `/api/review/${id}/result`,
-                import.meta.env.VITE_API_URL
-              );
-              const res = await fetch(url, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              });
-              if (!res.ok) return;
-              const raw: any = await res.json();
-              const results: any[] = (raw?.results ??
-                raw?.Results ??
-                []) as any[];
-              const normalized = results.map((r: any) => {
-                const activeRoles = Array.isArray(r.activeRoles)
-                  ? r.activeRoles
-                  : r.user?.currentActiveRoles ?? [];
-                const eligiblePimRoles = Array.isArray(r.eligiblePimRoles)
-                  ? r.eligiblePimRoles
-                  : r.user?.currentEligiblePimRoles ?? [];
-                return { ...r, activeRoles, eligiblePimRoles };
-              }) as unknown as UserReview[];
-              setReport(normalized);
-            }}
-            onInProgressChange={setQueueInProgress}
-            onCountChange={setJobCount}
-          />
-        </div>
-      )}
+      {/* Small job queue widget (always visible) */}
+      <div className="relative">
+        {/* Inline progress bar when any job is queued or running */}
+        {queueInProgress && (
+          <div className="absolute left-0 right-0 -top-2">
+            <Progress value={undefined as any} />
+          </div>
+        )}
+        <JobQueue
+          accessToken={accessToken}
+          onOpenResult={async (id) => {
+            if (!accessToken) return;
+            const url = new URL(
+              `/api/review/${id}/result`,
+              import.meta.env.VITE_API_URL
+            );
+            const res = await fetch(url, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            if (!res.ok) return;
+            const raw: any = await res.json();
+            const results: any[] = (raw?.results ??
+              raw?.Results ??
+              []) as any[];
+            const normalized = results.map((r: any) => {
+              const activeRoles = Array.isArray(r.activeRoles)
+                ? r.activeRoles
+                : r.user?.currentActiveRoles ?? [];
+              const eligiblePimRoles = Array.isArray(r.eligiblePimRoles)
+                ? r.eligiblePimRoles
+                : r.user?.currentEligiblePimRoles ?? [];
+              return { ...r, activeRoles, eligiblePimRoles };
+            }) as unknown as UserReview[];
+            setReport(normalized);
+          }}
+          onInProgressChange={setQueueInProgress}
+        />
+      </div>
 
       {report && (
         <div className="space-y-3">
