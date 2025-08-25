@@ -1,4 +1,3 @@
-using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Dto;
@@ -14,7 +13,6 @@ public class ReviewService(
     ICacheService cache
 ) : IReviewService
 {
-
     public async Task<ReviewResponse> ReviewAsync(ReviewRequest request)
     {
         var userIds = await graphService.ExpandUsersOrGroupsAsync(request.UsersOrGroups);
@@ -31,17 +29,20 @@ public class ReviewService(
             var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
             await SaveActivitiesAsync(auditActivities);
 
-            var mappedActivities = await activityService.GetActivitiesAsync(auditActivities.Select(a => a.ActivityName).ToList());
+            var mappedActivities =
+                await activityService.GetActivitiesAsync(auditActivities.Select(a => a.ActivityName).ToList());
             var allSuggestedRoles = new List<RoleDefinitionDto>();
             foreach (var activity in mappedActivities)
             {
                 if (activity.IsExcluded)
                 {
-                    auditActivities.RemoveAll(a => a.ActivityName.Equals(activity.Name, StringComparison.InvariantCultureIgnoreCase));
+                    auditActivities.RemoveAll(a =>
+                        a.ActivityName.Equals(activity.Name, StringComparison.InvariantCultureIgnoreCase));
                     continue;
                 }
 
-                var auditActivity = auditActivities.FirstOrDefault(a => a.ActivityName.Equals(activity.Name, StringComparison.InvariantCultureIgnoreCase));
+                var auditActivity = auditActivities.FirstOrDefault(a =>
+                    a.ActivityName.Equals(activity.Name, StringComparison.InvariantCultureIgnoreCase));
                 var targets = auditActivity?.TargetResources.ConvertAll(t => new ReviewTargetResource
                 {
                     Id = t.Id,
@@ -68,18 +69,22 @@ public class ReviewService(
                 a.TargetResources.ConvertAll(t => new OperationTarget(
                     t.Id,
                     t.DisplayName,
-                    [.. (t.ModifiedProperties ?? []).Select(mp => new OperationModifiedProperty(
-                        mp.DisplayName,
-                        mp.OldValue,
-                        mp.NewValue
-                    ))]
+                    [
+                        .. (t.ModifiedProperties ?? []).Select(mp => new OperationModifiedProperty(
+                            mp.DisplayName,
+                            mp.OldValue,
+                            mp.NewValue
+                        ))
+                    ]
                 )),
                 []
             ));
 
             var user = new SimpleUser(uid, userCtx.DisplayName ?? uid, null, null);
-            var userCurrentActiveRoles = userCtx.ActiveRoleIds.Select(async id => await cache.GetRoleByIdAsync(Guid.Parse(id)));
-            var userCurrentEligiblePimRoles = userCtx.EligibleRoleIds.Select(async id => await cache.GetRoleByIdAsync(Guid.Parse(id)));
+            var userCurrentActiveRoles =
+                userCtx.ActiveRoleIds.Select(async id => await cache.GetRoleByIdAsync(Guid.Parse(id)));
+            var userCurrentEligiblePimRoles =
+                userCtx.EligibleRoleIds.Select(async id => await cache.GetRoleByIdAsync(Guid.Parse(id)));
             var roles = await Task.WhenAll(userCurrentActiveRoles);
             var pimRoles = await Task.WhenAll(userCurrentEligiblePimRoles);
             user = user with
@@ -87,7 +92,11 @@ public class ReviewService(
                 CurrentActiveRoles = [.. roles.Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))],
                 CurrentEligiblePimRoles = [.. pimRoles.Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))]
             };
-            consolidatedRoles = [.. consolidatedRoles.Distinct(new RoleComparer()).Where(r => roles.All(role => role?.Id != r.Id) || pimRoles.Any(pimRole => pimRole?.Id == r.Id))];
+            consolidatedRoles =
+            [
+                .. consolidatedRoles.Distinct(new RoleComparer()).Where(r =>
+                    roles.All(role => role?.Id != r.Id) || pimRoles.Any(pimRole => pimRole?.Id == r.Id))
+            ];
             var removedRoles = roles.Where(r => r is not null && !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
             removedRoles = pimRoles.Where(r => r is not null && !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
 
@@ -102,6 +111,7 @@ public class ReviewService(
             )).ToList());
             results.Add(review);
         }
+
         return new ReviewResponse(results);
     }
 
@@ -109,18 +119,24 @@ public class ReviewService(
     {
         foreach (var auditActivity in activities)
         {
-            await activityService.AddAsync(new Activity
-            {
-                Name = auditActivity.ActivityName,
-                TargetResources = auditActivity.TargetResources.Select(x => new TargetResource
-                {
-                    ResourceType = x.Type,
-                    Properties = (x.ModifiedProperties ?? []).Where(mp => !string.IsNullOrEmpty(mp.DisplayName)).Select(mp => new TargetResourceProperty
-                    {
-                        PropertyName = mp.DisplayName!,
-                    }).ToList()
-                }).ToList()
-            });
+            await activityService.AddAsync(new ActivityDto
+            (
+                Guid.NewGuid(),
+                auditActivity.ActivityName,
+                "Imported",
+                "Imported",
+                auditActivity.TargetResources.Select(x => new TargetResourceDto
+                (
+                    Guid.NewGuid(),
+                    x.Type,
+                    (x.ModifiedProperties ?? []).Where(mp => !string.IsNullOrEmpty(mp.DisplayName)).Select(mp =>
+                        new TargetResourcePropertyDto(
+                            Guid.NewGuid(),
+                            mp.DisplayName!,
+                            false,
+                            null)).ToList()
+                )).ToList()
+            ));
         }
     }
 }

@@ -3,6 +3,7 @@ using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Services.Dto;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Services;
 
@@ -13,17 +14,16 @@ public interface IActivityService
     Task SetExclusionAsync(string activityName, bool isExcluded);
     Task<IEnumerable<Activity>> GetExcludedActivitiesAsync();
     Task<IEnumerable<Activity>> GetActivitiesAsync(List<string>? activityNames = null);
-    Task<Activity?> AddAsync(Activity activity);
+    Task<Activity?> AddAsync(ActivityDto activity);
     Task<Activity?> GetActivityById(Guid activityId);
     Task<TargetResource?> GetTargetResource(Guid id);
     Task AddTargetResourceAsync(TargetResourceDto targetResource);
     Task<TargetResource?> GetTargetResourceByType(string resourceType);
-    Task SaveChangesAsync();
 }
 
 [UsedImplicitly]
-public class ActivityService(ReaperDbContext dbContext)
-    : IActivityService
+public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService> logger)
+    : UnitOfWorkService(dbContext, logger), IActivityService
 {
     private readonly ActivityRepository _activityRepository = new(dbContext);
     private readonly ResourceActionRepository _resourceActionRepository = new(dbContext);
@@ -143,23 +143,45 @@ public class ActivityService(ReaperDbContext dbContext)
         return _activityRepository.GetActivitiesByNamesAsync(activityNames);
     }
 
-    public async Task<Activity?> AddAsync(Activity activity)
+    public async Task<Activity?> AddAsync(ActivityDto activity)
     {
-        var existing = await _activityRepository.GetByNameAsync(activity.Name);
-        if (existing == null)
+        var existing = await _activityRepository.GetByNameAsync(activity.ActivityName);
+        var targetResources = new List<TargetResource>();
+        foreach(var targetResourceDto in activity.TargetResources ?? [])
         {
-            existing = await _activityRepository.AddAsync(activity);
-            await SaveChangesAsync();
-        }
-        foreach(var targetResource in activity.TargetResources)
-        {
-            var existingTarget = await GetTargetResourceByType(targetResource.ResourceType);
+            var existingTarget = await GetTargetResourceByType(targetResourceDto.ResourceType);
             if (existingTarget == null)
             {
-                _targetResourceRepository.Add(targetResource);
+                existingTarget = new TargetResource
+                {
+                    ResourceType = targetResourceDto.ResourceType,
+                    Properties = targetResourceDto.Properties.Select(p => new TargetResourceProperty
+                    {
+                        PropertyName = p.PropertyName,
+                        Description = p.Description
+                    }).ToList()
+                };
+                _targetResourceRepository.Add(existingTarget);
+                targetResources.Add(existingTarget);
             }
-            if (existing.TargetResources.Any(tr => tr.ResourceType == targetResource.ResourceType)) continue;
-            existing.TargetResources.Add(existingTarget ?? targetResource);
+        }
+
+        if (existing == null)
+        {
+            existing = new Activity
+            {
+                Name = activity.ActivityName,
+                AuditCategory = activity.Category,
+                Service = activity.Service,
+                IsExcluded = false,
+                TargetResources = targetResources
+            };
+            _activityRepository.Add(existing);
+        }
+        else
+        {
+            targetResources.Where(tr => existing.TargetResources.All(t => t.ResourceType != tr.ResourceType)).ToList()
+                .ForEach(existing.TargetResources.Add);
         }
         await SaveChangesAsync();
         return existing;
@@ -174,10 +196,7 @@ public class ActivityService(ReaperDbContext dbContext)
         return _activityRepository.GetByIdAsync(activityId);
     }
     
-    public async Task SaveChangesAsync()
-    {
-        await dbContext.SaveChangesAsync();
-    }
+        
 }
 
 public class ActivityExport

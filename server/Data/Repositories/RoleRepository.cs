@@ -3,7 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Data.Repositories;
 
-public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository resourceActionRepository, ILogger<RoleRepository> logger) : IRoleRepository
+public class RoleRepository(
+    ReaperDbContext dbContext,
+    IResourceActionRepository resourceActionRepository,
+    ILogger<RoleRepository> logger) : IRoleRepository
 {
     public Task<int> GetRoleCountAsync(bool customRolesOnly = false)
     {
@@ -40,33 +43,25 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
             return;
         }
 
-        try
+        foreach (var role in roleDefinitions)
         {
-            foreach (var role in roleDefinitions)
+            var existing = await dbContext.FindAsync<RoleDefinition>(role.Id);
+            if (existing is not null)
             {
-                var existing = await dbContext.FindAsync<RoleDefinition>(role.Id);
-                if (existing is not null)
-                {
-                    continue; // Skip existing roles
-                }
-                dbContext.RoleDefinitions.Add(role);
+                continue; // Skip existing roles
             }
 
-            await dbContext.SaveChangesAsync();
-        }
-        catch (DbUpdateException ex)
-        {
-            // Handle specific database update exceptions if needed
-            logger.LogError(ex, "Failed to trying to add roles.");
-            throw new Exception("An error occurred while adding roles.", ex);
+            dbContext.RoleDefinitions.Add(role);
         }
     }
+
     public async Task AddRoleAsync(RoleDefinition role)
     {
         if (role == null)
         {
             throw new ArgumentNullException(nameof(role));
         }
+
         try
         {
             foreach (var permissionSet in role.PermissionSets)
@@ -76,16 +71,19 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
                     .GetResourceActionsByNamesAsync(permissionSet.ResourceActions.Select(ra => ra.Action));
 
                 // Update the resource actions in the permission set with existing ones
-                permissionSet.ResourceActions.RemoveAll(a => existingActions.Any(existing => existing.Action.Equals(a.Action, StringComparison.InvariantCultureIgnoreCase)));
+                permissionSet.ResourceActions.RemoveAll(a => existingActions.Any(existing =>
+                    existing.Action.Equals(a.Action, StringComparison.InvariantCultureIgnoreCase)));
                 var newResourceActions = new List<ResourceAction>();
                 foreach (var action in permissionSet.ResourceActions)
                 {
                     // Ensure each resource action is added to the repository
                     newResourceActions.Add(await resourceActionRepository.AddAsync(action));
                 }
+
                 permissionSet.ResourceActions.AddRange(existingActions);
                 permissionSet.ResourceActions.AddRange(newResourceActions);
             }
+
             dbContext.RoleDefinitions.Add(role);
             await dbContext.SaveChangesAsync();
         }
@@ -107,7 +105,6 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
 
     public Task<RoleDefinition?> GetRoleByIdAsync(Guid roleId)
     {
-
         return dbContext
             .RoleDefinitions.Include(r => r.PermissionSets)
             .ThenInclude(ps => ps.ResourceActions)
@@ -138,13 +135,16 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
         return dbContext.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<RoleDefinition>> SearchRolesAsync(string searchTerm, bool privilegedOnly = false, int limit = 100)
+    public async Task<IEnumerable<RoleDefinition>> SearchRolesAsync(string searchTerm, bool privilegedOnly = false,
+        int limit = 100)
     {
         IQueryable<RoleDefinition> query = dbContext.RoleDefinitions;
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            var pattern = searchTerm.Contains('*') ? searchTerm.Replace('*', '%').ToLowerInvariant() : $"%{searchTerm}%";
+            var pattern = searchTerm.Contains('*')
+                ? searchTerm.Replace('*', '%').ToLowerInvariant()
+                : $"%{searchTerm}%";
             query = query.Where(x => EF.Functions.Like(x.DisplayName, pattern));
         }
 

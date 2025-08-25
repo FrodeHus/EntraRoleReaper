@@ -10,7 +10,6 @@ public class Repository<TEntity>(ReaperDbContext dbContext) where TEntity : Enti
     public void Add(TEntity entity)
     {
         dbSet.Add(entity);
-        dbContext.SaveChanges();
     }
 
     public virtual async Task<IEnumerable<TEntity>> Get(Expression<Func<TEntity, bool>>? filter = null, Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null, string includeProperties = "")
@@ -59,10 +58,5 @@ public class Repository<TEntity>(ReaperDbContext dbContext) where TEntity : Enti
     {
         dbSet.Attach(entity);
         dbContext.Entry(entity).State = EntityState.Modified;
-    }
-
-    public Task SaveAsync()
-    {
-        return dbContext.SaveChangesAsync();
     }
 }

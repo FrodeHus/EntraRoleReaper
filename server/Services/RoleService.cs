@@ -25,7 +25,7 @@ public class RoleService(
     IGraphService graphService,
     ReaperDbContext dbContext,
     ITenantService tenantService,
-    ILogger<RoleService> logger) : IRoleService
+    ILogger<RoleService> logger) : UnitOfWorkService(dbContext, logger), IRoleService
 {
     private readonly ResourceActionRepository _resourceActionRepository = new  (dbContext);
     public async Task InitializeAsync(bool forceRefresh = false)
@@ -55,7 +55,6 @@ public class RoleService(
                 IsPrivileged = kvp.Value
             }).ToList();
             var addedResourceActions =  _resourceActionRepository.AddRange(resourceActions);
-            await dbContext.SaveChangesAsync();
             var addedRoles = new List<RoleDefinition>();
             foreach (var role in roles)
             {
@@ -88,6 +87,7 @@ public class RoleService(
                 .Select(g => g.First())
                 .ToList();
             await roleRepository.AddRangeAsync(addedRoles);
+            await SaveChangesAsync();
         }
         catch (Exception ex)
         {

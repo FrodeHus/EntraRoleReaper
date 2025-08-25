@@ -25,8 +25,7 @@ public class ActivityRepository(ReaperDbContext dbContext) : Repository<Activity
                 )
                 .ToList();
             newMappedActions.ForEach(a => existing.MappedResourceActions.Add(a));
-            dbContext.Activities.Update(existing);
-            await dbContext.SaveChangesAsync();
+            Update(existing);
             return existing;
         }
 
