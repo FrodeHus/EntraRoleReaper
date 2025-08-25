@@ -71,9 +71,7 @@ public class ReviewService(
                     t.DisplayName,
                     [
                         .. (t.ModifiedProperties ?? []).Select(mp => new OperationModifiedProperty(
-                            mp.DisplayName,
-                            mp.OldValue,
-                            mp.NewValue
+                            mp.DisplayName
                         ))
                     ]
                 )),

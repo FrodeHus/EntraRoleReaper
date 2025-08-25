@@ -1,10 +1,10 @@
+using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using System.Text.Json;
-using EntraRoleReaper.Api.Data.Models;
 using ModifiedProperty = EntraRoleReaper.Api.Services.Models.ModifiedProperty;
 
 namespace EntraRoleReaper.Api.Services;
@@ -165,6 +165,12 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
                 var auditEntry = new AuditActivity { ActivityName = a.ActivityDisplayName };
                 if (a.TargetResources == null || !a.TargetResources.Any())
                     continue;
+                var updatedProperties = a
+                    .TargetResources
+                    .SelectMany(tr => tr.ModifiedProperties ?? [])
+                    .FirstOrDefault(t => t.DisplayName == "Included Updated Properties")?
+                    .NewValue?.Replace("\"", string.Empty).Replace(" ", string.Empty)
+                    .Split(',') ?? [];
 
                 foreach (var tr in a.TargetResources)
                 {
@@ -179,13 +185,11 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
                         DisplayName = display ?? "(no name)",
                     };
 
-                    if (tr.ModifiedProperties != null && tr.ModifiedProperties.Any())
+                    if (tr.ModifiedProperties != null && tr.ModifiedProperties.Count != 0)
                     {
                         target.ModifiedProperties = tr
-                            .ModifiedProperties.Select(mp => new ModifiedProperty(
-                                mp.DisplayName,
-                                mp.OldValue,
-                                mp.NewValue
+                            .ModifiedProperties.Where(p => updatedProperties.Contains(p.DisplayName))?.Select(mp => new ModifiedProperty(
+                                mp.DisplayName
                             ))
                             .ToList();
                     }
@@ -277,7 +281,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
         return (eligibleRoleIds, pimActiveRoleIds);
     }
 
-     public async Task<Dictionary<string, bool>> GetResourceActionMetadataAsync()
+    public async Task<Dictionary<string, bool>> GetResourceActionMetadataAsync()
     {
         var resourceActionsData = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         var nsBuilder = GraphClient.RoleManagement.Directory.ResourceNamespaces;
@@ -337,10 +341,10 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
         var page = await GraphClient.RoleManagement.Directory.RoleDefinitions.GetAsync();
         return page?.Value;
     }
-    
+
     public async Task<Tenant?> FetchTenantMetadataAsync(Guid tenantId, CancellationToken ct = default)
     {
-        
+
         try
         {
             var orgs = await GraphClient.Organization.GetAsync(q =>
@@ -367,7 +371,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
             return null;
         }
     }
-    
+
     private static string? TryGetPrimaryDomain(List<VerifiedDomain>? domains)
     {
         if (domains == null || domains.Count == 0) return null;

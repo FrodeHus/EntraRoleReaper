@@ -147,6 +147,7 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
     {
         var existing = await _activityRepository.GetByNameAsync(activity.ActivityName);
         var targetResources = new List<TargetResource>();
+
         foreach (var targetResourceDto in activity.TargetResources ?? [])
         {
             var existingTarget = await GetTargetResourceByType(targetResourceDto.ResourceType) ?? targetResources.Find(tr => tr.ResourceType == targetResourceDto.ResourceType);
