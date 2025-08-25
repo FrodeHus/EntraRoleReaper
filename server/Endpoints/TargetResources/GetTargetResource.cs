@@ -16,6 +16,8 @@ public class GetTargetResource : IEndpoint
 
     private static async Task<Ok<TargetResourceDto>> Handle(Guid id, [FromServices] IActivityService activityService)
     {
-
+        var targetResource = await activityService.GetTargetResource(id);
+        var dto = TargetResourceDto.FromTargetResource(targetResource);
+        return TypedResults.Ok(dto);
     }
 }

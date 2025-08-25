@@ -1,6 +1,7 @@
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Services.Dto;
 using JetBrains.Annotations;
 
 namespace EntraRoleReaper.Api.Services;
@@ -11,37 +12,43 @@ public interface IActivityService
     Task<ImportResult> ImportAsync(IEnumerable<ActivityExport> importedData);
     Task SetExclusionAsync(string activityName, bool isExcluded);
     Task<IEnumerable<Activity>> GetExcludedActivitiesAsync();
-    Task<IEnumerable<Activity>> GetActivitesAsync(List<string>? activityNames = null);
+    Task<IEnumerable<Activity>> GetActivitiesAsync(List<string>? activityNames = null);
     Task<Activity?> AddAsync(Activity activity);
     Task<Activity?> GetActivityById(Guid activityId);
+    Task<TargetResource?> GetTargetResource(Guid id);
+    Task SaveChangesAsync();
 }
 
 [UsedImplicitly]
 public class ActivityService(ReaperDbContext dbContext)
     : IActivityService
 {
-    private readonly ActivityRepository activityRepository = new(dbContext);
-    private readonly Repository<ResourceAction> resourceActionRepository = new(dbContext);
-    private readonly Repository<TargetResource> targetResourceRepository = new(dbContext);
-    private readonly Repository<TargetResourceProperty> targetResourcePropertyRepository = new(dbContext);
+    private readonly ActivityRepository _activityRepository = new(dbContext);
+    private readonly ResourceActionRepository _resourceActionRepository = new(dbContext);
+    private readonly Repository<TargetResource> _targetResourceRepository = new(dbContext);
+    private readonly Repository<TargetResourceProperty> _targetResourcePropertyRepository = new(dbContext);
 
     public async Task<IEnumerable<ActivityExport>> ExportActivitiesAsync()
     {
-        var activities = await activityRepository.Get(null, a => a.OrderBy(x => x.Name), "MappedResourceActions";
+        var activities = await _activityRepository.Get(null, a => a.OrderBy(x => x.Name), "MappedResourceActions");
         var exportData = activities.Select(activity => new
             ActivityExport
         {
             Name = activity.Name,
             Category = activity.AuditCategory ?? string.Empty,
             Service = activity.Service ?? string.Empty,
-            TargetResources = (activity.TargetResources ?? []).ToDictionary(p => p.ResourceType,
-                    p => (p.Properties ?? []).Select(a => a.DisplayName)),
+            TargetResources = activity.TargetResources.Select(TargetResourceDto.FromTargetResource).ToList(),
             MappedResourceActions = activity.MappedResourceActions.Select(ra => ra.Action)
         });
 
         return exportData;
     }
 
+    public async Task<TargetResource?> GetTargetResource(Guid id)
+    {
+        var targetResource = await _targetResourceRepository.GetById(id);
+        return targetResource;
+    }
     public async Task<ImportResult> ImportAsync(IEnumerable<ActivityExport> importedData)
     {
         var activityExports = importedData.ToList();
@@ -58,12 +65,11 @@ public class ActivityService(ReaperDbContext dbContext)
 
         var importedCount = 0;
 
-        await activityRepository.ClearAsync();
+        await _activityRepository.ClearAsync();
         foreach (var importedActivity in activityExports)
         {
-            var allResourceActions = importedActivity.MappedResourceActions
-                .Union(importedActivity.Properties.SelectMany(p => p.Value));
-            var resourceActions = await resourceActionRepository.GetResourceActionsByNamesAsync(allResourceActions);
+            var allResourceActions = importedActivity.MappedResourceActions;
+            var resourceActions = await _resourceActionRepository.GetResourceActionsByNamesAsync(allResourceActions);
             // Create new activity
             var newActivity = new Activity
             {
@@ -72,17 +78,7 @@ public class ActivityService(ReaperDbContext dbContext)
                     .Where(r => importedActivity.MappedResourceActions.Contains(r.Action)).ToList()
             };
 
-            foreach (var property in importedActivity.Properties)
-            {
-                var mappedActions = resourceActions.Where(r => property.Value.Contains(r.Action)).ToList();
-                newActivity.Properties.Add(new ActivityProperty
-                {
-                    Name = property.Key,
-                    MappedResourceActions = mappedActions
-                });
-            }
-
-            await activityRepository.AddAsync(newActivity);
+            await _activityRepository.AddAsync(newActivity);
             importedCount++;
         }
 
@@ -95,10 +91,10 @@ public class ActivityService(ReaperDbContext dbContext)
 
     public async Task SetExclusionAsync(string activityName, bool isExcluded)
     {
-        var existing = await activityRepository.GetByNameAsync(activityName);
+        var existing = await _activityRepository.GetByNameAsync(activityName);
         if (existing == null)
         {
-            await activityRepository.AddAsync(new Activity
+            await _activityRepository.AddAsync(new Activity
             {
                 Name = activityName,
                 IsExcluded = isExcluded
@@ -106,29 +102,30 @@ public class ActivityService(ReaperDbContext dbContext)
             return;
         }
         existing.IsExcluded = isExcluded;
-        await activityRepository.UpdateAsync(existing);
+        _activityRepository.Update(existing);
+        await SaveChangesAsync();
     }
 
     public Task<IEnumerable<Activity>> GetExcludedActivitiesAsync()
     {
-        return activityRepository.GetExcludedActivitiesAsync();
+        return _activityRepository.GetExcludedActivitiesAsync();
     }
 
-    public Task<IEnumerable<Activity>> GetActivitesAsync(List<string>? activityNames = null)
+    public Task<IEnumerable<Activity>> GetActivitiesAsync(List<string>? activityNames = null)
     {
         if (activityNames == null || activityNames.Count == 0)
         {
-            return activityRepository.GetAllActivitiesAsync();
+            return _activityRepository.GetAllActivitiesAsync();
         }
-        return activityRepository.GetActivitiesByNamesAsync(activityNames);
+        return _activityRepository.GetActivitiesByNamesAsync(activityNames);
     }
 
     public async Task<Activity?> AddAsync(Activity activity)
     {
-        var existing = await activityRepository.GetByNameAsync(activity.Name);
+        var existing = await _activityRepository.GetByNameAsync(activity.Name);
         if (existing == null)
         {
-            await activityRepository.AddAsync(activity);
+            await _activityRepository.AddAsync(activity);
         }
         else
         {
@@ -143,7 +140,12 @@ public class ActivityService(ReaperDbContext dbContext)
         {
             return Task.FromResult<Activity?>(null);
         }
-        return activityRepository.GetByIdAsync(activityId);
+        return _activityRepository.GetByIdAsync(activityId);
+    }
+    
+    public async Task SaveChangesAsync()
+    {
+        await dbContext.SaveChangesAsync();
     }
 }
 
@@ -152,7 +154,7 @@ public class ActivityExport
     public string Name { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
     public string Service { get; set; } = string.Empty;
-    public Dictionary<string, IEnumerable<string>> Properties { get; set; } = new();
+    public IEnumerable<TargetResourceDto> TargetResources { get; set; } = [];
     public IEnumerable<string> MappedResourceActions { get; set; } = [];
 }
 

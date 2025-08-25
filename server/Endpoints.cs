@@ -5,6 +5,7 @@ using EntraRoleReaper.Api.Endpoints.Onboarding;
 using EntraRoleReaper.Api.Endpoints.Review;
 using EntraRoleReaper.Api.Endpoints.Roles;
 using EntraRoleReaper.Api.Endpoints.Search;
+using EntraRoleReaper.Api.Endpoints.TargetResources;
 
 namespace EntraRoleReaper.Api;
 
@@ -80,10 +81,9 @@ public static class EndpointMapper
             .MapEndpoint<PostImport>()
             .MapEndpoint<PutActivityMapping>()
             .MapEndpoint<GetActivityMapping>()
-            .MapEndpoint<PutActivityPropertyMapping>()
-            .MapEndpoint<DeleteActivityPropertyMapping>()
             .MapEndpoint<PostExclude>()
             .MapEndpoint<DeleteExclude>()
+            .MapEndpoint<GetTargetResource>()
             .MapEndpoint<GetExcludedActivities>();
     }
     private static IEndpointRouteBuilder MapEndpoint<TEndpoint>(this IEndpointRouteBuilder app)

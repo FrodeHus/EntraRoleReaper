@@ -5,7 +5,7 @@ namespace EntraRoleReaper.Api.Data.Repositories;
 public interface IResourceActionRepository
 {
     Task<ResourceAction> AddAsync(ResourceAction resourceAction);
-    Task<IEnumerable<ResourceAction>> AddRangeAsync(IEnumerable<ResourceAction> resourceActions);
+    IEnumerable<ResourceAction> AddRange(IEnumerable<ResourceAction> resourceActions);
     Task<ResourceAction?> GetResourceActionByIdAsync(Guid id);
     Task<ResourceAction?> GetResourceActionByNameAsync(string name);
     Task<IEnumerable<ResourceAction>> SearchResourceActionsAsync(string searchTerm, int limit = 100);

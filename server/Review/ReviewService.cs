@@ -31,7 +31,7 @@ public class ReviewService(
             var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
             await SaveActivitiesAsync(auditActivities);
 
-            var mappedActivities = await activityService.GetActivitesAsync(auditActivities.Select(a => a.ActivityName).ToList());
+            var mappedActivities = await activityService.GetActivitiesAsync(auditActivities.Select(a => a.ActivityName).ToList());
             var allSuggestedRoles = new List<RoleDefinitionDto>();
             foreach (var activity in mappedActivities)
             {
