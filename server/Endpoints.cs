@@ -24,17 +24,14 @@ public static class EndpointMapper
 
     private static void MapRoleEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/roles")
-            .WithTags("Roles");
+        var group = app.MapGroup("/api/roles").WithTags("Roles");
 
-        group.MapEndpoint<GetRole>()
-            .MapEndpoint<GetRoleSummary>();
+        group.MapEndpoint<GetRole>().MapEndpoint<GetRoleSummary>();
     }
 
     private static void MapReviewEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/review")
-            .WithTags("Review");
+        var group = app.MapGroup("/api/review").WithTags("Review");
         group
             .MapEndpoint<PostReview>()
             .MapEndpoint<GetReviewStatus>()
@@ -50,31 +47,26 @@ public static class EndpointMapper
 
     private static void MapCacheEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/cache")
-            .WithTags("Cache");
+        var group = app.MapGroup("/api/cache").WithTags("Cache");
         group.MapEndpoint<GetStatus>();
         group.MapEndpoint<PostRefresh>();
     }
 
     private static void MapResourceActionEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/resourceaction")
-            .WithTags("Resource Actions");
+        var group = app.MapGroup("/api/resourceaction").WithTags("Resource Actions");
         group.MapEndpoint<EntraRoleReaper.Api.Endpoints.ResourceActions.GetSearch>();
     }
 
     private static void MapOnboardingEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/onboarding")
-            .WithTags("Onboarding");
-        group.MapEndpoint<PostVerify>()
-            .MapEndpoint<GetTenant>();
+        var group = app.MapGroup("/api/onboarding").WithTags("Onboarding");
+        group.MapEndpoint<PostVerify>().MapEndpoint<GetTenant>();
     }
 
     private static void MapActivityEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/activity")
-            .WithTags("Activities");
+        var group = app.MapGroup("/api/activity").WithTags("Activities");
         group
             .MapEndpoint<GetAllActivities>()
             .MapEndpoint<GetExport>()
@@ -84,9 +76,12 @@ public static class EndpointMapper
             .MapEndpoint<PostExclude>()
             .MapEndpoint<DeleteExclude>()
             .MapEndpoint<GetTargetResource>()
+            .MapEndpoint<PutTargetResource>()
+            .MapEndpoint<PostTargetResource>()
             .MapEndpoint<GetTargetResourceByActivity>()
             .MapEndpoint<GetExcludedActivities>();
     }
+
     private static IEndpointRouteBuilder MapEndpoint<TEndpoint>(this IEndpointRouteBuilder app)
         where TEndpoint : IEndpoint
     {
