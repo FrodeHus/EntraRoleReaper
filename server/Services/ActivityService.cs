@@ -149,7 +149,7 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
         var targetResources = new List<TargetResource>();
         foreach(var targetResourceDto in activity.TargetResources ?? [])
         {
-            var existingTarget = await GetTargetResourceByType(targetResourceDto.ResourceType);
+            var existingTarget = await GetTargetResourceByType(targetResourceDto.ResourceType) ?? targetResources.Find(tr => tr.ResourceType == targetResourceDto.ResourceType);
             if (existingTarget == null)
             {
                 existingTarget = new TargetResource
