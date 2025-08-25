@@ -1,6 +1,9 @@
+using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Services.Dto;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Services;
 
@@ -8,36 +11,67 @@ public interface IActivityService
 {
     Task<IEnumerable<ActivityExport>> ExportActivitiesAsync();
     Task<ImportResult> ImportAsync(IEnumerable<ActivityExport> importedData);
-    Task AddPropertyMapToActivityAsync(string activityName, string propertyName, IEnumerable<Guid> resourceActionIds);
-    Task DeletePropertyMapAsync(string activityName, string propertyName);
     Task SetExclusionAsync(string activityName, bool isExcluded);
     Task<IEnumerable<Activity>> GetExcludedActivitiesAsync();
-    Task<IEnumerable<Activity>> GetActivitesAsync(List<string>? activityNames = null);
-    Task<Activity?> AddAsync(Activity activity);
+    Task<IEnumerable<Activity>> GetActivitiesAsync(List<string>? activityNames = null);
+    Task<Activity?> AddAsync(ActivityDto activity);
     Task<Activity?> GetActivityById(Guid activityId);
+    Task<TargetResource?> GetTargetResource(Guid id);
+    Task AddTargetResourceAsync(TargetResourceDto targetResource);
+    Task<TargetResource?> GetTargetResourceByType(string resourceType);
 }
 
 [UsedImplicitly]
-public class ActivityService(IActivityRepository activityRepository, IResourceActionRepository resourceActionRepository)
-    : IActivityService
+public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService> logger)
+    : UnitOfWorkService(dbContext, logger), IActivityService
 {
+    private readonly ActivityRepository _activityRepository = new(dbContext);
+    private readonly ResourceActionRepository _resourceActionRepository = new(dbContext);
+    private readonly Repository<TargetResource> _targetResourceRepository = new(dbContext);
+    private readonly Repository<TargetResourceProperty> _targetResourcePropertyRepository = new(dbContext);
+
     public async Task<IEnumerable<ActivityExport>> ExportActivitiesAsync()
     {
-        var activities = await activityRepository.GetAllActivitiesAsync();
+        var activities = await _activityRepository.Get(null, a => a.OrderBy(x => x.Name), "MappedResourceActions");
         var exportData = activities.Select(activity => new
             ActivityExport
         {
             Name = activity.Name,
             Category = activity.AuditCategory ?? string.Empty,
             Service = activity.Service ?? string.Empty,
-            Properties = (activity.Properties ?? []).ToDictionary(p => p.Name,
-                    p => (p.MappedResourceActions ?? []).Select(a => a.Action)),
+            TargetResources = activity.TargetResources.Select(TargetResourceDto.FromTargetResource).ToList(),
             MappedResourceActions = activity.MappedResourceActions.Select(ra => ra.Action)
         });
 
         return exportData;
     }
 
+    public async Task<TargetResource?> GetTargetResource(Guid id)
+    {
+        var targetResource = await _targetResourceRepository.GetById(id);
+        return targetResource;
+    }
+    
+    public async Task<TargetResource?> GetTargetResourceByType(string resourceType)
+    {
+        var targetResources = await _targetResourceRepository.Get(r => r.ResourceType == resourceType, null, "Properties");
+        return targetResources.FirstOrDefault();
+    }
+    
+    public async Task AddTargetResourceAsync(TargetResourceDto targetResource)
+    {
+        var newTargetResource = new TargetResource
+        {
+            ResourceType = targetResource.ResourceType,
+            Properties = targetResource.Properties.Select(p => new TargetResourceProperty
+            {
+                PropertyName = p.PropertyName,
+                Description = p.Description
+            }).ToList()
+        };
+        _targetResourceRepository.Add(newTargetResource);
+        await SaveChangesAsync();
+    }
     public async Task<ImportResult> ImportAsync(IEnumerable<ActivityExport> importedData)
     {
         var activityExports = importedData.ToList();
@@ -54,12 +88,11 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
 
         var importedCount = 0;
 
-        await activityRepository.ClearAsync();
+        await _activityRepository.ClearAsync();
         foreach (var importedActivity in activityExports)
         {
-            var allResourceActions = importedActivity.MappedResourceActions
-                .Union(importedActivity.Properties.SelectMany(p => p.Value));
-            var resourceActions = await resourceActionRepository.GetResourceActionsByNamesAsync(allResourceActions);
+            var allResourceActions = importedActivity.MappedResourceActions;
+            var resourceActions = await _resourceActionRepository.GetResourceActionsByNamesAsync(allResourceActions);
             // Create new activity
             var newActivity = new Activity
             {
@@ -68,17 +101,7 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
                     .Where(r => importedActivity.MappedResourceActions.Contains(r.Action)).ToList()
             };
 
-            foreach (var property in importedActivity.Properties)
-            {
-                var mappedActions = resourceActions.Where(r => property.Value.Contains(r.Action)).ToList();
-                newActivity.Properties.Add(new ActivityProperty
-                {
-                    Name = property.Key,
-                    MappedResourceActions = mappedActions
-                });
-            }
-
-            await activityRepository.AddAsync(newActivity);
+            await _activityRepository.AddAsync(newActivity);
             importedCount++;
         }
 
@@ -89,23 +112,12 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
         };
     }
 
-    public async Task AddPropertyMapToActivityAsync(string activityName, string propertyName,
-        IEnumerable<Guid> resourceActionIds)
-    {
-        await activityRepository.AddPropertyMapToActivityAsync(activityName, propertyName, resourceActionIds);
-    }
-
-    public async Task DeletePropertyMapAsync(string activityName, string propertyName)
-    {
-        await activityRepository.DeletePropertyMapAsync(activityName, propertyName);
-    }
-
     public async Task SetExclusionAsync(string activityName, bool isExcluded)
     {
-        var existing = await activityRepository.GetByNameAsync(activityName);
+        var existing = await _activityRepository.GetByNameAsync(activityName);
         if (existing == null)
         {
-            await activityRepository.AddAsync(new Activity
+            await _activityRepository.AddAsync(new Activity
             {
                 Name = activityName,
                 IsExcluded = isExcluded
@@ -113,35 +125,66 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
             return;
         }
         existing.IsExcluded = isExcluded;
-        await activityRepository.UpdateAsync(existing);
+        _activityRepository.Update(existing);
+        await SaveChangesAsync();
     }
 
     public Task<IEnumerable<Activity>> GetExcludedActivitiesAsync()
     {
-        return activityRepository.GetExcludedActivitiesAsync();
+        return _activityRepository.GetExcludedActivitiesAsync();
     }
 
-    public Task<IEnumerable<Activity>> GetActivitesAsync(List<string>? activityNames = null)
+    public Task<IEnumerable<Activity>> GetActivitiesAsync(List<string>? activityNames = null)
     {
         if (activityNames == null || activityNames.Count == 0)
         {
-            return activityRepository.GetAllActivitiesAsync();
+            return _activityRepository.GetAllActivitiesAsync();
         }
-        return activityRepository.GetActivitiesByNamesAsync(activityNames);
+        return _activityRepository.GetActivitiesByNamesAsync(activityNames);
     }
 
-    public async Task<Activity?> AddAsync(Activity activity)
+    public async Task<Activity?> AddAsync(ActivityDto activity)
     {
-        var existing = await activityRepository.GetByNameAsync(activity.Name);
+        var existing = await _activityRepository.GetByNameAsync(activity.ActivityName);
+        var targetResources = new List<TargetResource>();
+        foreach(var targetResourceDto in activity.TargetResources ?? [])
+        {
+            var existingTarget = await GetTargetResourceByType(targetResourceDto.ResourceType) ?? targetResources.Find(tr => tr.ResourceType == targetResourceDto.ResourceType);
+            if (existingTarget == null)
+            {
+                existingTarget = new TargetResource
+                {
+                    ResourceType = targetResourceDto.ResourceType,
+                    Properties = targetResourceDto.Properties.Select(p => new TargetResourceProperty
+                    {
+                        PropertyName = p.PropertyName,
+                        Description = p.Description
+                    }).ToList()
+                };
+                _targetResourceRepository.Add(existingTarget);
+                targetResources.Add(existingTarget);
+            }
+        }
+
         if (existing == null)
         {
-            await activityRepository.AddAsync(activity);
+            existing = new Activity
+            {
+                Name = activity.ActivityName,
+                AuditCategory = activity.Category,
+                Service = activity.Service,
+                IsExcluded = false,
+                TargetResources = targetResources
+            };
+            _activityRepository.Add(existing);
         }
         else
         {
-            return existing;
+            targetResources.Where(tr => existing.TargetResources.All(t => t.ResourceType != tr.ResourceType)).ToList()
+                .ForEach(existing.TargetResources.Add);
         }
-        return activity;
+        await SaveChangesAsync();
+        return existing;
     }
 
     public Task<Activity?> GetActivityById(Guid activityId)
@@ -150,8 +193,10 @@ public class ActivityService(IActivityRepository activityRepository, IResourceAc
         {
             return Task.FromResult<Activity?>(null);
         }
-        return activityRepository.GetByIdAsync(activityId);
+        return _activityRepository.GetByIdAsync(activityId);
     }
+    
+        
 }
 
 public class ActivityExport
@@ -159,7 +204,7 @@ public class ActivityExport
     public string Name { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
     public string Service { get; set; } = string.Empty;
-    public Dictionary<string, IEnumerable<string>> Properties { get; set; } = new();
+    public IEnumerable<TargetResourceDto> TargetResources { get; set; } = [];
     public IEnumerable<string> MappedResourceActions { get; set; } = [];
 }
 

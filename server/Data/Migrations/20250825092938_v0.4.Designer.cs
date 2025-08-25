@@ -3,6 +3,7 @@ using System;
 using EntraRoleReaper.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Data.Migrations
 {
     [DbContext(typeof(ReaperDbContext))]
-    partial class ReaperDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250825092938_v0.4")]
+    partial class v04
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -199,9 +202,14 @@ namespace Data.Migrations
                     b.Property<DateTime?>("DeletedUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ResourceType")
                         .IsRequired()
-                        .HasMaxLength(32)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("UpdatedUtc")
@@ -210,9 +218,6 @@ namespace Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ActivityId");
-
-                    b.HasIndex("ResourceType")
-                        .IsUnique();
 
                     b.ToTable("TargetResources");
                 });
@@ -249,8 +254,7 @@ namespace Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TargetResourceId", "PropertyName")
-                        .IsUnique();
+                    b.HasIndex("TargetResourceId");
 
                     b.ToTable("TargetResourceProperties");
                 });

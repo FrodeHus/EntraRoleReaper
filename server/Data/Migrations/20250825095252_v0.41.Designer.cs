@@ -3,6 +3,7 @@ using System;
 using EntraRoleReaper.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Data.Migrations
 {
     [DbContext(typeof(ReaperDbContext))]
-    partial class ReaperDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250825095252_v0.41")]
+    partial class v041
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -211,9 +214,6 @@ namespace Data.Migrations
 
                     b.HasIndex("ActivityId");
 
-                    b.HasIndex("ResourceType")
-                        .IsUnique();
-
                     b.ToTable("TargetResources");
                 });
 
@@ -249,8 +249,7 @@ namespace Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TargetResourceId", "PropertyName")
-                        .IsUnique();
+                    b.HasIndex("TargetResourceId");
 
                     b.ToTable("TargetResourceProperties");
                 });

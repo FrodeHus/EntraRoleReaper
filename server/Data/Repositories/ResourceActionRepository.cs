@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Data.Repositories;
 
-public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActionRepository
+public class ResourceActionRepository(ReaperDbContext dbContext) : Repository<ResourceAction>(dbContext), IResourceActionRepository
 {
     public async Task<ResourceAction> AddAsync(ResourceAction resourceAction)
     {
@@ -12,14 +12,13 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
 
         try
         {
-            var existingAction = await dbContext.ResourceActions
+            var existingAction = await dbSet
                 .FirstOrDefaultAsync(x => x.Action == resourceAction.Action);
             if (existingAction != null)
             {
                 return existingAction;
             }
-            dbContext.ResourceActions.Add(resourceAction);
-            await dbContext.SaveChangesAsync();
+            dbSet.Add(resourceAction);
             return resourceAction;
         }
         catch (DbUpdateException ex)
@@ -29,7 +28,7 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
         }
     }
 
-    public async Task<IEnumerable<ResourceAction>> AddRangeAsync(IEnumerable<ResourceAction> resourceActions)
+    public IEnumerable<ResourceAction> AddRange(IEnumerable<ResourceAction> resourceActions)
     {
         var addedResourceActions = resourceActions.ToList();
         if (addedResourceActions.Count == 0)
@@ -40,7 +39,7 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
         var addedActions = new List<ResourceAction>();
         foreach (var action in addedResourceActions)
         {
-            var existingAction = dbContext.ResourceActions
+            var existingAction = dbSet
                 .FirstOrDefault(x => x.Action == action.Action);
             if (existingAction != null)
             {
@@ -49,21 +48,20 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
             else
             {
                 addedActions.Add(action);
-                dbContext.ResourceActions.Add(action);
+                Add(action);
             }
         }
-        await dbContext.SaveChangesAsync();
         return addedActions;
     }
 
     public async Task<ResourceAction?> GetResourceActionByNameAsync(string name)
     {
-        return await dbContext.ResourceActions.FirstOrDefaultAsync(x => x.Action == name);
+        return await dbSet.FirstOrDefaultAsync(x => x.Action == name);
     }
 
     public async Task<ResourceAction?> GetResourceActionByIdAsync(Guid id)
     {
-        return await dbContext.ResourceActions.FirstOrDefaultAsync(x => x.Id == id);
+        return await GetById(id);
     }
 
     public async Task<IEnumerable<ResourceAction>> SearchResourceActionsAsync(string searchTerm, int limit = 100)
@@ -87,7 +85,7 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
             return [];
         }
 
-        return await dbContext.ResourceActions
+        return await dbSet
             .Where(x => resourceActionIds.Contains(x.Id))
             .ToListAsync();
     }
@@ -101,14 +99,14 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : IResourceActi
             return [];
         }
 
-        return await dbContext.ResourceActions
+        return await dbSet
             .Where(x => actionNames.Contains(x.Action))
             .ToListAsync();
     }
 
     public async Task<ICollection<ResourceActionDto>> GetAllAsync()
     {
-        return (await dbContext.ResourceActions
+        return (await dbSet
             .OrderBy(x => x.Action)
             .ToListAsync()).ConvertAll(ResourceActionDto.FromResourceAction);
     }

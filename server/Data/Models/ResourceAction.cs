@@ -10,6 +10,6 @@ public class ResourceAction : Entity
     public string Action { get; init; } = string.Empty; // unique
     public bool IsPrivileged { get; init; }
     public virtual ICollection<PermissionSet> PermissionSets { get; init; } = [];
-    public virtual ICollection<ActivityProperty> MappedActivityProperties { get; init; } = [];
+    public virtual ICollection<TargetResourceProperty> MappedTargetResourceProperties { get; init; } = [];
     public virtual ICollection<Activity> MappedActivities { get; init; } = [];
 }

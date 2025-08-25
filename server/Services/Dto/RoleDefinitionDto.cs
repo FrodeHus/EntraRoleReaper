@@ -13,11 +13,11 @@ public class RoleDefinitionDto
     public Guid? TenantId { get; set; }
     public bool IsPrivileged => PermissionSets.Any(ps => ps.ResourceActions?.Any(ra => ra.IsPrivileged) == true);
 
-    public static RoleDefinitionDto? FromRoleDefinition(RoleDefinition? role)
+    public static RoleDefinitionDto FromRoleDefinition(RoleDefinition? role)
     {
         if (role == null)
         {
-            return null;
+            return new RoleDefinitionDto();
         }
         return new RoleDefinitionDto
         {

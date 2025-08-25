@@ -16,7 +16,7 @@ public class GetAllActivities : IEndpoint
 
     private static async Task<Ok<IEnumerable<ActivityDto>>> Handle([FromServices] IActivityService activityService)
     {
-        var activities = await activityService.GetActivitesAsync();
+        var activities = await activityService.GetActivitiesAsync();
         var dtos = activities?.Select(a => ActivityDto.FromActivity(a));
         return TypedResults.Ok(dtos);
     }
