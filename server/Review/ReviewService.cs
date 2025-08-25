@@ -112,6 +112,14 @@ public class ReviewService(
             await activityService.AddAsync(new Activity
             {
                 Name = auditActivity.ActivityName,
+                TargetResources = auditActivity.TargetResources.Select(x => new TargetResource
+                {
+                    ResourceType = x.Type,
+                    Properties = (x.ModifiedProperties ?? []).Where(mp => !string.IsNullOrEmpty(mp.DisplayName)).Select(mp => new TargetResourceProperty
+                    {
+                        PropertyName = mp.DisplayName!,
+                    }).ToList()
+                }).ToList()
             });
         }
     }

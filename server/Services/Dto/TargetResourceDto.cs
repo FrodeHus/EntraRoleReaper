@@ -3,8 +3,6 @@
 public record TargetResourceDto(
     Guid Id,
     string ResourceType,
-    string? DisplayName,
-    string? Description,
     List<TargetResourcePropertyDto> Properties
 )
 {
@@ -18,8 +16,6 @@ public record TargetResourceDto(
         return new TargetResourceDto(
             resource.Id,
             resource.ResourceType,
-            resource.DisplayName,
-            resource.Description,
             [.. resource.Properties.Select(TargetResourcePropertyDto.FromTargetResourceProperty)]
         );
     }

@@ -16,6 +16,8 @@ public interface IActivityService
     Task<Activity?> AddAsync(Activity activity);
     Task<Activity?> GetActivityById(Guid activityId);
     Task<TargetResource?> GetTargetResource(Guid id);
+    Task AddTargetResourceAsync(TargetResourceDto targetResource);
+    Task<TargetResource?> GetTargetResourceByType(string resourceType);
     Task SaveChangesAsync();
 }
 
@@ -48,6 +50,27 @@ public class ActivityService(ReaperDbContext dbContext)
     {
         var targetResource = await _targetResourceRepository.GetById(id);
         return targetResource;
+    }
+    
+    public async Task<TargetResource?> GetTargetResourceByType(string resourceType)
+    {
+        var targetResources = await _targetResourceRepository.Get(r => r.ResourceType == resourceType, null, "Properties");
+        return targetResources.FirstOrDefault();
+    }
+    
+    public async Task AddTargetResourceAsync(TargetResourceDto targetResource)
+    {
+        var newTargetResource = new TargetResource
+        {
+            ResourceType = targetResource.ResourceType,
+            Properties = targetResource.Properties.Select(p => new TargetResourceProperty
+            {
+                PropertyName = p.PropertyName,
+                Description = p.Description
+            }).ToList()
+        };
+        _targetResourceRepository.Add(newTargetResource);
+        await SaveChangesAsync();
     }
     public async Task<ImportResult> ImportAsync(IEnumerable<ActivityExport> importedData)
     {
@@ -125,13 +148,21 @@ public class ActivityService(ReaperDbContext dbContext)
         var existing = await _activityRepository.GetByNameAsync(activity.Name);
         if (existing == null)
         {
-            await _activityRepository.AddAsync(activity);
+            existing = await _activityRepository.AddAsync(activity);
+            await SaveChangesAsync();
         }
-        else
+        foreach(var targetResource in activity.TargetResources)
         {
-            return existing;
+            var existingTarget = await GetTargetResourceByType(targetResource.ResourceType);
+            if (existingTarget == null)
+            {
+                _targetResourceRepository.Add(targetResource);
+            }
+            if (existing.TargetResources.Any(tr => tr.ResourceType == targetResource.ResourceType)) continue;
+            existing.TargetResources.Add(existingTarget ?? targetResource);
         }
-        return activity;
+        await SaveChangesAsync();
+        return existing;
     }
 
     public Task<Activity?> GetActivityById(Guid activityId)
