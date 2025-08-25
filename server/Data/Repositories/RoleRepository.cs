@@ -55,8 +55,6 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
             await dbContext.SaveChangesAsync();
         }
         catch (DbUpdateException ex)
-        }
-        catch (DbUpdateException ex)
         {
             // Handle specific database update exceptions if needed
             logger.LogError(ex, "Failed to trying to add roles.");
