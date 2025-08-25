@@ -23,7 +23,6 @@ public class RoleRepository(ReaperDbContext dbContext, IResourceActionRepository
         return dbContext.SaveChangesAsync();
     }
 
-
     public Task<List<RoleDefinition>> GetTenantCustomRolesAsync(Guid tenantId)
     {
         return dbContext.RoleDefinitions
