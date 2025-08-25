@@ -84,6 +84,7 @@ public static class EndpointMapper
             .MapEndpoint<PostExclude>()
             .MapEndpoint<DeleteExclude>()
             .MapEndpoint<GetTargetResource>()
+            .MapEndpoint<GetTargetResourceByActivity>()
             .MapEndpoint<GetExcludedActivities>();
     }
     private static IEndpointRouteBuilder MapEndpoint<TEndpoint>(this IEndpointRouteBuilder app)

@@ -19,7 +19,14 @@ interface AppHeaderProps {
 export function AppHeader({ authed, theme, onToggleTheme, onOpenSidebar, reviewerName, tenantDomain, accessToken, apiBase, onLogout, firstFocusableRef }: AppHeaderProps) {
   if (!authed) return null;
   return (
-    <header className="sticky top-0 z-40 border-b bg-card backdrop-blur">
+    <header className="sticky top-0 z-40 border-b bg-card backdrop-blur relative overflow-visible">
+      {/* Beta ribbon (top-left corner) */}
+      <span
+        className="pointer-events-none select-none absolute left-0 top-0 -translate-x-8 translate-y-2 -rotate-45 z-[60] bg-gradient-to-r from-rose-600 to-pink-500 text-white text-[10px] font-semibold uppercase tracking-widest shadow-md ring-1 ring-rose-400/50 px-10 py-1"
+        aria-hidden="true"
+      >
+        beta
+      </span>
       <div className="mx-auto max-w-7xl px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button

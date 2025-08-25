@@ -18,6 +18,7 @@ public interface IActivityService
     Task<TargetResource?> GetTargetResource(Guid id);
     Task AddTargetResourceAsync(TargetResourceDto targetResource);
     Task<TargetResource?> GetTargetResourceByType(string resourceType);
+    Task UpdateTargetResourceAsync(TargetResource targetResource);
 }
 
 [UsedImplicitly]
@@ -195,7 +196,11 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
         return _activityRepository.GetByIdAsync(activityId);
     }
 
-
+    public async Task UpdateTargetResourceAsync(TargetResource targetResource)
+    {
+        _targetResourceRepository.Update(targetResource);
+        await SaveChangesAsync();
+    }
 }
 
 public class ActivityExport

@@ -19,7 +19,14 @@ export function WelcomeCard({ onSignIn }: WelcomeCardProps) {
 
   return (
     <div className="py-16 flex items-center justify-center">
-      <Card className="w-full max-w-xl text-center">
+      <Card className="w-full max-w-xl text-center relative overflow-hidden">
+        {/* Beta ribbon (top-right corner) */}
+        <span
+          className="pointer-events-none select-none absolute -right-8 top-3 rotate-45 bg-gradient-to-r from-rose-600 to-pink-500 text-white text-[10px] font-semibold uppercase tracking-widest shadow-md ring-1 ring-rose-400/50 px-10 py-1"
+          aria-hidden="true"
+        >
+          beta
+        </span>
         <CardHeader className="items-center">
           <div className="flex items-center gap-2 mb-1">
             <img
