@@ -19,7 +19,14 @@ export function StatusNav({ authed, reviewerName, tenantDomain, accessToken, api
     `px-3 py-1.5 rounded text-sm transition-colors ${isActive ? "bg-accent/60 text-foreground" : "text-muted-foreground hover:bg-accent/40"}`;
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 overflow-visible">
+    <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 overflow-visible relative">
+      {/* Beta ribbon (top-left corner) */}
+      <span
+        className="pointer-events-none select-none absolute left-0 top-0 -translate-x-8 translate-y-2 -rotate-45 z-[60] bg-gradient-to-r from-rose-600 to-pink-500 text-white text-[10px] font-semibold uppercase tracking-widest shadow-md ring-1 ring-rose-400/50 px-10 py-1"
+        aria-hidden="true"
+      >
+        beta
+      </span>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 h-14 grid grid-cols-2 sm:grid-cols-3 items-center gap-2">
         {/* left: brand */}
         <div className="flex items-center gap-2">

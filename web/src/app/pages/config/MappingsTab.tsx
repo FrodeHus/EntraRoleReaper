@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pencil } from "lucide-react";
+import ActivityTargetResourceDialog, {
+  type ActivitySummary,
+} from "@/app/activities/ActivityTargetResourceDialog";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Switch } from "../../../components/ui/switch";
@@ -38,6 +42,9 @@ export function MappingsTab({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [mappedOnly, setMappedOnly] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingActivity, setEditingActivity] =
+    useState<ActivitySummary | null>(null);
   // Optional metadata lookup map: name -> { category, service }
   const [meta, setMeta] = useState<
     Record<string, { category?: string; service?: string }>
@@ -118,6 +125,33 @@ export function MappingsTab({
   useEffect(() => {
     void load();
   }, [load]);
+  const openEditDialogFor = useCallback(
+    async (name: string) => {
+      if (!accessToken) return;
+      try {
+        // Find the activity id by name
+        const res = await fetch(new URL("/api/activity/", apiBase), {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        const arr: any[] = Array.isArray(json) ? json : [];
+        const match = arr.find(
+          (a) => String(a?.activityName ?? a?.ActivityName ?? "") === name
+        );
+        if (!match) return;
+        const act: ActivitySummary = {
+          id: String(match?.id ?? match?.Id ?? ""),
+          name: String(match?.activityName ?? match?.ActivityName ?? name),
+        };
+        setEditingActivity(act);
+        setEditDialogOpen(true);
+      } catch {
+        /* ignore */
+      }
+    },
+    [accessToken, apiBase]
+  );
 
   useEffect(() => {
     const handler = () => void load();
@@ -228,12 +262,24 @@ export function MappingsTab({
                     return (
                       <TableRow
                         key={m.name}
-                        className="cursor-pointer"
+                        className="group cursor-pointer"
                         onClick={() => onEditBase(m.name)}
                         title="Edit base mapping"
                       >
-                        <TableCell className="font-mono break-all">
+                        <TableCell className="font-mono break-all relative pr-8">
                           {m.name}
+                          <button
+                            type="button"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:inline-flex items-center justify-center rounded p-1 hover:bg-muted"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void openEditDialogFor(m.name);
+                            }}
+                            aria-label="Edit target resources"
+                            title="Edit target resources"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {m.category ?? "-"}
@@ -278,6 +324,15 @@ export function MappingsTab({
             )}
         </div>
       </div>
+      {editingActivity && (
+        <ActivityTargetResourceDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          activity={editingActivity}
+          accessToken={accessToken}
+          apiBase={apiBase}
+        />
+      )}
     </div>
   );
 }

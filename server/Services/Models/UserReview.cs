@@ -2,7 +2,7 @@ namespace EntraRoleReaper.Api.Services.Models;
 
 public record SimpleUser(string Id, string DisplayName, List<SimpleRole>? CurrentActiveRoles, List<SimpleRole>? CurrentEligiblePimRoles);
 
-public record OperationModifiedProperty(string? DisplayName, string? OldValue, string? NewValue);
+public record OperationModifiedProperty(string? DisplayName);
 
 public record OperationTarget(
     string? Id,

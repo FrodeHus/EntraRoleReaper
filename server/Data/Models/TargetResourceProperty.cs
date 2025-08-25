@@ -7,6 +7,6 @@ public class TargetResourceProperty : Entity
     public string? DisplayName { get; set; }
     public string? Description { get; set; }
     public Guid TargetResourceId { get; set; }
-    public TargetResource? TargetResource { get; set; }
+    public virtual TargetResource? TargetResource { get; set; }
     public virtual ICollection<ResourceAction> MappedResourceActions { get; set; } = [];
 }

@@ -3,7 +3,6 @@ using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Services.Dto;
 using JetBrains.Annotations;
-using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Services;
 
@@ -19,6 +18,7 @@ public interface IActivityService
     Task<TargetResource?> GetTargetResource(Guid id);
     Task AddTargetResourceAsync(TargetResourceDto targetResource);
     Task<TargetResource?> GetTargetResourceByType(string resourceType);
+    Task UpdateTargetResourceAsync(TargetResource targetResource);
 }
 
 [UsedImplicitly]
@@ -51,13 +51,13 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
         var targetResource = await _targetResourceRepository.GetById(id);
         return targetResource;
     }
-    
+
     public async Task<TargetResource?> GetTargetResourceByType(string resourceType)
     {
         var targetResources = await _targetResourceRepository.Get(r => r.ResourceType == resourceType, null, "Properties");
         return targetResources.FirstOrDefault();
     }
-    
+
     public async Task AddTargetResourceAsync(TargetResourceDto targetResource)
     {
         var newTargetResource = new TargetResource
@@ -147,7 +147,8 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
     {
         var existing = await _activityRepository.GetByNameAsync(activity.ActivityName);
         var targetResources = new List<TargetResource>();
-        foreach(var targetResourceDto in activity.TargetResources ?? [])
+
+        foreach (var targetResourceDto in activity.TargetResources ?? [])
         {
             var existingTarget = await GetTargetResourceByType(targetResourceDto.ResourceType) ?? targetResources.Find(tr => tr.ResourceType == targetResourceDto.ResourceType);
             if (existingTarget == null)
@@ -166,7 +167,7 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
             }
         }
 
-        if (existing == null)
+        if (existing is null)
         {
             existing = new Activity
             {
@@ -195,8 +196,12 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
         }
         return _activityRepository.GetByIdAsync(activityId);
     }
-    
-        
+
+    public async Task UpdateTargetResourceAsync(TargetResource targetResource)
+    {
+        _targetResourceRepository.Update(targetResource);
+        await SaveChangesAsync();
+    }
 }
 
 public class ActivityExport
