@@ -48,8 +48,9 @@ export function CacheStatusChip({ accessToken, apiBase }: Props) {
       }
     };
     run();
-    const id = setInterval(run, 60_000);
-    return () => { cancelled = true; clearInterval(id); };
+  return () => {
+    cancelled = true;
+  };
   }, [accessToken, apiBase]);
 
   // relative time refresh every 30s so the short label stays current
