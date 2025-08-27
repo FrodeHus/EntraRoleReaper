@@ -53,15 +53,8 @@ export function JobQueue({
 
   useEffect(() => {
     if (!accessToken) return;
-    let timer: number | undefined;
-    const tick = async () => {
-      await refresh();
-      timer = window.setTimeout(tick, 2000);
-    };
-    tick();
-    return () => {
-      if (timer) window.clearTimeout(timer);
-    };
+    // Single refresh on mount/token change
+    void refresh();
   }, [accessToken]);
 
   // Notify parent when any job is queued or running
@@ -99,6 +92,20 @@ export function JobQueue({
     () => jobs.some((j) => j.status === "Queued" || j.status === "Running"),
     [jobs]
   );
+
+  // Poll only when there are in-progress jobs
+  useEffect(() => {
+    if (!accessToken || !hasInProgress) return;
+    let timer: number | undefined;
+    const tick = async () => {
+      await refresh();
+      timer = window.setTimeout(tick, 2000);
+    };
+    tick();
+    return () => {
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [accessToken, hasInProgress]);
 
   if (!accessToken) return null;
   const content = (
