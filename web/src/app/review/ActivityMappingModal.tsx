@@ -4,6 +4,12 @@ import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Switch } from "../../components/ui/switch";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../../components/ui/accordion";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -62,6 +68,23 @@ export function ActivityMappingModal({
   const [privOnly, setPrivOnly] = useState(false);
   const [properties, setProperties] = useState<Record<string, number>>({});
   const [newPropName, setNewPropName] = useState<string>("");
+  // Target resources and property multiselect (property-level mapping)
+  type TargetResourceProperty = {
+    id: string;
+    propertyName: string;
+    isSensitive: boolean;
+    description?: string | null;
+  };
+  type TargetResourceDto = {
+    id: string;
+    resourceType: string;
+    properties: TargetResourceProperty[];
+  };
+  const [targetResources, setTargetResources] = useState<TargetResourceDto[]>(
+    []
+  );
+  const [trLoading, setTrLoading] = useState(false);
+  const [selectedProps, setSelectedProps] = useState<Set<string>>(new Set());
   // Namespace/ResourceGroup filters
   const [selectedNamespaces, setSelectedNamespaces] = useState<Set<string>>(
     new Set()
@@ -232,6 +255,7 @@ export function ActivityMappingModal({
       setOriginalSelected(new Set());
       setSelectedNamespaces(new Set());
       setSelectedResourceGroups(new Set());
+      setSelectedProps(new Set());
       // Load immediately (uses placeholder name for create to get 'all')
       load();
     }
@@ -243,6 +267,85 @@ export function ActivityMappingModal({
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, accessToken, apiBase, mode, initialActivityName]);
+
+  // Load target resources for the current activity (edit mode preferred)
+  useEffect(() => {
+    if (!open || !accessToken) return;
+    const actName = (mode === "edit" ? initialActivityName : name)?.trim();
+    if (!actName) {
+      setTargetResources([]);
+      return;
+    }
+    (async () => {
+      try {
+        setTrLoading(true);
+        // Find activity id by name
+        const actsRes = await fetch(new URL("/api/activity", apiBase), {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!actsRes.ok) {
+          setTargetResources([]);
+          return;
+        }
+        const arr = (await actsRes.json()) as any[];
+        const match = Array.isArray(arr)
+          ? arr.find(
+              (a) =>
+                String(
+                  a?.activityName ?? a?.ActivityName ?? a?.name ?? a?.Name ?? ""
+                ).toLowerCase() === actName.toLowerCase()
+            )
+          : null;
+        const actId = match ? String(match?.id ?? match?.Id ?? "") : null;
+        if (!actId) {
+          setTargetResources([]);
+          return;
+        }
+        const trRes = await fetch(
+          new URL(`/api/activity/${actId}/targetresource`, apiBase),
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }
+        );
+        if (!trRes.ok) {
+          setTargetResources([]);
+          return;
+        }
+        const json = (await trRes.json()) as any[];
+        const mapped: TargetResourceDto[] = Array.isArray(json)
+          ? json.map((r: any) => ({
+              id: String(r?.id ?? r?.Id ?? r?.ID ?? ""),
+              resourceType: String(
+                r?.resourceType ?? r?.ResourceType ?? r?.type ?? ""
+              ),
+              properties: Array.isArray(r?.properties ?? r?.Properties)
+                ? (r?.properties ?? r?.Properties).map((p: any) => ({
+                    id: String(p?.id ?? p?.Id ?? p?.ID ?? ""),
+                    propertyName: String(
+                      p?.propertyName ??
+                        p?.PropertyName ??
+                        p?.name ??
+                        p?.Name ??
+                        ""
+                    ),
+                    isSensitive: Boolean(
+                      p?.isSensitive ?? p?.IsSensitive ?? false
+                    ),
+                    description: (p?.description ?? p?.Description ?? null) as
+                      | string
+                      | null,
+                  }))
+                : [],
+            }))
+          : [];
+        setTargetResources(mapped);
+      } catch {
+        setTargetResources([]);
+      } finally {
+        setTrLoading(false);
+      }
+    })();
+  }, [open, accessToken, apiBase, mode, initialActivityName, name]);
 
   // Load properties for the current activity name without resetting action list or selection
   useEffect(() => {
@@ -400,19 +503,49 @@ export function ActivityMappingModal({
     try {
       setSaving(true);
       const ids = Array.from(selected);
-      const url = new URL(`/api/activity`, apiBase);
-      const res = await fetch(url, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ activityName: actName, resourceActionIds: ids }),
-      });
-      if (!res.ok) throw new Error("Failed to save mapping");
-      toast.success("Mapping saved", {
-        description: `${ids.length} actions mapped`,
-      });
+      if (selectedProps.size > 0) {
+        // Save to property-level mapping for each selected property name
+        for (const prop of selectedProps) {
+          const propUrl = new URL(`/api/activity/property`, apiBase);
+          const r = await fetch(propUrl, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              activityName: actName,
+              propertyName: prop,
+              resourceActionIds: ids,
+            }),
+          });
+          if (!r.ok)
+            throw new Error(`Failed to save mapping for property ${prop}`);
+        }
+        toast.success("Property mapping saved", {
+          description: `${ids.length} actions mapped to ${
+            selectedProps.size
+          } propert${selectedProps.size === 1 ? "y" : "ies"}`,
+        });
+      } else {
+        // Default to activity-level mapping
+        const url = new URL(`/api/activity`, apiBase);
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            activityName: actName,
+            resourceActionIds: ids,
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to save mapping");
+        toast.success("Mapping saved", {
+          description: `${ids.length} actions mapped`,
+        });
+      }
       window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
       onSaved?.(actName);
       onOpenChange(false);
@@ -545,90 +678,132 @@ export function ActivityMappingModal({
               </DropdownMenu>
             )}
           </label>
+          {/* Target resource and property selection (optional). Select properties to map actions at property-level. */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <input
-                className="border rounded px-2 py-1 text-xs bg-background flex-1"
-                placeholder="New property name"
-                value={newPropName}
-                onChange={(e) => setNewPropName(e.target.value)}
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const act = (
-                    mode === "edit" ? initialActivityName : name
-                  )?.trim();
-                  if (!act) {
-                    toast.error("Set an activity name first");
-                    return;
-                  }
-                  const val = newPropName.trim();
-                  if (!val) return;
-                  setNewPropName("");
-                  onOpenChange(false);
-                  window.dispatchEvent(
-                    new CustomEvent("open-op-mapping", {
-                      detail: { operationName: `${act}::${val}` },
-                    })
-                  );
-                }}
-              >
-                Add property
-              </Button>
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">
+                Target resource properties (optional)
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {selectedProps.size > 0
+                  ? `${selectedProps.size} selected`
+                  : "None selected"}
+              </div>
             </div>
-            <div className="border rounded bg-muted/40 overflow-hidden">
-              <Table className="text-xs">
-                <TableHeader className="bg-muted/60">
-                  <TableRow>
-                    <TableHead className="w-2/3">Property</TableHead>
-                    <TableHead className="text-right">Mapped actions</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.keys(properties).length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-muted-foreground">
-                        No properties
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    Object.entries(properties).map(([p, count]) => (
-                      <TableRow key={p}>
-                        <TableCell>
-                          <span className="font-mono break-all">{p}</span>
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {count}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            title={`Edit ${name}::${p}`}
-                            onClick={() => {
-                              const act = (
-                                mode === "edit" ? initialActivityName : name
-                              )?.trim();
-                              if (!act) return;
-                              onOpenChange(false);
-                              window.dispatchEvent(
-                                new CustomEvent("open-op-mapping", {
-                                  detail: { operationName: `${act}::${p}` },
-                                })
+            <div className="border rounded bg-muted/40 overflow-hidden max-h-48 overflow-auto p-2">
+              {trLoading ? (
+                <div className="text-[11px] text-muted-foreground px-1">
+                  Loading target resources…
+                </div>
+              ) : targetResources.length === 0 ? (
+                <div className="text-[11px] text-muted-foreground px-1">
+                  No target resources
+                </div>
+              ) : (
+                <Accordion type="multiple" className="space-y-1">
+                  {targetResources.map((r) => {
+                    const props = Array.isArray(r.properties)
+                      ? r.properties
+                      : [];
+                    return (
+                      <AccordionItem
+                        key={r.resourceType}
+                        value={r.resourceType}
+                      >
+                        <AccordionTrigger className="px-2 text-xs">
+                          {r.resourceType || "(unknown)"}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          {props.length > 0 && (
+                            <div className="flex items-center justify-between px-2 pb-1">
+                              <div className="text-[11px] text-muted-foreground">
+                                {props.length} propert
+                                {props.length === 1 ? "y" : "ies"}
+                              </div>
+                              {(() => {
+                                const allSelected = props.every((p) =>
+                                  selectedProps.has(p.propertyName)
+                                );
+                                const anySelected = props.some((p) =>
+                                  selectedProps.has(p.propertyName)
+                                );
+                                return (
+                                  <label className="inline-flex items-center gap-2 text-[11px]">
+                                    <Checkbox
+                                      checked={allSelected}
+                                      onCheckedChange={() =>
+                                        setSelectedProps((prev) => {
+                                          const next = new Set(prev);
+                                          if (allSelected) {
+                                            for (const p of props)
+                                              next.delete(p.propertyName);
+                                          } else {
+                                            for (const p of props)
+                                              next.add(p.propertyName);
+                                          }
+                                          return next;
+                                        })
+                                      }
+                                      aria-label={`Select all properties for ${r.resourceType}`}
+                                    />
+                                    <span
+                                      className={
+                                        anySelected && !allSelected
+                                          ? "opacity-80"
+                                          : undefined
+                                      }
+                                    >
+                                      Select all
+                                    </span>
+                                  </label>
+                                );
+                              })()}
+                            </div>
+                          )}
+                          <ul className="space-y-1">
+                            {props.length === 0 && (
+                              <li className="text-[11px] text-muted-foreground px-2">
+                                No properties
+                              </li>
+                            )}
+                            {props.map((p) => {
+                              const key = p.propertyName;
+                              const checked = selectedProps.has(key);
+                              return (
+                                <li
+                                  key={`${r.resourceType}:${key}`}
+                                  className="flex items-center gap-2 px-2"
+                                >
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={() =>
+                                      setSelectedProps((prev) => {
+                                        const next = new Set(prev);
+                                        if (next.has(key)) next.delete(key);
+                                        else next.add(key);
+                                        return next;
+                                      })
+                                    }
+                                    aria-label={`Select property ${key}`}
+                                  />
+                                  <span className="font-mono text-xs break-all">
+                                    {key}
+                                  </span>
+                                  {p.isSensitive && (
+                                    <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
+                                      sensitive
+                                    </span>
+                                  )}
+                                </li>
                               );
-                            }}
-                          >
-                            Edit
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                            })}
+                          </ul>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">

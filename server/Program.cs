@@ -101,17 +101,14 @@ builder
     );
 
 // Use Azure Monitor distro/exporter (reads env var APPLICATIONINSIGHTS_CONNECTION_STRING or AzureMonitor:ConnectionString)
-builder
-    .Services.AddOpenTelemetry()
-    .UseAzureMonitor(options =>
-    {
-        // If not set, the SDK will read APPLICATIONINSIGHTS_CONNECTION_STRING or AzureMonitor:ConnectionString
-        var cs =
-            builder.Configuration["ApplicationInsights:ConnectionString"]
-            ?? builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
-        if (!string.IsNullOrWhiteSpace(cs))
-            options.ConnectionString = cs;
-    });
+var telemetry = builder
+    .Services.AddOpenTelemetry();
+var cs = builder.Configuration["ApplicationInsights:ConnectionString"]
+                ?? builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+if (!string.IsNullOrWhiteSpace(cs))
+{
+    telemetry.UseAzureMonitor(options => { options.ConnectionString = cs; });
+}
 
 // Review queue & background processing
 builder.Services.Configure<ReviewOptions>(builder.Configuration.GetSection("Review"));
