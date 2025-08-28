@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { MappingsTab } from "./config/MappingsTab";
-import ActivityMappingModal from "../review/ActivityMappingModal";
+import ActivityMappingDialog from "./config/ActivityMappingDialog";
 import { OperationMappingSheet } from "../review/OperationMappingSheet";
 
 export function MappingsPage({
@@ -132,7 +132,7 @@ export function MappingsPage({
         onDeleteProperty={(op, prop) => deletePropertyMap(op, prop)}
       />
 
-      <ActivityMappingModal
+      <ActivityMappingDialog
         open={mappingModalOpen}
         onOpenChange={(o) => {
           setMappingModalOpen(o);

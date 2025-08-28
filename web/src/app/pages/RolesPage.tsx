@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { RolesTab } from "./config/RolesTab";
 import { RoleDetailsSheet } from "../review/RoleDetailsSheet";
-import ActivityMappingModal from "../review/ActivityMappingModal";
+import ActivityMappingDialog from "./config/ActivityMappingDialog";
 import { OperationMappingSheet } from "../review/OperationMappingSheet";
 import type { RoleDetails } from "../review/types";
 
@@ -145,7 +145,9 @@ export function RolesPage({
             setRoleDetails(null);
           }
         }}
-        role={selectedRole ? { name: selectedRole.name, requiredPerms: [] } : null}
+        role={
+          selectedRole ? { name: selectedRole.name, requiredPerms: [] } : null
+        }
         details={
           roleDetails ||
           ({
@@ -158,7 +160,7 @@ export function RolesPage({
         }
         loading={roleDetailsLoading}
       />
-      <ActivityMappingModal
+      <ActivityMappingDialog
         open={mappingModalOpen}
         onOpenChange={(o) => {
           setMappingModalOpen(o);

@@ -3,6 +3,7 @@ import { Pencil } from "lucide-react";
 import ActivityTargetResourceDialog, {
   type ActivitySummary,
 } from "@/app/activities/ActivityTargetResourceDialog";
+import ActivityMappingDialog from "./ActivityMappingDialog";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Switch } from "../../../components/ui/switch";
@@ -45,6 +46,11 @@ export function MappingsTab({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingActivity, setEditingActivity] =
     useState<ActivitySummary | null>(null);
+  const [mappingOpen, setMappingOpen] = useState(false);
+  const [mappingMode, setMappingMode] = useState<"create" | "edit">("create");
+  const [mappingActivityName, setMappingActivityName] = useState<string | null>(
+    null
+  );
   // Optional metadata lookup map: name -> { category, service }
   const [meta, setMeta] = useState<
     Record<string, { category?: string; service?: string }>
@@ -175,7 +181,11 @@ export function MappingsTab({
           className="ml-2"
           size="sm"
           disabled={!accessToken}
-          onClick={onCreate}
+          onClick={() => {
+            setMappingMode("create");
+            setMappingActivityName("");
+            setMappingOpen(true);
+          }}
         >
           Create mapping
         </Button>
@@ -263,7 +273,11 @@ export function MappingsTab({
                       <TableRow
                         key={m.name}
                         className="group cursor-pointer"
-                        onClick={() => onEditBase(m.name)}
+                        onClick={() => {
+                          setMappingMode("edit");
+                          setMappingActivityName(m.name);
+                          setMappingOpen(true);
+                        }}
                         title="Edit base mapping"
                       >
                         <TableCell className="font-mono break-all relative pr-8">
@@ -333,6 +347,15 @@ export function MappingsTab({
           apiBase={apiBase}
         />
       )}
+      <ActivityMappingDialog
+        open={mappingOpen}
+        onOpenChange={setMappingOpen}
+        accessToken={accessToken}
+        apiBase={apiBase}
+        mode={mappingMode}
+        initialActivityName={mappingActivityName || undefined}
+        onSaved={() => void load()}
+      />
     </div>
   );
 }
