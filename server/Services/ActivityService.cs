@@ -165,6 +165,25 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
                 _targetResourceRepository.Add(existingTarget);
                 targetResources.Add(existingTarget);
             }
+            else
+            {
+                foreach (var prop in targetResourceDto.Properties)
+                {
+                    if (existingTarget.Properties.All(p => p.PropertyName != prop.PropertyName))
+                    {
+                        var newProp = new TargetResourceProperty
+                        {
+                            PropertyName = prop.PropertyName,
+                            Description = prop.Description,
+                            TargetResourceId = existingTarget.Id
+                        };
+                        _targetResourcePropertyRepository.Add(newProp);
+                    }
+                }
+                _targetResourceRepository.Update(existingTarget);
+            }
+
+            existing?.TargetResources.Add(existingTarget);
         }
 
         if (existing is null)
@@ -181,9 +200,9 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
         }
         else
         {
-            targetResources.Where(tr => existing.TargetResources.All(t => t.ResourceType != tr.ResourceType)).ToList()
-                .ForEach(existing.TargetResources.Add);
+            _activityRepository.Update(existing);
         }
+
         await SaveChangesAsync();
         return existing;
     }

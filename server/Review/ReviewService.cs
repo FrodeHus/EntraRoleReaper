@@ -87,8 +87,8 @@ public class ReviewService(
             var pimRoles = await Task.WhenAll(userCurrentEligiblePimRoles);
             user = user with
             {
-                CurrentActiveRoles = [.. roles.Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))],
-                CurrentEligiblePimRoles = [.. pimRoles.Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))]
+                CurrentActiveRoles = [.. roles.Where(r => r is not null).Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))],
+                CurrentEligiblePimRoles = [.. pimRoles.Where(r => r is not null).Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))]
             };
             consolidatedRoles =
             [

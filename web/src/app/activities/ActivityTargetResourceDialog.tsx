@@ -66,6 +66,9 @@ export function ActivityTargetResourceDialog({
     resourceType: string;
     index: number;
   } | null>(null);
+  const [propNameInputs, setPropNameInputs] = useState<Record<string, string>>(
+    {}
+  );
 
   useEffect(() => {
     if (!open || !activity?.id || !accessToken) return;
@@ -489,6 +492,117 @@ export function ActivityTargetResourceDialog({
                               {rt || "(unknown)"}
                             </AccordionTrigger>
                             <AccordionContent>
+                              {/* Add new property to this resource type */}
+                              <div className="flex items-center gap-2 px-2 pb-2">
+                                <Input
+                                  value={propNameInputs[rt] ?? ""}
+                                  onChange={(e) =>
+                                    setPropNameInputs((prev) => ({
+                                      ...prev,
+                                      [rt]: e.target.value,
+                                    }))
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      const name = (
+                                        propNameInputs[rt] ?? ""
+                                      ).trim();
+                                      if (!name) {
+                                        toast.error(
+                                          "Property name is required"
+                                        );
+                                        return;
+                                      }
+                                      const dup = props.some(
+                                        (p) =>
+                                          (
+                                            p.propertyName ?? ""
+                                          ).toLowerCase() === name.toLowerCase()
+                                      );
+                                      if (dup) {
+                                        toast.error("Property already exists");
+                                        return;
+                                      }
+                                      setResources((prev) => {
+                                        const next = structuredClone(prev);
+                                        const grp = next.find(
+                                          (g) => (g.resourceType ?? "") === rt
+                                        );
+                                        if (!grp) return prev;
+                                        if (!Array.isArray(grp.properties))
+                                          grp.properties = [] as any;
+                                        (grp.properties as any[]).unshift({
+                                          id: `prop-temp-${crypto.randomUUID()}`,
+                                          propertyName: name,
+                                          isSensitive: false,
+                                          description: null,
+                                        });
+                                        return next;
+                                      });
+                                      setSelected({
+                                        resourceType: rt,
+                                        index: 0,
+                                      });
+                                      setPropNameInputs((prev) => ({
+                                        ...prev,
+                                        [rt]: "",
+                                      }));
+                                      toast.success("Property added");
+                                    }
+                                  }}
+                                  placeholder="New property name"
+                                  className="text-xs"
+                                  aria-label={`New property name for ${rt}`}
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const name = (
+                                      propNameInputs[rt] ?? ""
+                                    ).trim();
+                                    if (!name) {
+                                      toast.error("Property name is required");
+                                      return;
+                                    }
+                                    const dup = props.some(
+                                      (p) =>
+                                        (p.propertyName ?? "").toLowerCase() ===
+                                        name.toLowerCase()
+                                    );
+                                    if (dup) {
+                                      toast.error("Property already exists");
+                                      return;
+                                    }
+                                    setResources((prev) => {
+                                      const next = structuredClone(prev);
+                                      const grp = next.find(
+                                        (g) => (g.resourceType ?? "") === rt
+                                      );
+                                      if (!grp) return prev;
+                                      if (!Array.isArray(grp.properties))
+                                        grp.properties = [] as any;
+                                      (grp.properties as any[]).unshift({
+                                        id: `prop-temp-${crypto.randomUUID()}`,
+                                        propertyName: name,
+                                        isSensitive: false,
+                                        description: null,
+                                      });
+                                      return next;
+                                    });
+                                    setSelected({ resourceType: rt, index: 0 });
+                                    setPropNameInputs((prev) => ({
+                                      ...prev,
+                                      [rt]: "",
+                                    }));
+                                    toast.success("Property added");
+                                  }}
+                                  aria-label={`Add property to ${rt}`}
+                                >
+                                  Add
+                                </Button>
+                              </div>
                               <ul className="space-y-1">
                                 {props.length === 0 && (
                                   <li className="text-[11px] text-muted-foreground px-2">

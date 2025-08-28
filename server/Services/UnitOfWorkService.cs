@@ -9,8 +9,10 @@ public abstract class UnitOfWorkService(ReaperDbContext dbContext, ILogger logge
     {
         try
         {
-            await dbContext.SaveChangesAsync();
-        }catch(DbUpdateException e){
+            var entries = await dbContext.SaveChangesAsync();
+            logger.LogDebug("Added/updated {Entries} entries to the database", entries);
+        }
+        catch(DbUpdateException e){
             logger.LogError(e.InnerException?.Message ?? e.Message);
             foreach (var entry in e.Entries)
             {

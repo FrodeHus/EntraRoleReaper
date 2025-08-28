@@ -10,4 +10,5 @@ public class TargetResource : Entity
     public required string ResourceType { get; set; }
 
     public virtual ICollection<TargetResourceProperty> Properties { get; init; } = [];
+    public virtual ICollection<Activity> Activities { get; init; } = [];
 }

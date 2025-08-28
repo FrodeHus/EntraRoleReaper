@@ -18,6 +18,9 @@ public class ReaperDbContext(DbContextOptions<ReaperDbContext> options, IHttpCon
     {
         modelBuilder.Entity<RoleDefinition>()
             .HasQueryFilter(t => t.TenantId == TenantId || t.TenantId == null);
+
+        modelBuilder.Entity<Activity>().HasMany<TargetResource>();
+        modelBuilder.Entity<TargetResource>().HasMany<Activity>();
         base.OnModelCreating(modelBuilder);
     }
 }
