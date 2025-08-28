@@ -1,3 +1,4 @@
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using EntraRoleReaper.Api;
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
@@ -9,6 +10,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +29,10 @@ builder
             builder.Configuration.Bind("AzureAd", options);
             options.Events ??= new JwtBearerEvents();
         },
-        options => { builder.Configuration.Bind("AzureAd", options); }
+        options =>
+        {
+            builder.Configuration.Bind("AzureAd", options);
+        }
     );
 
 builder.Services.AddAuthorization();
@@ -83,6 +89,29 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "RoleReaper API", Version = "v1" });
 });
 builder.Services.AddScoped<DatabaseSeeder>();
+
+// Observability: OpenTelemetry + Azure Monitor (Application Insights)
+builder
+    .Services.AddOpenTelemetry()
+    .ConfigureResource(r =>
+        r.AddService(
+            serviceName: builder.Environment.ApplicationName,
+            serviceVersion: typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0"
+        )
+    );
+
+// Use Azure Monitor distro/exporter (reads env var APPLICATIONINSIGHTS_CONNECTION_STRING or AzureMonitor:ConnectionString)
+builder
+    .Services.AddOpenTelemetry()
+    .UseAzureMonitor(options =>
+    {
+        // If not set, the SDK will read APPLICATIONINSIGHTS_CONNECTION_STRING or AzureMonitor:ConnectionString
+        var cs =
+            builder.Configuration["ApplicationInsights:ConnectionString"]
+            ?? builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        if (!string.IsNullOrWhiteSpace(cs))
+            options.ConnectionString = cs;
+    });
 
 // Review queue & background processing
 builder.Services.Configure<ReviewOptions>(builder.Configuration.GetSection("Review"));
