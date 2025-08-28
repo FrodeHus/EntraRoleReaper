@@ -258,14 +258,13 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
         if(activity == null)
             return;
 
+        activity.MappedResourceActions.Clear();
         foreach (var resourceActionId in resourceActionIds)
         {
             var resourceAction = _resourceActionRepository.GetById(resourceActionId).Result;
             if(resourceAction == null)
                 continue;
             
-            if(activity.MappedResourceActions.Any(ra => ra.Id == resourceAction.Id))
-                continue;
             activity.MappedResourceActions.Add(resourceAction);
         }
         _activityRepository.Update(activity);
