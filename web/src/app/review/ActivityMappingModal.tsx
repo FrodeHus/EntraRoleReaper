@@ -504,28 +504,58 @@ export function ActivityMappingModal({
       setSaving(true);
       const ids = Array.from(selected);
       if (selectedProps.size > 0) {
-        // Save to property-level mapping for each selected property name
-        for (const prop of selectedProps) {
-          const propUrl = new URL(`/api/activity/property`, apiBase);
-          const r = await fetch(propUrl, {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              activityName: actName,
-              propertyName: prop,
-              resourceActionIds: ids,
-            }),
-          });
-          if (!r.ok)
-            throw new Error(`Failed to save mapping for property ${prop}`);
+        // Save to property-level mapping using new endpoint shape
+        // Build TargetResourcePropertyIds from selected values (id or name)
+        const isGuid = (s: string) =>
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
+            s
+          );
+        const allProps: Array<{ id: string; name: string }> = [];
+        for (const tr of targetResources) {
+          for (const p of tr.properties || []) {
+            allProps.push({ id: p.id, name: p.propertyName });
+          }
         }
+        const nameToIds = new Map<string, string[]>();
+        for (const { id, name } of allProps) {
+          const key = name.toLowerCase();
+          const arr = nameToIds.get(key) ?? [];
+          arr.push(id);
+          nameToIds.set(key, arr);
+        }
+        const propIds = new Set<string>();
+        for (const sel of selectedProps) {
+          if (isGuid(sel)) {
+            propIds.add(sel);
+            continue;
+          }
+          const arr = nameToIds.get(sel.toLowerCase());
+          if (arr && arr.length > 0) arr.forEach((x) => propIds.add(x));
+        }
+        if (propIds.size === 0)
+          throw new Error("No matching target resource properties selected");
+
+        const propUrl = new URL(
+          `/api/activity/targetresourceproperty`,
+          apiBase
+        );
+        const r = await fetch(propUrl, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            targetResourcePropertyIds: Array.from(propIds),
+            resourceActionIds: ids,
+          }),
+        });
+        if (!r.ok) throw new Error("Failed to save property mapping");
+
         toast.success("Property mapping saved", {
           description: `${ids.length} actions mapped to ${
-            selectedProps.size
-          } propert${selectedProps.size === 1 ? "y" : "ies"}`,
+            propIds.size
+          } propert${propIds.size === 1 ? "y" : "ies"}`,
         });
       } else {
         // Default to activity-level mapping

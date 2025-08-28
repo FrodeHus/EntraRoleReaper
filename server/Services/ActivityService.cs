@@ -19,6 +19,9 @@ public interface IActivityService
     Task AddTargetResourceAsync(TargetResourceDto targetResource);
     Task<TargetResource?> GetTargetResourceByType(string resourceType);
     Task UpdateTargetResourceAsync(TargetResource targetResource);
+    Task<TargetResourceProperty?> GetTargetResourcePropertyById(Guid id);
+    Task<ResourceAction?> GetResourceActionById(Guid id);
+    Task MapActivityToTargetResourcePropertyAsync(Guid targetResourceProperty, Guid resourceActionId);
 }
 
 [UsedImplicitly]
@@ -219,6 +222,32 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
     public async Task UpdateTargetResourceAsync(TargetResource targetResource)
     {
         _targetResourceRepository.Update(targetResource);
+        await SaveChangesAsync();
+    }
+
+    public Task<TargetResourceProperty?> GetTargetResourcePropertyById(Guid id)
+    {
+        return _targetResourcePropertyRepository.GetById(id);
+    }
+
+    public Task<ResourceAction?> GetResourceActionById(Guid id)
+    {
+        return _resourceActionRepository.GetById(id);
+    }
+
+    public async Task MapActivityToTargetResourcePropertyAsync(Guid targetResourceProperty, Guid resourceActionId)
+    {
+        var targetResourceProp = await _targetResourcePropertyRepository.GetById(targetResourceProperty);
+        if (targetResourceProp == null)
+            return;
+
+        var resourceAction = await _resourceActionRepository.GetById(resourceActionId);
+        if (resourceAction == null)
+            return;
+        if(targetResourceProp.MappedResourceActions.Any(ra => ra.Id == resourceAction.Id))
+            return;
+        targetResourceProp.MappedResourceActions.Add(resourceAction);
+        _targetResourcePropertyRepository.Update(targetResourceProp);
         await SaveChangesAsync();
     }
 }

@@ -72,6 +72,7 @@ public static class EndpointMapper
             .MapEndpoint<GetExport>()
             .MapEndpoint<PostImport>()
             .MapEndpoint<PutActivityMapping>()
+            .MapEndpoint<PutActivityTargetResourcePropertyMapping>()
             .MapEndpoint<GetActivityMapping>()
             .MapEndpoint<PostExclude>()
             .MapEndpoint<DeleteExclude>()
