@@ -2,6 +2,7 @@
 
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,19 +17,13 @@ public class PutActivityMapping : IEndpoint
             .RequireAuthorization();
     }
 
-    private static async Task<Results<Created, BadRequest>> Handle(ActivityMappingRequest request, [FromServices] IActivityRepository activityRepository, [FromServices] IResourceActionRepository resourceActionRepository)
+    private static async Task<Results<Created, BadRequest>> Handle(ActivityMappingRequest request, [FromServices] IActivityService activityService, [FromServices] IResourceActionRepository resourceActionRepository)
     {
-        if (string.IsNullOrWhiteSpace(request.ActivityName))
-            return TypedResults.BadRequest();
         var dIds = request.ResourceActionIds?.Distinct().ToArray() ?? [];
-        await activityRepository.AddAsync(new Activity
-        {
-            Name = request.ActivityName.Trim(),
-            MappedResourceActions = await resourceActionRepository
-                .GetResourceActionsByIdsAsync(dIds),
-        });
+
+        await activityService.MapResourceActionsToActivity(dIds, request.ActivityId);
         return TypedResults.Created();
     }
 
-    private record ActivityMappingRequest(string ActivityName, Guid[] ResourceActionIds);
+    private record ActivityMappingRequest(Guid ActivityId, Guid[] ResourceActionIds);
 }

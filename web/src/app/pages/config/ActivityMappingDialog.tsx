@@ -390,7 +390,12 @@ export function ActivityMappingDialog({
         if (!res.ok) throw new Error("Failed to save property mapping");
         toast.success("Property mapping saved");
       } else {
-        // Activity-level mapping
+        // Activity-level mapping now requires ActivityId per backend shape
+        if (!activityId) {
+          toast.error("Select an existing activity to map actions");
+          setSaving(false);
+          return;
+        }
         const url = new URL(`/api/activity`, apiBase);
         const res = await fetch(url, {
           method: "PUT",
@@ -399,7 +404,7 @@ export function ActivityMappingDialog({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            activityName: act,
+            activityId: activityId,
             resourceActionIds: Array.from(selectedActionIds),
           }),
         });
@@ -414,7 +419,16 @@ export function ActivityMappingDialog({
     } finally {
       setSaving(false);
     }
-  }, [accessToken, apiBase, activityName, selectedActionIds, selectedPropIds, onSaved, onOpenChange]);
+  }, [
+    accessToken,
+    apiBase,
+    activityName,
+    activityId,
+    selectedActionIds,
+    selectedPropIds,
+    onSaved,
+    onOpenChange,
+  ]);
 
   if (!open) return null;
 
@@ -429,10 +443,23 @@ export function ActivityMappingDialog({
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Activity mapping</h2>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              disabled={saving}
+            >
               Close
             </Button>
-            <Button size="sm" onClick={save} disabled={saving || !accessToken}>
+            <Button
+              size="sm"
+              onClick={save}
+              disabled={
+                saving ||
+                !accessToken ||
+                (selectedPropIds.size === 0 && !activityId)
+              }
+            >
               {saving ? "Saving…" : "Save"}
             </Button>
           </div>
@@ -447,7 +474,12 @@ export function ActivityMappingDialog({
             <label className="text-xs text-muted-foreground">Activity</label>
             <div className="col-span-2">
               {mode === "edit" ? (
-                <Input value={activityName} readOnly disabled className="text-sm" />
+                <Input
+                  value={activityName}
+                  readOnly
+                  disabled
+                  className="text-sm"
+                />
               ) : (
                 <>
                   <Input
@@ -471,7 +503,9 @@ export function ActivityMappingDialog({
             {/* Left column 1/3 width: target resources */}
             <div className="col-span-1 min-h-0 overflow-auto border rounded bg-muted/40 p-2 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Target resources</span>
+                <span className="text-xs text-muted-foreground">
+                  Target resources
+                </span>
                 <div className="flex items-center gap-2 text-xs">
                   <span className="text-muted-foreground">Select all</span>
                   <Switch
@@ -489,11 +523,21 @@ export function ActivityMappingDialog({
                 </div>
               </div>
               {targetResources.length === 0 ? (
-                <div className="text-xs text-muted-foreground">No target resources</div>
+                <div className="text-xs text-muted-foreground">
+                  No target resources
+                </div>
               ) : (
-                <Accordion type="multiple" value={expandedTr} onValueChange={(v) => setExpandedTr(v as string[])} className="space-y-2">
+                <Accordion
+                  type="multiple"
+                  value={expandedTr}
+                  onValueChange={(v) => setExpandedTr(v as string[])}
+                  className="space-y-2"
+                >
                   {targetResources.map((tr) => (
-                    <AccordionItem key={tr.resourceType} value={tr.resourceType}>
+                    <AccordionItem
+                      key={tr.resourceType}
+                      value={tr.resourceType}
+                    >
                       <AccordionTrigger className="text-xs">
                         <div className="flex items-center justify-between w-full">
                           <span className="font-medium">{tr.resourceType}</span>
@@ -505,13 +549,18 @@ export function ActivityMappingDialog({
                       <AccordionContent>
                         <div className="space-y-1">
                           {(tr.properties || []).map((p) => (
-                            <label key={p.id} className="flex items-center gap-2 text-xs px-1 py-1 rounded hover:bg-muted/60 cursor-pointer">
+                            <label
+                              key={p.id}
+                              className="flex items-center gap-2 text-xs px-1 py-1 rounded hover:bg-muted/60 cursor-pointer"
+                            >
                               <Checkbox
                                 checked={selectedPropIds.has(p.id)}
                                 onCheckedChange={() => toggleProp(p.id)}
                                 aria-label={`Select ${p.propertyName}`}
                               />
-                              <span className="font-mono break-all">{p.propertyName}</span>
+                              <span className="font-mono break-all">
+                                {p.propertyName}
+                              </span>
                             </label>
                           ))}
                         </div>
@@ -546,23 +595,35 @@ export function ActivityMappingDialog({
               </div>
               <div className="divide-y">
                 {filteredActions.map((a) => (
-                  <label key={a.id} className="flex items-center gap-2 py-1 text-sm cursor-pointer hover:bg-muted/40 px-1 rounded">
+                  <label
+                    key={a.id}
+                    className="flex items-center gap-2 py-1 text-sm cursor-pointer hover:bg-muted/40 px-1 rounded"
+                  >
                     <Checkbox
                       checked={selectedActionIds.has(a.id)}
                       onCheckedChange={() => toggleAction(a.id)}
                       aria-label={`Toggle ${a.action}`}
                     />
-                    <span className="font-mono text-xs break-all flex-1">{a.action}</span>
-                    {selectedPropIds.size === 0 && mappedActionNames.has(a.action) && (
-                      <span className="text-[10px] px-1 rounded border bg-muted text-muted-foreground">mapped</span>
-                    )}
+                    <span className="font-mono text-xs break-all flex-1">
+                      {a.action}
+                    </span>
+                    {selectedPropIds.size === 0 &&
+                      mappedActionNames.has(a.action) && (
+                        <span className="text-[10px] px-1 rounded border bg-muted text-muted-foreground">
+                          mapped
+                        </span>
+                      )}
                     {a.isPrivileged && (
-                      <span className="text-[10px] px-1 rounded border bg-amber-100/40 text-amber-800">privileged</span>
+                      <span className="text-[10px] px-1 rounded border bg-amber-100/40 text-amber-800">
+                        privileged
+                      </span>
                     )}
                   </label>
                 ))}
                 {filteredActions.length === 0 && (
-                  <div className="text-xs text-muted-foreground p-2">No actions</div>
+                  <div className="text-xs text-muted-foreground p-2">
+                    No actions
+                  </div>
                 )}
               </div>
             </div>

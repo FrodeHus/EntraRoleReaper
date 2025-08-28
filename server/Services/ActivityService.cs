@@ -22,6 +22,7 @@ public interface IActivityService
     Task<TargetResourceProperty?> GetTargetResourcePropertyById(Guid id);
     Task<ResourceAction?> GetResourceActionById(Guid id);
     Task MapActivityToTargetResourcePropertyAsync(Guid targetResourceProperty, Guid resourceActionId);
+    Task MapResourceActionsToActivity(Guid[] resourceActionIds, Guid activityId);
 }
 
 [UsedImplicitly]
@@ -248,6 +249,26 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
             return;
         targetResourceProp.MappedResourceActions.Add(resourceAction);
         _targetResourcePropertyRepository.Update(targetResourceProp);
+        await SaveChangesAsync();
+    }
+
+    public async Task MapResourceActionsToActivity(Guid[] resourceActionIds, Guid activityId)
+    {
+        var activity = await GetActivityById(activityId);
+        if(activity == null)
+            return;
+
+        foreach (var resourceActionId in resourceActionIds)
+        {
+            var resourceAction = _resourceActionRepository.GetById(resourceActionId).Result;
+            if(resourceAction == null)
+                continue;
+            
+            if(activity.MappedResourceActions.Any(ra => ra.Id == resourceAction.Id))
+                continue;
+            activity.MappedResourceActions.Add(resourceAction);
+        }
+        _activityRepository.Update(activity);
         await SaveChangesAsync();
     }
 }
