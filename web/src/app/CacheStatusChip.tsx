@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Database, CheckCircle2, XCircle } from "lucide-react";
 
 interface Props {
   accessToken: string | null;
@@ -81,14 +82,9 @@ export function CacheStatusChip({ accessToken, apiBase }: Props) {
 
   const displayTime = lastUpdated ? lastUpdated.toLocaleString() : 'n/a';
   const rel = formatRelativeShort(lastUpdated);
-  const baseClasses = 'inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium';
-  const variant = loading
-    ? 'border-muted-foreground/30 text-muted-foreground'
-    : error
-      ? 'bg-red-600/10 border-red-600/40 text-red-700 dark:text-red-400'
-      : stale || (count ?? 0) === 0
-        ? 'bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-400'
-        : 'bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-400';
+  const baseClasses =
+    "inline-flex items-center gap-1.5 h-7 px-2 rounded border text-xs font-medium bg-card/60";
+  const isUpdated = !loading && !error && !stale && (count ?? 0) > 0;
   const title = error
     ? "Failed to load cache status"
     : `Role cache: ${count ?? "-"} role definitions, ${
@@ -99,27 +95,29 @@ export function CacheStatusChip({ accessToken, apiBase }: Props) {
 
   return (
     <span
-      className={`${baseClasses} ${variant}`}
+      className={baseClasses}
       title={title}
       aria-label={title}
       role="status"
     >
+      <Database className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
       {loading ? (
         <span
-          className="inline-block h-3 w-3 rounded-full border-2 border-t-transparent border-current animate-spin"
+          className="inline-block h-3 w-3 rounded-full border-2 border-t-transparent border-muted-foreground animate-spin"
           aria-hidden
-        ></span>
+        />
+      ) : isUpdated ? (
+        <CheckCircle2
+          className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400"
+          aria-hidden
+        />
       ) : (
-        <span
-          className="inline-block h-2 w-2 rounded-full bg-current opacity-70"
+        <XCircle
+          className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400"
           aria-hidden
-        ></span>
+        />
       )}
-      Cache: {count ?? "-"}
-      {typeof count === "number" ? " roles" : ""}
-      {typeof actionCount === "number" ? ` · ${actionCount} actions` : ""}
-      {rel && !loading && !error ? ` · ${rel}` : ""}
-      {(stale || (count ?? 0) === 0) && !loading && !error ? "!" : ""}
+      <span className="sr-only">Cache status</span>
     </span>
   );
 }
