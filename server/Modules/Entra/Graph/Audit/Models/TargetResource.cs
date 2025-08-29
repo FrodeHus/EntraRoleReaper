@@ -1,7 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using EntraRoleReaper.Api.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
-namespace EntraRoleReaper.Api.Data.Models;
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 
 [Index(nameof(ResourceType), IsUnique = true)]
 public class TargetResource : Entity

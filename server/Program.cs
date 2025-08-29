@@ -3,6 +3,7 @@ using EntraRoleReaper.Api;
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Data.Seed;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
@@ -11,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -1,4 +1,6 @@
-﻿namespace EntraRoleReaper.Api.Services.Dto;
+﻿using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
+
+namespace EntraRoleReaper.Api.Services.Dto;
 
 public record TargetResourcePropertyDto(
     Guid Id,
@@ -7,7 +9,7 @@ public record TargetResourcePropertyDto(
     string? Description,
     List<ResourceActionDto>? MappedResourceActions)
 {
-    public static TargetResourcePropertyDto FromTargetResourceProperty(Data.Models.TargetResourceProperty? property)
+    public static TargetResourcePropertyDto FromTargetResourceProperty(TargetResourceProperty? property)
     {
         if (property == null)
         {
