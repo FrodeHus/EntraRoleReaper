@@ -10,16 +10,16 @@ public class EvaluationTests
     {
         // Arrange
         var targetResource = new Mock<ReviewTargetResource>();
-        var nameEvaluatorMock = new Mock<IEvaluateRoleRequirement>();
+        var nameEvaluatorMock = new Mock<IEvaluateRole>();
         nameEvaluatorMock.Setup(e => e.Evaluate(It.IsAny<RoleEvaluationContext>()))
-            .Returns(Task.FromResult(new RoleScoreCard { Score = 1 }))
+            .Returns(Task.FromResult(new RoleScoreCard { Score = 1, Justification = "" }))
             .Verifiable();
-        var privilegedEvaluatorMock = new Mock<IEvaluateRoleRequirement>();
+        var privilegedEvaluatorMock = new Mock<IEvaluateRole>();
         privilegedEvaluatorMock.Setup(e => e.Evaluate(It.IsAny<RoleEvaluationContext>()))
-            .Returns(Task.FromResult(new RoleScoreCard { Score = 2 }))
+            .Returns(Task.FromResult(new RoleScoreCard { Score = 2, Justification = "" }))
             .Verifiable();
 
-        var evaluators = new List<IEvaluateRoleRequirement>
+        var evaluators = new List<IEvaluateRole>
         {
             privilegedEvaluatorMock.Object,
             nameEvaluatorMock.Object
@@ -35,5 +35,29 @@ public class EvaluationTests
         Assert.NotNull(result);
         Assert.Equal(3, result.TotalScore);
         Assert.Equal(2, result.RoleScoreCards.Count());
+    }
+
+    [Fact]
+    public async Task It_Can_Filter_Out_Roles_Not_Applicable()
+    {
+        // Arrange
+        var role = new MockRole
+        {
+            Name = "Not valid role"
+        };
+
+        var roleRequirement = new Mock<IRoleRequirement>();
+        var context = new RoleEvaluationContext(role, new { }, new UserContext { UserId = "test" });
+        roleRequirement.Setup(e => e.IsSatisfied(It.Is<RoleEvaluationContext>(r => ((MockRole)r.RoleDefinition).Name == "MockRole"))).Returns(true);
+        var roleEvaluationService = new RoleEvaluationService([], [roleRequirement.Object]);
+        // Act
+        var result = await roleEvaluationService.EvaluateAsync(context);
+        // Assert
+        Assert.Equal(-1000, result.TotalScore);
+    }
+
+    private class MockRole
+    {
+        public string Name { get; set; } = "MockRole";
     }
 }

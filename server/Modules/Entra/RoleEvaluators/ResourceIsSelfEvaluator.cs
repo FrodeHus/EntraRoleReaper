@@ -3,7 +3,7 @@ using EntraRoleReaper.Api.Review.Models;
 
 namespace EntraRoleReaper.Api.Modules.Entra.RoleEvaluators;
 
-public class ResourceIsSelfEvaluator : IEvaluateRoleRequirement
+public class ResourceIsSelfEvaluator : IEvaluateRole
 {
     public Task<RoleScoreCard> Evaluate(RoleEvaluationContext context)
     {
