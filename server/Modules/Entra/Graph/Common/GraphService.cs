@@ -1,13 +1,12 @@
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review.Models;
-using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using System.Text.Json;
 using ModifiedProperty = EntraRoleReaper.Api.Services.Models.ModifiedProperty;
 
-namespace EntraRoleReaper.Api.Services;
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 
 public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<GraphService> logger) : IGraphService
 {

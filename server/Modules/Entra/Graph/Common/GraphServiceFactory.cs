@@ -1,8 +1,8 @@
 using Azure.Identity;
-using EntraRoleReaper.Api.Services.Interfaces;
+using EntraRoleReaper.Api.Services;
 using Microsoft.Graph;
 
-namespace EntraRoleReaper.Api.Services;
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 
 public class GraphServiceFactory(
     IConfiguration config,

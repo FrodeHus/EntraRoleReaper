@@ -1,6 +1,4 @@
-﻿
-
-using EntraRoleReaper.Api.Data.Models;
+﻿using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 using EntraRoleReaper.Api.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;

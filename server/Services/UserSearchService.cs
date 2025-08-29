@@ -1,3 +1,4 @@
+using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 

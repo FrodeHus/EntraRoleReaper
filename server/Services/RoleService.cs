@@ -1,6 +1,7 @@
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Api.Services;
@@ -27,7 +28,7 @@ public class RoleService(
     ITenantService tenantService,
     ILogger<RoleService> logger) : UnitOfWorkService(dbContext, logger), IRoleService
 {
-    private readonly ResourceActionRepository _resourceActionRepository = new  (dbContext);
+    private readonly ResourceActionRepository _resourceActionRepository = new(dbContext);
     public async Task InitializeAsync(bool forceRefresh = false)
     {
         if (await roleRepository.GetRoleCountAsync() > 0 && !forceRefresh)
@@ -54,7 +55,7 @@ public class RoleService(
                 Action = kvp.Key,
                 IsPrivileged = kvp.Value
             }).ToList();
-            var addedResourceActions =  _resourceActionRepository.AddRange(resourceActions);
+            var addedResourceActions = _resourceActionRepository.AddRange(resourceActions);
             var addedRoles = new List<RoleDefinition>();
             foreach (var role in roles)
             {

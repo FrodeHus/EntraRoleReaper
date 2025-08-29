@@ -1,7 +1,7 @@
 ﻿using System.Runtime.ExceptionServices;
-using EntraRoleReaper.Api.Data.Models;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 using EntraRoleReaper.Api.Review.Models;
-using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Api.Review;

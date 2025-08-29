@@ -3,7 +3,7 @@ using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph.Models;
 
-namespace EntraRoleReaper.Api.Services;
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 public interface IGraphService
 {
     Task<List<AuditActivity>> CollectAuditActivitiesAsync(ReviewRequest request, string uid);
