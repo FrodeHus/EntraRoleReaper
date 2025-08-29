@@ -42,10 +42,10 @@ public class GetVerifyAccess : IEndpoint
             config.GetSection("Onboarding:RequiredRoleNames").Get<string[]>()
             ?? new[]
             {
-                "Privileged Role Administrator",
+                "Security Reader",
                 "Global Administrator",
                 "Security Administrator",
-                "Cloud Application Administrator",
+                "Global Reader",
             };
 
         try
