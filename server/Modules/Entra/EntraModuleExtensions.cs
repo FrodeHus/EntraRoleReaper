@@ -22,7 +22,7 @@ public static class EntraModuleExtensions
 
     private static void RegisterEntraRoleEvaluators(this IServiceCollection services)
     {
-        services.AddTransient<IEvaluateRoleRequirement, ResourceOwnerEvaluator>();
+        services.AddTransient<IEvaluateRole, ResourceOwnerEvaluator>();
     }
 
     public static WebApplication UseEntraModule(this WebApplication app)

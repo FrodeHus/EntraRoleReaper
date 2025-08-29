@@ -2,7 +2,7 @@
 
 namespace EntraRoleReaper.Api.Review;
 
-public interface IEvaluateRoleRequirement
+public interface IEvaluateRole
 {
     public Task<RoleScoreCard> Evaluate(RoleEvaluationContext context);
 }

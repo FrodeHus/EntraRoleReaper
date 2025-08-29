@@ -4,7 +4,7 @@ using EntraRoleReaper.Api.Review.Models;
 
 namespace EntraRoleReaper.Api.Modules.Entra.RoleEvaluators;
 
-public class ResourceOwnerEvaluator(IGraphService graphService) : IEvaluateRoleRequirement
+public class ResourceOwnerEvaluator(IGraphService graphService) : IEvaluateRole
 {
     public async Task<RoleScoreCard> Evaluate(RoleEvaluationContext context)
     {
