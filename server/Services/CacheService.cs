@@ -4,8 +4,9 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace EntraRoleReaper.Api.Services;
 
-public class CacheService(IMemoryCache memoryCache, ILogger<CacheService> logger, IRoleService roleService) : ICacheService
+public class CacheService(IMemoryCache memoryCache, ILogger<CacheService> logger, IRoleService roleService, IActivityService activityService) : ICacheService
 {
+    private const string ActivityKeyPrefix = "Activity_";
     public async Task InitializeAsync(bool forceRefresh = false)
     {
         logger.LogInformation("Initializing cache service...");
@@ -30,6 +31,13 @@ public class CacheService(IMemoryCache memoryCache, ILogger<CacheService> logger
             .ToList();
         
         Set("ResourceActions", resourceActions, TimeSpan.FromHours(1));
+
+        var activities = await activityService.GetActivitiesAsync();
+        foreach(var activity in activities)
+        {
+            var dto = ActivityDto.FromActivity(activity);
+            Set($"{ActivityKeyPrefix}{activity.Id}", dto, TimeSpan.FromHours(1));
+        }
         
         Set("CacheMetadata", new CacheMetadata
         {
@@ -74,6 +82,20 @@ public class CacheService(IMemoryCache memoryCache, ILogger<CacheService> logger
         }
         return role;
     }
+
+    public async Task<ActivityDto?> GetActivityByIdAsync(Guid activityId)
+    {
+        var activityDto = Get<ActivityDto>($"{ActivityKeyPrefix}{activityId.ToString()}");
+        if (activityDto is not null)
+            return activityDto;
+        logger.LogWarning("Cache miss for activity ID: {ActivityId}", activityId);
+        var activity = await activityService.GetActivityById(activityId);
+        if (activity is null)
+            return null;
+        var dto = ActivityDto.FromActivity(activity);
+        Set($"{ActivityKeyPrefix}{dto.Id}", dto, TimeSpan.FromHours(1));
+        return dto;
+    }
     
     private void Set<T>(string key, T value, TimeSpan? expiration = null)
     {
@@ -113,5 +135,6 @@ public interface ICacheService
 {
     Task InitializeAsync(bool forceRefresh = false);
     Task<RoleDefinitionDto?> GetRoleByIdAsync(Guid roleId);
+    Task<ActivityDto?> GetActivityByIdAsync(Guid activityId);
     CacheMetadata GetCacheMetadata();   
 }
