@@ -3,6 +3,7 @@ import { Button } from "../../components/ui/button";
 import { CacheStatusChip } from "../CacheStatusChip";
 import { UserMenu } from "../../components/ui/user-menu";
 import { ThemeSwitcher } from "../../components/ui/theme-switcher";
+import { AccessBadge } from "./AccessBadge";
 
 interface StatusNavProps {
   authed: boolean;
@@ -13,10 +14,21 @@ interface StatusNavProps {
   onLogout: () => void;
 }
 
-export function StatusNav({ authed, reviewerName, tenantDomain, accessToken, apiBase, onLogout }: StatusNavProps) {
+export function StatusNav({
+  authed,
+  reviewerName,
+  tenantDomain,
+  accessToken,
+  apiBase,
+  onLogout,
+}: StatusNavProps) {
   if (!authed) return null;
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-1.5 rounded text-sm transition-colors ${isActive ? "bg-accent/60 text-foreground" : "text-muted-foreground hover:bg-accent/40"}`;
+    `px-3 py-1.5 rounded text-sm transition-colors ${
+      isActive
+        ? "bg-accent/60 text-foreground"
+        : "text-muted-foreground hover:bg-accent/40"
+    }`;
 
   return (
     <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 overflow-visible relative">
@@ -61,6 +73,7 @@ export function StatusNav({ authed, reviewerName, tenantDomain, accessToken, api
 
         {/* right: status/actions */}
         <div className="flex items-center justify-end gap-2">
+          <AccessBadge accessToken={accessToken} apiBase={apiBase} />
           <CacheStatusChip accessToken={accessToken} apiBase={apiBase} />
           <ThemeSwitcher />
           <UserMenu

@@ -61,7 +61,7 @@ public static class EndpointMapper
     private static void MapOnboardingEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/onboarding").WithTags("Onboarding");
-        group.MapEndpoint<PostVerify>().MapEndpoint<GetTenant>();
+        group.MapEndpoint<PostVerify>().MapEndpoint<GetTenant>().MapEndpoint<GetVerifyAccess>();
     }
 
     private static void MapActivityEndpoints(this IEndpointRouteBuilder app)
