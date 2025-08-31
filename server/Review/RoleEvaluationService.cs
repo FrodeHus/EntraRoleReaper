@@ -2,13 +2,20 @@
 
 namespace EntraRoleReaper.Api.Review;
 
-public class RoleEvaluationService(IEnumerable<IEvaluateRole> evaluators, IEnumerable<IRoleRequirement>? roleRequirements = null)
+public class RoleEvaluationService(IUserService userService, IEnumerable<IEvaluateRole> evaluators, IEnumerable<IRoleRequirement>? roleRequirements = null)
 {
-    public async Task<RoleEvaluationResult> EvaluateAsync(RoleEvaluationContext context)
+    public async Task<RoleEvaluationResult> EvaluateRole(object roleDefinition, object targetResource)
+    {
+        var userContext = await userService.GetCurrentUser();
+        var context = new RoleEvaluationContext(roleDefinition, targetResource, userContext);
+        return await EvaluateAsync(context);
+    }
+
+    internal async Task<RoleEvaluationResult> EvaluateAsync(RoleEvaluationContext context)
     {
         if (!MeetsAllRequirements(context))
         {
-            return new RoleEvaluationResult(-1000, Array.Empty<RoleScoreCard>());
+            return new RoleEvaluationResult(context.RoleDefinition, -1000, Array.Empty<RoleScoreCard>());
         }
 
         var roleScoreCards = new List<RoleScoreCard>();
@@ -19,7 +26,7 @@ public class RoleEvaluationService(IEnumerable<IEvaluateRole> evaluators, IEnume
         }
 
         var score = roleScoreCards.Sum(r => r.Score);
-        return new RoleEvaluationResult(score, roleScoreCards);
+        return new RoleEvaluationResult(context.RoleDefinition, score, roleScoreCards);
     }
 
     private bool MeetsAllRequirements(RoleEvaluationContext context)
@@ -39,4 +46,4 @@ public class RoleEvaluationService(IEnumerable<IEvaluateRole> evaluators, IEnume
     }
 }
 
-public record RoleEvaluationResult(int TotalScore, IEnumerable<RoleScoreCard> RoleScoreCards);
+public record RoleEvaluationResult(object RoleDefinition, int TotalScore, IEnumerable<RoleScoreCard> RoleScoreCards);
