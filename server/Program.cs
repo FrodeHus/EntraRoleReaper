@@ -81,6 +81,8 @@ builder.Services.AddScoped<ActivityPermissionAnalyzer>();
 builder.Services.AddScoped<RoleAdvisor>();
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddScoped<ITenantService, TenantService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<RoleEvaluationService>();
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<ITokenProtector, DataProtectionTokenProtector>();
 builder.Services.AddEndpointsApiExplorer();
