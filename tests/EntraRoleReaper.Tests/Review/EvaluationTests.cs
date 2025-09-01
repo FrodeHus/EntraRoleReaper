@@ -25,11 +25,13 @@ public class EvaluationTests
             nameEvaluatorMock.Object
         };
 
-        var roleEvaluationService = new RoleEvaluationService(evaluators);
+        var userService = new Mock<IUserService>();
+        userService.Setup(u => u.GetCurrentUser()).ReturnsAsync(new UserContext { UserId = "test" , TenantId = Guid.NewGuid()});
+        var roleEvaluationService = new RoleEvaluationService(userService.Object, evaluators);
         var role = new { Name = "Test Role" };
 
         // Act
-        var result = await roleEvaluationService.EvaluateAsync(new RoleEvaluationContext(role, targetResource.Object, new UserContext { UserId = "test" }));
+        var result = await roleEvaluationService.EvaluateRole(role, targetResource.Object);
 
         // Assert
         Assert.NotNull(result);
@@ -47,11 +49,12 @@ public class EvaluationTests
         };
 
         var roleRequirement = new Mock<IRoleRequirement>();
-        var context = new RoleEvaluationContext(role, new { }, new UserContext { UserId = "test" });
+        var userService = new Mock<IUserService>();
+        userService.Setup(u => u.GetCurrentUser()).ReturnsAsync(new UserContext { UserId = "test" , TenantId = Guid.NewGuid()});
+        var roleEvaluationService = new RoleEvaluationService(userService.Object, [], [roleRequirement.Object]);
         roleRequirement.Setup(e => e.IsSatisfied(It.Is<RoleEvaluationContext>(r => ((MockRole)r.RoleDefinition).Name == "MockRole"))).Returns(true);
-        var roleEvaluationService = new RoleEvaluationService([], [roleRequirement.Object]);
         // Act
-        var result = await roleEvaluationService.EvaluateAsync(context);
+        var result = await roleEvaluationService.EvaluateRole(role, null);
         // Assert
         Assert.Equal(-1000, result.TotalScore);
     }
