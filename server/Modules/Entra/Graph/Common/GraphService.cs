@@ -4,6 +4,7 @@ using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using System.Text.Json;
+using Microsoft.Graph.Models.ODataErrors;
 using ModifiedProperty = EntraRoleReaper.Api.Services.Models.ModifiedProperty;
 
 namespace EntraRoleReaper.Api.Modules.Entra.Graph.Common;
@@ -368,6 +369,48 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
         {
             logger.LogError(ex, "Failed fetching tenant metadata (non-persistent) for {TenantId}", tenantId);
             return null;
+        }
+    }
+    
+    public async Task<string?> ActivatePIMRole(string roleId, int durationMinutes = 60)
+    {
+        var assignments = await GraphClient.RoleManagement.Directory.RoleEligibilitySchedules.GetAsync(q =>
+        {
+            q.QueryParameters.Filter = $"roleDefinitionId eq '{roleId}'";
+            q.QueryParameters.Top = 20;
+        });
+        var assignment = assignments?.Value?.FirstOrDefault();
+        if (assignment == null)
+            throw new InvalidOperationException($"No eligible assignment found for role {roleId}");
+
+        var activation = new UnifiedRoleAssignmentScheduleRequest
+        {
+            Action = UnifiedRoleScheduleRequestActions.SelfActivate,
+            RoleDefinitionId = roleId,
+            ScheduleInfo = new RequestSchedule
+            {
+                Expiration = new ExpirationPattern
+                {
+                    Type = ExpirationPatternType.AfterDateTime,
+                    EndDateTime = DateTimeOffset.UtcNow.AddMinutes(durationMinutes)
+                }
+            },
+            Justification = "Activated via Entra Role Reaper for review processing",
+            PrincipalId = assignment.PrincipalId,
+            DirectoryScopeId = assignment.DirectoryScopeId,
+        };
+        try
+        {
+            var result =
+                await GraphClient.RoleManagement.Directory.RoleAssignmentScheduleRequests.PostAsync(activation);
+            if (result == null || string.IsNullOrWhiteSpace(result.Id))
+                throw new InvalidOperationException($"Failed to activate role {roleId}");
+            return result.Status;
+        }
+        catch (ODataError ex)
+        {
+            logger.LogError(ex, "Failed to activate role {RoleId}", roleId);
+            return ex.Error?.Message;
         }
     }
 

@@ -5,6 +5,7 @@ using EntraRoleReaper.Api.Endpoints.Review;
 using EntraRoleReaper.Api.Endpoints.Roles;
 using EntraRoleReaper.Api.Endpoints.Search;
 using EntraRoleReaper.Api.Endpoints.TargetResources;
+using EntraRoleReaper.Api.Modules.Entra.Endpoints;
 using EntraRoleReaper.Api.Modules.Entra.RoleEvaluators;
 using EntraRoleReaper.Api.Review;
 
@@ -33,8 +34,15 @@ public static class EntraModuleExtensions
         app.MapSearchEndpoints();
         app.MapCacheEndpoints();
         app.MapResourceActionEndpoints();
+        app.MapEntraOperations();
         app.MapOnboardingEndpoints();
         return app;
+    }
+    
+    private static void MapEntraOperations(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/entra").WithTags("Entra Operations");
+        group.MapEndpoint<PostActivatePIMRole>();
     }
 
     private static void MapRoleEndpoints(this IEndpointRouteBuilder app)
