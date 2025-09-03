@@ -40,4 +40,9 @@ internal class SimpleGraphService(Dictionary<string, bool> targetOwners) : IGrap
     {
         throw new NotImplementedException();
     }
+
+    public Task<string?> ActivatePIMRole(string roleId, int durationMinutes = 60)
+    {
+        throw new NotImplementedException();
+    }
 }
