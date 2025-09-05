@@ -6,6 +6,14 @@ namespace EntraRoleReaper.Api;
 
 public static class ConfigureApp
 {
+    public static IServiceCollection ConfigureServices(this IServiceCollection services)
+    {
+        services.AddMcpServer()
+            .WithStdioServerTransport()
+            .WithToolsFromAssembly();
+        return services;
+    }
+
     public static async Task ConfigureApplication(this WebApplication app, string[] corsOrigins)
     {
         app.UseCors(policy =>
@@ -24,7 +32,7 @@ public static class ConfigureApp
         await app.EnsureDatabaseCreated();
     }
 
-    
+
     private static async Task EnsureDatabaseCreated(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();

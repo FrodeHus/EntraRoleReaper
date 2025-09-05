@@ -117,6 +117,8 @@ builder.Services.Configure<ReviewOptions>(builder.Configuration.GetSection("Revi
 builder.Services.AddSingleton<IReviewCoordinator, ReviewCoordinator>();
 builder.Services.AddHostedService<ReviewWorker>();
 
+builder.Services.ConfigureServices();
+
 var app = builder.Build();
 
 await app.ConfigureApplication(corsOrigins);
