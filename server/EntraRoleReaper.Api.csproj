@@ -11,7 +11,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.8" />
   <PackageReference Include="Microsoft.Identity.Client" Version="4.76.0" />
   <PackageReference Include="Microsoft.Identity.Web" Version="3.14.0" />
-  <PackageReference Include="Azure.Identity" Version="1.15.0" />
+  <PackageReference Include="Azure.Identity" Version="1.16.0" />
     <PackageReference Include="Microsoft.Graph" Version="5.91.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.8" />
     <PackageReference Include="StackExchange.Redis" Version="2.9.11" />
