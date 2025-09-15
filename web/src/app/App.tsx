@@ -13,6 +13,7 @@ import { OnboardPage } from "./pages/OnboardPage";
 import { TenantPage } from "./pages/TenantPage";
 import { RolesPage } from "./pages/RolesPage";
 import { MappingsPage } from "./pages/MappingsPage";
+import { RoleEditorPage } from "./pages/RoleEditorPage";
 
 // apiBase constant retained for passing to components expecting explicit base.
 
@@ -123,6 +124,24 @@ export default function App() {
                   path="/roles"
                   element={
                     <RolesPage accessToken={accessToken} apiBase={apiBase} />
+                  }
+                />
+                <Route
+                  path="/role/editor"
+                  element={
+                    <RoleEditorPage
+                      accessToken={accessToken}
+                      apiBase={apiBase}
+                    />
+                  }
+                />
+                <Route
+                  path="/role/editor/:id"
+                  element={
+                    <RoleEditorPage
+                      accessToken={accessToken}
+                      apiBase={apiBase}
+                    />
                   }
                 />
                 <Route path="/tenant" element={<TenantPage />} />
