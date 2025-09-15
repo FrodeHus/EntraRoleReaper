@@ -250,66 +250,192 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-sm font-medium tracking-wide">{editing ? "Edit Role" : "Create Role"}</h2>
+        <h2 className="text-sm font-medium tracking-wide">
+          {editing ? "Edit Role" : "Create Role"}
+        </h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setCombinatorOpen(true)} type="button"><Layers className="h-4 w-4 mr-1" /> Role combinator</Button>
-          <Button variant="secondary" size="sm" type="button" onClick={() => navigate(-1)}>Back</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCombinatorOpen(true)}
+            type="button"
+          >
+            <Layers className="h-4 w-4 mr-1" /> Role combinator
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            type="button"
+            onClick={() => navigate(-1)}
+          >
+            Back
+          </Button>
           {/* Save button placeholder - future implementation */}
-          <Button variant="default" size="sm" disabled title="Saving not yet implemented">Save</Button>
+          <Button
+            variant="default"
+            size="sm"
+            disabled
+            title="Saving not yet implemented"
+          >
+            Save
+          </Button>
         </div>
       </div>
       {editing && isBuiltIn && (
-        <div className="text-xs rounded border border-amber-400/40 bg-amber-100/40 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 p-2">Built-in roles cannot be edited. You may clone its actions using the Role combinator.</div>
+        <div className="text-xs rounded border border-amber-400/40 bg-amber-100/40 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 p-2">
+          Built-in roles cannot be edited. You may clone its actions using the
+          Role combinator.
+        </div>
       )}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="space-y-6">
         <Card>
-          <CardHeader><CardTitle className="text-sm">General</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm">General</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <label className="text-xs font-medium">Role name</label>
-              <Input value={roleName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoleName(e.target.value)} disabled={isBuiltIn} placeholder="Enter role name" />
+              <Input
+                value={roleName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setRoleName(e.target.value)
+                }
+                disabled={isBuiltIn}
+                placeholder="Enter role name"
+              />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium">Description</label>
-              <textarea className="w-full rounded border bg-background px-2 py-1 text-sm h-28" value={description} onChange={e => setDescription(e.target.value)} disabled={isBuiltIn} placeholder="Describe this role" />
+              <textarea
+                className="w-full rounded border bg-background px-2 py-1 text-sm h-28"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={isBuiltIn}
+                placeholder="Describe this role"
+              />
             </div>
           </CardContent>
         </Card>
-        <Card className="md:row-span-2">
-          <CardHeader><CardTitle className="text-sm">Resource actions ({selectedActions.length})</CardTitle></CardHeader>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center justify-between">
+              <span>Resource actions ({selectedActions.length})</span>
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                <span className="hidden md:inline">
+                  Click or checkbox to move between lists
+                </span>
+              </div>
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2">
-              <Input value={actionQuery} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActionQuery(e.target.value)} placeholder="Search actions" className="text-sm" />
+              <Input
+                value={actionQuery}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setActionQuery(e.target.value)
+                }
+                placeholder="Search actions"
+                className="text-sm"
+              />
               {actionQuery && (
-                <Button variant="ghost" size="icon" type="button" onClick={() => setActionQuery("")}><X className="h-4 w-4" /></Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  onClick={() => setActionQuery("")}
+                >
+                  {" "}
+                  <X className="h-4 w-4" />{" "}
+                </Button>
               )}
             </div>
-            {actionResults.length > 0 && (
-              <ul className="max-h-48 overflow-auto border rounded divide-y text-xs">
-                {actionResults.map(a => (
-                  <li key={a.id} className="flex items-center justify-between px-2 py-1">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox checked={selectedActionIds.has(a.id)} onCheckedChange={() => toggleAction(a)} />
-                      <span className="font-mono truncate max-w-[300px]" title={a.action}>{a.action}</span>
-                    </label>
-                    {a.isPrivileged && <span className="text-[10px] px-1 py-0.5 rounded bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-300">priv</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="space-y-2">
-              <h4 className="text-xs font-medium uppercase tracking-wide">Selected actions</h4>
-              {selectedActions.length === 0 && <div className="text-xs text-muted-foreground">None selected</div>}
-              {selectedActions.length > 0 && (
-                <ul className="max-h-64 overflow-auto border rounded divide-y text-xs">
-                  {selectedActions.sort((a,b) => a.action.localeCompare(b.action)).map(a => (
-                    <li key={a.id} className="flex items-center justify-between px-2 py-1">
-                      <span className="font-mono truncate max-w-[360px]" title={a.action}>{a.action}</span>
-                      <button type="button" className="text-rose-600 hover:underline" onClick={() => setSelectedActions(prev => prev.filter(x => x.id !== a.id))}>remove</button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <h4 className="text-xs font-medium uppercase tracking-wide">
+                  Search results{" "}
+                  {actionResults.length > 0 && (
+                    <span className="font-normal lowercase text-muted-foreground">
+                      ({actionResults.length})
+                    </span>
+                  )}
+                </h4>
+                {actionResults.length === 0 && (
+                  <div className="text-xs text-muted-foreground border rounded p-3">
+                    {actionQuery
+                      ? "No matches"
+                      : "Type to search resource actions"}
+                  </div>
+                )}
+                {actionResults.length > 0 && (
+                  <ul className="max-h-72 overflow-auto border rounded divide-y text-xs">
+                    {actionResults.map((a) => (
+                      <li
+                        key={a.id}
+                        className="flex items-center justify-between px-2 py-1 hover:bg-accent/30"
+                      >
+                        <label
+                          className="flex items-center gap-2 cursor-pointer w-full"
+                          onClick={() => toggleAction(a)}
+                        >
+                          <Checkbox
+                            checked={selectedActionIds.has(a.id)}
+                            onCheckedChange={() => toggleAction(a)}
+                          />
+                          <span className="font-mono truncate" title={a.action}>
+                            {a.action}
+                          </span>
+                        </label>
+                        {a.isPrivileged && (
+                          <span className="ml-2 text-[9px] px-1 py-0.5 rounded bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-300">
+                            priv
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-xs font-medium uppercase tracking-wide flex items-center justify-between">
+                  Selected actions{" "}
+                  <span className="font-normal lowercase text-muted-foreground">
+                    ({selectedActions.length})
+                  </span>
+                </h4>
+                {selectedActions.length === 0 && (
+                  <div className="text-xs text-muted-foreground border rounded p-3">
+                    None selected
+                  </div>
+                )}
+                {selectedActions.length > 0 && (
+                  <ul className="max-h-72 overflow-auto border rounded divide-y text-xs">
+                    {selectedActions
+                      .slice()
+                      .sort((a, b) => a.action.localeCompare(b.action))
+                      .map((a) => (
+                        <li
+                          key={a.id}
+                          className="flex items-center justify-between px-2 py-1 hover:bg-accent/30"
+                        >
+                          <span className="font-mono truncate" title={a.action}>
+                            {a.action}
+                          </span>
+                          <button
+                            type="button"
+                            className="text-[10px] text-rose-600 hover:underline ml-2"
+                            onClick={() =>
+                              setSelectedActions((prev) =>
+                                prev.filter((x) => x.id !== a.id)
+                              )
+                            }
+                          >
+                            remove
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -320,111 +446,237 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Role combinator</DialogTitle>
-            <DialogDescription>Build a role by cloning actions from roles and subtracting others.</DialogDescription>
+            <DialogDescription>
+              Build a role by cloning actions from roles and subtracting others.
+            </DialogDescription>
           </DialogHeader>
           {!comboPreview && (
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Clone combobox */}
-            <div className="space-y-3">
-              <div ref={cloneRef} className="relative">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={cloneSearch}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setCloneSearch(e.target.value); setCloneOpen(true); }}
-                    onFocus={() => { setCloneOpen(true); if (!cloneSearch) setCloneSearch(''); }}
-                    placeholder="Search roles to clone"
-                    className="text-sm"
-                    aria-expanded={cloneOpen}
-                    aria-controls="clone-combobox-list"
-                  />
-                  {cloneSearch && <Button variant="ghost" size="icon" type="button" onClick={() => { setCloneSearch(''); setCloneOpen(true); }}> <X className="h-4 w-4" /> </Button>}
-                </div>
-                {cloneOpen && (
-                  <div id="clone-combobox-list" role="listbox" aria-label="Clone role search results" className="absolute z-20 mt-1 w-full max-h-56 overflow-auto border rounded bg-background shadow text-xs divide-y">
-                    {cloneCandidates.length === 0 && <div className="px-2 py-2 text-muted-foreground">No roles</div>}
-                    {cloneCandidates.map(r => {
-                      const selected = cloneRoles.some(c => c.id === r.id);
-                      return (
-                        <div
-                          key={r.id}
-                          role="option"
-                          data-selected={selected ? 'true' : 'false'}
-                          className={`px-2 py-1 cursor-pointer flex items-center justify-between hover:bg-accent ${selected ? 'opacity-50' : ''}`}
-                          onMouseDown={(e) => { e.preventDefault(); if (!selected) { addClone(r); } setCloneOpen(false); }}
-                        >
-                          <span className="truncate" title={r.displayName}>{r.displayName}</span>
-                          {!selected && <span className="text-[10px] border rounded px-1">add</span>}
-                          {selected && <span className="text-[10px] px-1 text-muted-foreground">added</span>}
-                        </div>
-                      );
-                    })}
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Clone combobox */}
+              <div className="space-y-3">
+                <div ref={cloneRef} className="relative">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={cloneSearch}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setCloneSearch(e.target.value);
+                        setCloneOpen(true);
+                      }}
+                      onFocus={() => {
+                        setCloneOpen(true);
+                        if (!cloneSearch) setCloneSearch("");
+                      }}
+                      placeholder="Search roles to clone"
+                      className="text-sm"
+                      aria-expanded={cloneOpen}
+                      aria-controls="clone-combobox-list"
+                    />
+                    {cloneSearch && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        type="button"
+                        onClick={() => {
+                          setCloneSearch("");
+                          setCloneOpen(true);
+                        }}
+                      >
+                        {" "}
+                        <X className="h-4 w-4" />{" "}
+                      </Button>
+                    )}
                   </div>
-                )}
+                  {cloneOpen && (
+                    <div
+                      id="clone-combobox-list"
+                      role="listbox"
+                      aria-label="Clone role search results"
+                      className="absolute z-20 mt-1 w-full max-h-56 overflow-auto border rounded bg-background shadow text-xs divide-y"
+                    >
+                      {cloneCandidates.length === 0 && (
+                        <div className="px-2 py-2 text-muted-foreground">
+                          No roles
+                        </div>
+                      )}
+                      {cloneCandidates.map((r) => {
+                        const selected = cloneRoles.some((c) => c.id === r.id);
+                        return (
+                          <div
+                            key={r.id}
+                            role="option"
+                            data-selected={selected ? "true" : "false"}
+                            className={`px-2 py-1 cursor-pointer flex items-center justify-between hover:bg-accent ${
+                              selected ? "opacity-50" : ""
+                            }`}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              if (!selected) {
+                                addClone(r);
+                              }
+                              setCloneOpen(false);
+                            }}
+                          >
+                            <span className="truncate" title={r.displayName}>
+                              {r.displayName}
+                            </span>
+                            {!selected && (
+                              <span className="text-[10px] border rounded px-1">
+                                add
+                              </span>
+                            )}
+                            {selected && (
+                              <span className="text-[10px] px-1 text-muted-foreground">
+                                added
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h4 className="text-xs font-medium mb-1">
+                    Clone list ({cloneRoles.length})
+                  </h4>
+                  <ul className="border rounded max-h-40 overflow-auto divide-y text-xs">
+                    {cloneRoles.map((r) => (
+                      <li
+                        key={r.id}
+                        className="flex items-center justify-between px-2 py-1"
+                      >
+                        <span className="truncate" title={r.displayName}>
+                          {r.displayName}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeClone(r.id)}
+                          className="text-rose-600 hover:underline"
+                        >
+                          remove
+                        </button>
+                      </li>
+                    ))}
+                    {cloneRoles.length === 0 && (
+                      <li className="px-2 py-1 text-muted-foreground">Empty</li>
+                    )}
+                  </ul>
+                </div>
               </div>
-              <div>
-                <h4 className="text-xs font-medium mb-1">Clone list ({cloneRoles.length})</h4>
-                <ul className="border rounded max-h-40 overflow-auto divide-y text-xs">
-                  {cloneRoles.map(r => (
-                    <li key={r.id} className="flex items-center justify-between px-2 py-1">
-                      <span className="truncate" title={r.displayName}>{r.displayName}</span>
-                      <button type="button" onClick={() => removeClone(r.id)} className="text-rose-600 hover:underline">remove</button>
-                    </li>
-                  ))}
-                  {cloneRoles.length === 0 && <li className="px-2 py-1 text-muted-foreground">Empty</li>}
-                </ul>
+              {/* Subtract combobox */}
+              <div className="space-y-3">
+                <div ref={subtractRef} className="relative">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={subtractSearch}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setSubtractSearch(e.target.value);
+                        setSubtractOpen(true);
+                      }}
+                      onFocus={() => {
+                        setSubtractOpen(true);
+                        if (!subtractSearch) setSubtractSearch("");
+                      }}
+                      placeholder="Search roles to subtract"
+                      className="text-sm"
+                      aria-expanded={subtractOpen}
+                      aria-controls="subtract-combobox-list"
+                    />
+                    {subtractSearch && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        type="button"
+                        onClick={() => {
+                          setSubtractSearch("");
+                          setSubtractOpen(true);
+                        }}
+                      >
+                        {" "}
+                        <X className="h-4 w-4" />{" "}
+                      </Button>
+                    )}
+                  </div>
+                  {subtractOpen && (
+                    <div
+                      id="subtract-combobox-list"
+                      role="listbox"
+                      aria-label="Subtract role search results"
+                      className="absolute z-20 mt-1 w-full max-h-56 overflow-auto border rounded bg-background shadow text-xs divide-y"
+                    >
+                      {subtractCandidates.length === 0 && (
+                        <div className="px-2 py-2 text-muted-foreground">
+                          No roles
+                        </div>
+                      )}
+                      {subtractCandidates.map((r) => {
+                        const selected = subtractRoles.some(
+                          (c) => c.id === r.id
+                        );
+                        return (
+                          <div
+                            key={r.id}
+                            role="option"
+                            data-selected={selected ? "true" : "false"}
+                            className={`px-2 py-1 cursor-pointer flex items-center justify-between hover:bg-accent ${
+                              selected ? "opacity-50" : ""
+                            }`}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              if (!selected) {
+                                addSubtract(r);
+                              }
+                              setSubtractOpen(false);
+                            }}
+                          >
+                            <span className="truncate" title={r.displayName}>
+                              {r.displayName}
+                            </span>
+                            {!selected && (
+                              <span className="text-[10px] border rounded px-1">
+                                add
+                              </span>
+                            )}
+                            {selected && (
+                              <span className="text-[10px] px-1 text-muted-foreground">
+                                added
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h4 className="text-xs font-medium mb-1">
+                    Subtract list ({subtractRoles.length})
+                  </h4>
+                  <ul className="border rounded max-h-40 overflow-auto divide-y text-xs">
+                    {subtractRoles.map((r) => (
+                      <li
+                        key={r.id}
+                        className="flex items-center justify-between px-2 py-1"
+                      >
+                        <span className="truncate" title={r.displayName}>
+                          {r.displayName}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeSubtract(r.id)}
+                          className="text-rose-600 hover:underline"
+                        >
+                          remove
+                        </button>
+                      </li>
+                    ))}
+                    {subtractRoles.length === 0 && (
+                      <li className="px-2 py-1 text-muted-foreground">Empty</li>
+                    )}
+                  </ul>
+                </div>
               </div>
             </div>
-            {/* Subtract combobox */}
-            <div className="space-y-3">
-              <div ref={subtractRef} className="relative">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={subtractSearch}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setSubtractSearch(e.target.value); setSubtractOpen(true); }}
-                    onFocus={() => { setSubtractOpen(true); if (!subtractSearch) setSubtractSearch(''); }}
-                    placeholder="Search roles to subtract"
-                    className="text-sm"
-                    aria-expanded={subtractOpen}
-                    aria-controls="subtract-combobox-list"
-                  />
-                  {subtractSearch && <Button variant="ghost" size="icon" type="button" onClick={() => { setSubtractSearch(''); setSubtractOpen(true); }}> <X className="h-4 w-4" /> </Button>}
-                </div>
-                {subtractOpen && (
-                  <div id="subtract-combobox-list" role="listbox" aria-label="Subtract role search results" className="absolute z-20 mt-1 w-full max-h-56 overflow-auto border rounded bg-background shadow text-xs divide-y">
-                    {subtractCandidates.length === 0 && <div className="px-2 py-2 text-muted-foreground">No roles</div>}
-                    {subtractCandidates.map(r => {
-                      const selected = subtractRoles.some(c => c.id === r.id);
-                      return (
-                        <div
-                          key={r.id}
-                          role="option"
-                          data-selected={selected ? 'true' : 'false'}
-                          className={`px-2 py-1 cursor-pointer flex items-center justify-between hover:bg-accent ${selected ? 'opacity-50' : ''}`}
-                          onMouseDown={(e) => { e.preventDefault(); if (!selected) { addSubtract(r); } setSubtractOpen(false); }}
-                        >
-                          <span className="truncate" title={r.displayName}>{r.displayName}</span>
-                          {!selected && <span className="text-[10px] border rounded px-1">add</span>}
-                          {selected && <span className="text-[10px] px-1 text-muted-foreground">added</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              <div>
-                <h4 className="text-xs font-medium mb-1">Subtract list ({subtractRoles.length})</h4>
-                <ul className="border rounded max-h-40 overflow-auto divide-y text-xs">
-                  {subtractRoles.map(r => (
-                    <li key={r.id} className="flex items-center justify-between px-2 py-1">
-                      <span className="truncate" title={r.displayName}>{r.displayName}</span>
-                      <button type="button" onClick={() => removeSubtract(r.id)} className="text-rose-600 hover:underline">remove</button>
-                    </li>
-                  ))}
-                  {subtractRoles.length === 0 && <li className="px-2 py-1 text-muted-foreground">Empty</li>}
-                </ul>
-              </div>
-            </div>
-          </div>
           )}
           {comboPreview && (
             <div className="space-y-5">
@@ -432,42 +684,94 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
                 <div className="font-medium mb-1">Preview changes</div>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div className="border rounded p-2">
-                    <h4 className="text-xs font-semibold mb-1 flex items-center justify-between">Add ({comboPreview.additions.length})
-                      <button type="button" className="text-[10px] underline ml-2 opacity-70 hover:opacity-100" onClick={() => setAddFilters({ included: true, subtracted: true, suppressed: true })}>reset</button>
+                    <h4 className="text-xs font-semibold mb-1 flex items-center justify-between">
+                      Add ({comboPreview.additions.length})
+                      <button
+                        type="button"
+                        className="text-[10px] underline ml-2 opacity-70 hover:opacity-100"
+                        onClick={() =>
+                          setAddFilters({
+                            included: true,
+                            subtracted: true,
+                            suppressed: true,
+                          })
+                        }
+                      >
+                        reset
+                      </button>
                     </h4>
                     <div className="flex flex-wrap gap-2 mb-1">
-                      {(['included','subtracted','suppressed'] as const).map(k => (
-                        <label key={k} className="flex items-center gap-1 text-[10px] cursor-pointer select-none">
-                          <Checkbox
-                            checked={(addFilters as any)[k]}
-                            onCheckedChange={() => setAddFilters(f => ({ ...f, [k]: !(f as any)[k] }))}
-                          />
-                          <span>{k}</span>
-                        </label>
-                      ))}
+                      {(["included", "subtracted", "suppressed"] as const).map(
+                        (k) => (
+                          <label
+                            key={k}
+                            className="flex items-center gap-1 text-[10px] cursor-pointer select-none"
+                          >
+                            <Checkbox
+                              checked={(addFilters as any)[k]}
+                              onCheckedChange={() =>
+                                setAddFilters((f) => ({
+                                  ...f,
+                                  [k]: !(f as any)[k],
+                                }))
+                              }
+                            />
+                            <span>{k}</span>
+                          </label>
+                        )
+                      )}
                     </div>
-                    {comboPreview.additions.length === 0 && <div className="text-xs text-muted-foreground">None</div>}
+                    {comboPreview.additions.length === 0 && (
+                      <div className="text-xs text-muted-foreground">None</div>
+                    )}
                     {comboPreview.additions.length > 0 && (
                       <ul className="max-h-48 overflow-auto text-[11px] space-y-0.5">
                         {comboPreview.additions
                           .slice()
-                          .sort((a,b)=>a.action.localeCompare(b.action))
-                          .map(a => {
+                          .sort((a, b) => a.action.localeCompare(b.action))
+                          .map((a) => {
                             const reason = comboPreview.excludedReason[a.id];
                             const notInFinal = !!reason;
-                            if (reason === 'suppressed' && !addFilters.suppressed) return null;
-                            if (reason === 'subtracted' && !addFilters.subtracted) return null;
+                            if (
+                              reason === "suppressed" &&
+                              !addFilters.suppressed
+                            )
+                              return null;
+                            if (
+                              reason === "subtracted" &&
+                              !addFilters.subtracted
+                            )
+                              return null;
                             if (!reason && !addFilters.included) return null;
                             return (
                               <li
                                 key={a.id}
-                                className={`font-mono truncate flex items-center gap-1 ${notInFinal ? 'opacity-60 line-through' : ''}`}
-                                title={a.action + (reason ? (reason === 'suppressed' ? ' (suppressed - wildcard/fields broadening conflict)' : ' (subtracted)') : '')}
+                                className={`font-mono truncate flex items-center gap-1 ${
+                                  notInFinal ? "opacity-60 line-through" : ""
+                                }`}
+                                title={
+                                  a.action +
+                                  (reason
+                                    ? reason === "suppressed"
+                                      ? " (suppressed - wildcard/fields broadening conflict)"
+                                      : " (subtracted)"
+                                    : "")
+                                }
                               >
                                 <span className="truncate">{a.action}</span>
                                 {reason && (
-                                  <span className={`text-[9px] px-1 py-0.5 rounded border ${reason === 'suppressed' ? 'bg-amber-200 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border-amber-300/60' : 'bg-slate-200 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border-slate-300/60'}`}
-                                    title={reason === 'suppressed' ? 'Suppressed: wildcard or allProperties conflicts with removed specifics' : 'Subtracted: removed via subtract roles'}>
+                                  <span
+                                    className={`text-[9px] px-1 py-0.5 rounded border ${
+                                      reason === "suppressed"
+                                        ? "bg-amber-200 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border-amber-300/60"
+                                        : "bg-slate-200 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border-slate-300/60"
+                                    }`}
+                                    title={
+                                      reason === "suppressed"
+                                        ? "Suppressed: wildcard or allProperties conflicts with removed specifics"
+                                        : "Subtracted: removed via subtract roles"
+                                    }
+                                  >
                                     {reason}
                                   </span>
                                 )}
@@ -478,38 +782,95 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
                     )}
                   </div>
                   <div className="border rounded p-2">
-                    <h4 className="text-xs font-semibold mb-1 flex items-center justify-between">Remove ({comboPreview.removals.length})
-                      <button type="button" className="text-[10px] underline ml-2 opacity-70 hover:opacity-100" onClick={() => setRemoveFilters({ effective: true, kept: true, noEffect: true })}>reset</button>
+                    <h4 className="text-xs font-semibold mb-1 flex items-center justify-between">
+                      Remove ({comboPreview.removals.length})
+                      <button
+                        type="button"
+                        className="text-[10px] underline ml-2 opacity-70 hover:opacity-100"
+                        onClick={() =>
+                          setRemoveFilters({
+                            effective: true,
+                            kept: true,
+                            noEffect: true,
+                          })
+                        }
+                      >
+                        reset
+                      </button>
                     </h4>
                     <div className="flex flex-wrap gap-2 mb-1">
-                      {(['effective','kept','noEffect'] as const).map(k => (
-                        <label key={k} className="flex items-center gap-1 text-[10px] cursor-pointer select-none">
+                      {(["effective", "kept", "noEffect"] as const).map((k) => (
+                        <label
+                          key={k}
+                          className="flex items-center gap-1 text-[10px] cursor-pointer select-none"
+                        >
                           <Checkbox
                             checked={(removeFilters as any)[k]}
-                            onCheckedChange={() => setRemoveFilters(f => ({ ...f, [k]: !(f as any)[k] }))}
+                            onCheckedChange={() =>
+                              setRemoveFilters((f) => ({
+                                ...f,
+                                [k]: !(f as any)[k],
+                              }))
+                            }
                           />
                           <span>{k}</span>
                         </label>
                       ))}
                     </div>
-                    {comboPreview.removals.length === 0 && <div className="text-xs text-muted-foreground">None</div>}
+                    {comboPreview.removals.length === 0 && (
+                      <div className="text-xs text-muted-foreground">None</div>
+                    )}
                     {comboPreview.removals.length > 0 && (
                       <ul className="max-h-48 overflow-auto text-[11px] space-y-0.5">
                         {comboPreview.removals
                           .slice()
-                          .sort((a,b)=>a.action.localeCompare(b.action))
-                          .map(a => {
+                          .sort((a, b) => a.action.localeCompare(b.action))
+                          .map((a) => {
                             const reason = comboPreview.removalReason[a.id];
-                            const style = reason === 'no-effect' ? 'opacity-60' : reason === 'kept' ? 'opacity-70' : '';
-                            if (reason === 'effective' && !removeFilters.effective) return null;
-                            if (reason === 'kept' && !removeFilters.kept) return null;
-                            if (reason === 'no-effect' && !removeFilters.noEffect) return null;
+                            const style =
+                              reason === "no-effect"
+                                ? "opacity-60"
+                                : reason === "kept"
+                                ? "opacity-70"
+                                : "";
+                            if (
+                              reason === "effective" &&
+                              !removeFilters.effective
+                            )
+                              return null;
+                            if (reason === "kept" && !removeFilters.kept)
+                              return null;
+                            if (
+                              reason === "no-effect" &&
+                              !removeFilters.noEffect
+                            )
+                              return null;
                             return (
-                              <li key={a.id} className={`font-mono truncate flex items-center gap-1 ${style}`} title={a.action + (reason ? ` (${reason})` : '')}>
+                              <li
+                                key={a.id}
+                                className={`font-mono truncate flex items-center gap-1 ${style}`}
+                                title={
+                                  a.action + (reason ? ` (${reason})` : "")
+                                }
+                              >
                                 <span className="truncate">{a.action}</span>
                                 {reason && (
-                                  <span className={`text-[9px] px-1 py-0.5 rounded border ${reason === 'effective' ? 'bg-rose-200 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 border-rose-300/60' : reason === 'kept' ? 'bg-emerald-200 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 border-emerald-300/60' : 'bg-slate-200 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border-slate-300/60'}`}
-                                    title={reason === 'effective' ? 'Will remove this action (present in clone set)' : reason === 'kept' ? 'Removal had partial/no effect (action still ends in final)' : 'No effect: action not present in clone set'}>
+                                  <span
+                                    className={`text-[9px] px-1 py-0.5 rounded border ${
+                                      reason === "effective"
+                                        ? "bg-rose-200 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 border-rose-300/60"
+                                        : reason === "kept"
+                                        ? "bg-emerald-200 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 border-emerald-300/60"
+                                        : "bg-slate-200 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border-slate-300/60"
+                                    }`}
+                                    title={
+                                      reason === "effective"
+                                        ? "Will remove this action (present in clone set)"
+                                        : reason === "kept"
+                                        ? "Removal had partial/no effect (action still ends in final)"
+                                        : "No effect: action not present in clone set"
+                                    }
+                                  >
                                     {reason}
                                   </span>
                                 )}
@@ -520,26 +881,76 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
                     )}
                   </div>
                   <div className="border rounded p-2">
-                    <h4 className="text-xs font-semibold mb-1">Result ({comboPreview.final.length})</h4>
-                    <div className="text-[11px] text-muted-foreground mb-1">Total after apply</div>
+                    <h4 className="text-xs font-semibold mb-1">
+                      Result ({comboPreview.final.length})
+                    </h4>
+                    <div className="text-[11px] text-muted-foreground mb-1">
+                      Total after apply
+                    </div>
                     <ul className="max-h-48 overflow-auto text-[11px] space-y-0.5">
-                      {comboPreview.final.slice(0,50).sort((a,b)=>a.action.localeCompare(b.action)).map(a => (
-                        <li key={a.id} className="font-mono truncate" title={a.action}>{a.action}</li>
-                      ))}
-                      {comboPreview.final.length > 50 && <li className="text-[10px] text-muted-foreground">… {comboPreview.final.length - 50} more</li>}
+                      {comboPreview.final
+                        .slice(0, 50)
+                        .sort((a, b) => a.action.localeCompare(b.action))
+                        .map((a) => (
+                          <li
+                            key={a.id}
+                            className="font-mono truncate"
+                            title={a.action}
+                          >
+                            {a.action}
+                          </li>
+                        ))}
+                      {comboPreview.final.length > 50 && (
+                        <li className="text-[10px] text-muted-foreground">
+                          … {comboPreview.final.length - 50} more
+                        </li>
+                      )}
                     </ul>
                   </div>
                 </div>
                 {/* Legend */}
                 <div className="mt-4 border rounded p-2 bg-muted/30">
-                  <h5 className="text-[10px] font-semibold mb-1 tracking-wide uppercase">Legend</h5>
+                  <h5 className="text-[10px] font-semibold mb-1 tracking-wide uppercase">
+                    Legend
+                  </h5>
                   <ul className="grid md:grid-cols-3 gap-2 text-[10px]">
-                    <li className="flex items-center gap-1"><span className="px-1 py-0.5 rounded border bg-slate-200 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border-slate-300/60">subtracted</span> Added via clone but explicitly removed by subtract roles.</li>
-                    <li className="flex items-center gap-1"><span className="px-1 py-0.5 rounded border bg-amber-200 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border-amber-300/60">suppressed</span> Wildcard/allProperties blocked by specific removals.</li>
-                    <li className="flex items-center gap-1"><span className="px-1 py-0.5 rounded border bg-rose-200 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 border-rose-300/60">effective</span> Removal eliminates action present in clone set.</li>
-                    <li className="flex items-center gap-1"><span className="px-1 py-0.5 rounded border bg-emerald-200 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 border-emerald-300/60">kept</span> Removal requested but action still survives (broader context retained).</li>
-                    <li className="flex items-center gap-1"><span className="px-1 py-0.5 rounded border bg-slate-200 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border-slate-300/60">no-effect</span> Removal targets action not in clone union.</li>
-                    <li className="flex items-center gap-1"><span className="px-1 py-0.5 rounded border">(no badge)</span> Included action will appear in final.</li>
+                    <li className="flex items-center gap-1">
+                      <span className="px-1 py-0.5 rounded border bg-slate-200 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border-slate-300/60">
+                        subtracted
+                      </span>{" "}
+                      Added via clone but explicitly removed by subtract roles.
+                    </li>
+                    <li className="flex items-center gap-1">
+                      <span className="px-1 py-0.5 rounded border bg-amber-200 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border-amber-300/60">
+                        suppressed
+                      </span>{" "}
+                      Wildcard/allProperties blocked by specific removals.
+                    </li>
+                    <li className="flex items-center gap-1">
+                      <span className="px-1 py-0.5 rounded border bg-rose-200 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 border-rose-300/60">
+                        effective
+                      </span>{" "}
+                      Removal eliminates action present in clone set.
+                    </li>
+                    <li className="flex items-center gap-1">
+                      <span className="px-1 py-0.5 rounded border bg-emerald-200 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 border-emerald-300/60">
+                        kept
+                      </span>{" "}
+                      Removal requested but action still survives (broader
+                      context retained).
+                    </li>
+                    <li className="flex items-center gap-1">
+                      <span className="px-1 py-0.5 rounded border bg-slate-200 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border-slate-300/60">
+                        no-effect
+                      </span>{" "}
+                      Removal targets action not in clone union.
+                    </li>
+                    <li className="flex items-center gap-1">
+                      <span className="px-1 py-0.5 rounded border">
+                        (no badge)
+                      </span>{" "}
+                      Included action will appear in final.
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -549,13 +960,38 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
             <div className="flex gap-2 ml-auto">
               {comboPreview ? (
                 <>
-                  <Button variant="secondary" type="button" onClick={resetPreview}>Back</Button>
-                  <Button variant="default" type="button" onClick={applyCombinationConfirmed}>Apply</Button>
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    onClick={resetPreview}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    variant="default"
+                    type="button"
+                    onClick={applyCombinationConfirmed}
+                  >
+                    Apply
+                  </Button>
                 </>
               ) : (
                 <>
-                  <Button variant="secondary" type="button" onClick={() => setCombinatorOpen(false)}>Cancel</Button>
-                  <Button variant="default" type="button" onClick={computeCombinationPreview} disabled={cloneRoles.length === 0}>Combine</Button>
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    onClick={() => setCombinatorOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="default"
+                    type="button"
+                    onClick={computeCombinationPreview}
+                    disabled={cloneRoles.length === 0}
+                  >
+                    Combine
+                  </Button>
                 </>
               )}
             </div>
