@@ -8,9 +8,7 @@ public static class ConfigureApp
 {
     public static IServiceCollection ConfigureServices(this IServiceCollection services)
     {
-        services.AddMcpServer()
-            .WithStdioServerTransport()
-            .WithToolsFromAssembly();
+        // services.AddMcpServer().WithStdioServerTransport().WithToolsFromAssembly();
         return services;
     }
 
@@ -32,12 +30,14 @@ public static class ConfigureApp
         await app.EnsureDatabaseCreated();
     }
 
-
     private static async Task EnsureDatabaseCreated(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ReaperDbContext>();
         var strategy = db.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () => { await db.Database.MigrateAsync(); });
+        await strategy.ExecuteAsync(async () =>
+        {
+            await db.Database.MigrateAsync();
+        });
     }
 }
