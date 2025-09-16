@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EntraRoleReaper.Api.Endpoints.Roles;
 
+[UsedImplicitly]
 public class PostRole : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder builder)
@@ -14,20 +15,29 @@ public class PostRole : IEndpoint
             .RequireAuthorization();
     }
 
-    private static async Task<Created> Handle(RoleRequest req, [FromServices] IGraphService graphService)
+    private static async Task<Results<CreatedAtRoute<CreateRoleResponse>, BadRequest>> Handle(CreateRoleRequest req,
+        [FromServices] IGraphService graphService)
     {
         var result = await graphService.CreateCustomRole(
             req.DisplayName,
             req.Description,
             req.ResourceActions
         );
-        return TypedResults.Created(new Uri($"/roles/{result}", UriKind.Relative));
+        if (string.IsNullOrEmpty(result))
+            return TypedResults.BadRequest();
+        var response = new CreateRoleResponse(result);
+        return TypedResults.CreatedAtRoute(response, nameof(GetRole),
+            new RouteValueDictionary(new { id = response.Id }));
     }
 
     [UsedImplicitly]
-    private record RoleRequest(
+    private record CreateRoleRequest(
         string DisplayName,
         string Description,
         List<string> ResourceActions
+    );
+
+    private record CreateRoleResponse(
+        string Id
     );
 }

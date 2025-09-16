@@ -13,10 +13,10 @@ public class GetRole : IEndpoint
     {
         builder.MapGet("/{id:guid}", Handle)
             .WithSummary("Get role definition by ID")
+            .WithName(nameof(GetRole))
             .RequireAuthorization();
     }
-
-    [EndpointName(nameof(GetRole))]
+    
     private static async Task<Results<Ok<RoleResponse>, BadRequest, NotFound>> Handle(Guid id,
         [FromServices] IRoleService roleService)
     {
