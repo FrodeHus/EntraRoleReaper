@@ -49,7 +49,9 @@ public static class EntraModuleExtensions
     {
         var group = app.MapGroup("/api/roles").WithTags("Roles");
 
-        group.MapEndpoint<GetRole>().MapEndpoint<GetRoleSummary>();
+        group.MapEndpoint<GetRole>();
+        group.MapEndpoint<GetRoleSummary>();
+        group.MapEndpoint<PostRole>();
     }
 
     private static void MapReviewEndpoints(this IEndpointRouteBuilder app)

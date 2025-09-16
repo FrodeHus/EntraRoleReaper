@@ -16,6 +16,7 @@ public class GetRole : IEndpoint
             .RequireAuthorization();
     }
 
+    [EndpointName(nameof(GetRole))]
     private static async Task<Results<Ok<RoleResponse>, BadRequest, NotFound>> Handle(Guid id,
         [FromServices] IRoleService roleService)
     {

@@ -45,4 +45,9 @@ internal class SimpleGraphService(Dictionary<string, bool> targetOwners) : IGrap
     {
         throw new NotImplementedException();
     }
+
+    public Task<string?> CreateCustomRole(string roleName, string description, List<string> permissions)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -414,6 +414,25 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
         }
     }
 
+    public async Task<string?> CreateCustomRole(string roleName, string description, List<string> permissions)
+    {
+        var definition = new UnifiedRoleDefinition
+            {
+                DisplayName = roleName,
+                Description = description,
+                IsEnabled = true,
+                RolePermissions = [
+                    new UnifiedRolePermission
+                    {
+                        AllowedResourceActions = permissions
+                    }
+                ]
+            }
+        ;
+        var result = await GraphClient.RoleManagement.Directory.RoleDefinitions.PostAsync(definition);
+        return result?.Id ?? null;
+    }
+
     private static string? TryGetPrimaryDomain(List<VerifiedDomain>? domains)
     {
         if (domains == null || domains.Count == 0) return null;

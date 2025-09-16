@@ -14,4 +14,5 @@ public interface IGraphService
     Task<bool> IsOwnerAsync(string userId, ReviewTargetResource target);
     Task<Tenant?> FetchTenantMetadataAsync(Guid tenantId, CancellationToken ct = default);
     Task<string?> ActivatePIMRole(string roleId, int durationMinutes = 60);
+    Task<string?> CreateCustomRole(string roleName, string description, List<string> permissions);
 }
