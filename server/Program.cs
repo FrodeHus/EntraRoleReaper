@@ -3,6 +3,7 @@ using EntraRoleReaper.Api;
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Data.Seed;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
@@ -11,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +81,8 @@ builder.Services.AddScoped<ActivityPermissionAnalyzer>();
 builder.Services.AddScoped<RoleAdvisor>();
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddScoped<ITenantService, TenantService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<RoleEvaluationService>();
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<ITokenProtector, DataProtectionTokenProtector>();
 builder.Services.AddEndpointsApiExplorer();
@@ -114,6 +116,8 @@ if (!string.IsNullOrWhiteSpace(cs))
 builder.Services.Configure<ReviewOptions>(builder.Configuration.GetSection("Review"));
 builder.Services.AddSingleton<IReviewCoordinator, ReviewCoordinator>();
 builder.Services.AddHostedService<ReviewWorker>();
+
+builder.Services.ConfigureServices();
 
 var app = builder.Build();
 

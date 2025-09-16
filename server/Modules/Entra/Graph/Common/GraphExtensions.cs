@@ -1,6 +1,6 @@
 using Microsoft.Graph.Models;
 
-namespace EntraRoleReaper.Api.Services;
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 
 public enum PermissionCondition
 {
@@ -20,7 +20,7 @@ public static class GraphExtensions
             _ => roleDefinition.RolePermissions?.FirstOrDefault()
         };
     }
-    
+
     public static bool HasResourceAction(this UnifiedRolePermission permission, string action)
     {
         return permission.AllowedResourceActions?.Any(a => a.Equals(action, StringComparison.OrdinalIgnoreCase)) ?? false;

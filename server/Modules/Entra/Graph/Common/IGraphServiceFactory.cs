@@ -1,6 +1,6 @@
 using Microsoft.Graph;
 
-namespace EntraRoleReaper.Api.Services.Interfaces;
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 
 public interface IGraphServiceFactory
 {

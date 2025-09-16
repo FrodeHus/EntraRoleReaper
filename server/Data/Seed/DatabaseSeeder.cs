@@ -1,5 +1,5 @@
-using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 using System.Text.Json;
 
 namespace EntraRoleReaper.Api.Data.Seed;
@@ -82,7 +82,7 @@ public class DatabaseSeeder(
                 }
                 try
                 {
-                    await activityRepository.AddAsync(new Activity { Name = name, AuditCategory = item.AuditCategory, Service = item.Service}, false);
+                    await activityRepository.AddAsync(new Activity { Name = name, AuditCategory = item.AuditCategory, Service = item.Service }, false);
                     added++;
                 }
                 catch (Exception ex)

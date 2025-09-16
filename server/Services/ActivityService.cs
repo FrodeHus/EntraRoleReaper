@@ -1,6 +1,7 @@
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 using EntraRoleReaper.Api.Services.Dto;
 using JetBrains.Annotations;
 
@@ -245,7 +246,7 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
         var resourceAction = await _resourceActionRepository.GetById(resourceActionId);
         if (resourceAction == null)
             return;
-        if(targetResourceProp.MappedResourceActions.Any(ra => ra.Id == resourceAction.Id))
+        if (targetResourceProp.MappedResourceActions.Any(ra => ra.Id == resourceAction.Id))
             return;
         targetResourceProp.MappedResourceActions.Add(resourceAction);
         _targetResourcePropertyRepository.Update(targetResourceProp);
@@ -255,16 +256,16 @@ public class ActivityService(ReaperDbContext dbContext, ILogger<ActivityService>
     public async Task MapResourceActionsToActivity(Guid[] resourceActionIds, Guid activityId)
     {
         var activity = await GetActivityById(activityId);
-        if(activity == null)
+        if (activity == null)
             return;
 
         activity.MappedResourceActions.Clear();
         foreach (var resourceActionId in resourceActionIds)
         {
             var resourceAction = _resourceActionRepository.GetById(resourceActionId).Result;
-            if(resourceAction == null)
+            if (resourceAction == null)
                 continue;
-            
+
             activity.MappedResourceActions.Add(resourceAction);
         }
         _activityRepository.Update(activity);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Dto;
 using Microsoft.AspNetCore.Http.HttpResults;

@@ -1,6 +1,6 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 using EntraRoleReaper.Api.Review.Models;
-using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Models;
 
 namespace EntraRoleReaper.Tests;
@@ -37,6 +37,11 @@ internal class SimpleGraphService(Dictionary<string, bool> targetOwners) : IGrap
     }
 
     public Task<Tenant?> FetchTenantMetadataAsync(Guid tenantId, CancellationToken ct = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<string?> ActivatePIMRole(string roleId, int durationMinutes = 60)
     {
         throw new NotImplementedException();
     }
