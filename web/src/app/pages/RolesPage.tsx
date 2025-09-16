@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "../../components/ui/button";
 import { toast } from "sonner";
 import { RolesTab } from "./config/RolesTab";
 import { RoleDetailsSheet } from "../review/RoleDetailsSheet";
@@ -13,6 +15,7 @@ export function RolesPage({
   accessToken: string | null;
   apiBase: string;
 }) {
+  const navigate = useNavigate();
   // Roles state
   const [selectedRole, setSelectedRole] = useState<{
     id: string;
@@ -127,7 +130,12 @@ export function RolesPage({
 
   return (
     <section className="border bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden p-4 sm:p-6 space-y-4">
-      <h2 className="text-sm font-medium tracking-wide">Roles</h2>
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-sm font-medium tracking-wide">Roles</h2>
+        <Button size="sm" variant="default" type="button" onClick={() => navigate('/role/editor')}>
+          Create custom role
+        </Button>
+      </div>
       <RolesTab
         accessToken={accessToken}
         apiBase={apiBase}
@@ -135,6 +143,7 @@ export function RolesPage({
           setSelectedRole({ id, name });
           setRoleDetailsOpen(true);
         }}
+        onEditRole={(id) => navigate(`/role/editor/${encodeURIComponent(id)}`)}
       />
       <RoleDetailsSheet
         open={roleDetailsOpen}

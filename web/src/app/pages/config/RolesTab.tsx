@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../../components/ui/button";
+import { Pencil } from "lucide-react";
 import { Switch } from "../../../components/ui/switch";
 import {
   Table,
@@ -28,10 +29,12 @@ export function RolesTab({
   accessToken,
   apiBase,
   onOpenRole,
+  onEditRole,
 }: {
   accessToken: string | null;
   apiBase: string;
   onOpenRole: (id: string, name: string) => void;
+  onEditRole?: (id: string) => void;
 }) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -164,6 +167,7 @@ export function RolesTab({
                   )
                 );
                 const type = r.isBuiltIn === true ? "Built-in" : "Custom";
+                const isCustom = type === 'Custom';
                 return (
                   <TableRow key={id}>
                     <TableCell className="max-w-0">
@@ -185,6 +189,17 @@ export function RolesTab({
                             <span className="text-[10px] px-1 rounded border bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-900/20 dark:border-slate-700 dark:text-slate-300">
                               Internal only
                             </span>
+                          )}
+                          {isCustom && onEditRole && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); onEditRole(id); }}
+                              className="p-1 rounded hover:bg-accent/40 text-muted-foreground hover:text-foreground"
+                              title="Edit role"
+                              aria-label={`Edit role ${name}`}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
                           )}
                         </div>
                       </div>
