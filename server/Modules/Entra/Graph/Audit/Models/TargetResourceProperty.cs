@@ -1,4 +1,6 @@
-﻿namespace EntraRoleReaper.Api.Data.Models;
+﻿using EntraRoleReaper.Api.Data.Models;
+
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 
 public class TargetResourceProperty : Entity
 {

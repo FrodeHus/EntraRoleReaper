@@ -1,4 +1,4 @@
-﻿using EntraRoleReaper.Api.Data.Models;
+﻿using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Data.Repositories;

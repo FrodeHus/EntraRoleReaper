@@ -1,7 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using EntraRoleReaper.Api.Data.Models;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
-namespace EntraRoleReaper.Api.Data.Models;
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 
 [Index(nameof(Name), IsUnique = true)]
 public class Activity : Entity

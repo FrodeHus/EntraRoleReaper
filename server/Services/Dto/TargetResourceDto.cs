@@ -1,4 +1,6 @@
-﻿namespace EntraRoleReaper.Api.Services.Dto;
+﻿using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
+
+namespace EntraRoleReaper.Api.Services.Dto;
 
 public record TargetResourceDto(
     Guid Id,
@@ -7,7 +9,7 @@ public record TargetResourceDto(
 )
 {
 
-    public static TargetResourceDto? FromTargetResource(Data.Models.TargetResource? resource)
+    public static TargetResourceDto? FromTargetResource(TargetResource? resource)
     {
         if (resource == null)
         {

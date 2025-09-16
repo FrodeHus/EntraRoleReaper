@@ -2,7 +2,7 @@ using System.Reflection;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Dto;
-using EntraRoleReaper.Api.Data.Models; // added for Activity
+using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models; // added for Activity
 
 namespace EntraRoleReaper.Tests;
 
