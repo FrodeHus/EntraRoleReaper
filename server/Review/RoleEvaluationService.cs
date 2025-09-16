@@ -1,21 +1,29 @@
-﻿using EntraRoleReaper.Api.Review.Models;
+﻿using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
+using EntraRoleReaper.Api.Review.Models;
+using EntraRoleReaper.Api.Services;
 
 namespace EntraRoleReaper.Api.Review;
 
-public class RoleEvaluationService(IUserService userService, IEnumerable<IEvaluateRole> evaluators, IEnumerable<IRoleRequirement>? roleRequirements = null)
+public class RoleEvaluationService(IUserService userService, IRoleService roleService, IEnumerable<IEvaluateRole> evaluators, IEnumerable<IRoleRequirement>? roleRequirements = null)
 {
-    public async Task<RoleEvaluationResult> EvaluateRole(object roleDefinition, object targetResource)
+    public async Task<RoleEvaluationResult> Evaluate(string userId, Activity activity, List<ReviewTargetResource> targets)
     {
-        var userContext = await userService.GetCurrentUser();
-        var context = new RoleEvaluationContext(roleDefinition, targetResource, userContext);
-        return await EvaluateAsync(context);
+        var userContext = await userService.GetUserById(userId);
+        var roles = await roleService.GetAllRolesAsync();
+        var results = new List<RoleEvaluationResult>();
+        foreach (var context in from role in roles from target in targets select new RoleEvaluationContext(role, activity, target, userContext))
+        {
+            var result = await EvaluateAsync(context);
+            results.Add(result);
+        }
+        return results.OrderByDescending(r => r.TotalScore).FirstOrDefault() ?? new RoleEvaluationResult(activity, -1000, []);
     }
 
-    internal async Task<RoleEvaluationResult> EvaluateAsync(RoleEvaluationContext context)
+    private async Task<RoleEvaluationResult> EvaluateAsync(RoleEvaluationContext context)
     {
         if (!MeetsAllRequirements(context))
         {
-            return new RoleEvaluationResult(context.RoleDefinition, -1000, Array.Empty<RoleScoreCard>());
+            return new RoleEvaluationResult(context.RoleDefinition, -1000, []);
         }
 
         var roleScoreCards = new List<RoleScoreCard>();

@@ -1,3 +1,4 @@
+using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services;
@@ -9,9 +10,8 @@ namespace EntraRoleReaper.Api.Review;
 
 public class ReviewService(
     IGraphService graphService,
-    RoleAdvisor roleAdvisor,
     IActivityService activityService,
-    ICacheService cache
+    RoleEvaluationService roleEvaluationService
 ) : IReviewService
 {
     public async Task<ReviewResponse> ReviewAsync(ReviewRequest request)
@@ -22,18 +22,16 @@ public class ReviewService(
         var results = new List<UserReview>();
         foreach (var uid in userIds)
         {
-            // Fetch core user + role context
-            var userCtx = await graphService.GetUserAndRolesAsync(uid);
-
-
             // Audit operations + targets
             var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
             await SaveActivitiesAsync(auditActivities);
 
-            var mappedActivities = auditActivities.Count > 0 ?
-                await activityService.GetActivitiesAsync(auditActivities.Select(a => a.ActivityName).ToList()) : [];
+            var mappedActivities = auditActivities.Count > 0
+                ? await activityService.GetActivitiesAsync(auditActivities.Select(a => a.ActivityName).ToList())
+                : [];
+            var activities = mappedActivities as Activity[] ?? mappedActivities.ToArray();
             var allSuggestedRoles = new List<RoleDefinitionDto>();
-            foreach (var activity in mappedActivities)
+            foreach (var activity in activities)
             {
                 if (activity.IsExcluded)
                 {
@@ -52,63 +50,10 @@ public class ReviewService(
                     ModifiedProperties = t.ModifiedProperties
                 }) ?? [];
 
-                var suggestedRoles = await roleAdvisor.GetSuggestedRoles(
-                    activity,
-                    targets,
-                    uid
-                );
-                allSuggestedRoles.AddRange(suggestedRoles);
+                var result = await roleEvaluationService.Evaluate(uid, activity, targets);
+
             }
 
-            var eligibleActions = mappedActivities.SelectMany(a => a.MappedResourceActions).ToList();
-
-            var consolidatedRoles = roleAdvisor.ConsolidateRoles(allSuggestedRoles, eligibleActions);
-
-            var reviewedActivities = auditActivities.ConvertAll(a => new OperationReview
-            (
-                a.ActivityName,
-                a.TargetResources.ConvertAll(t => new OperationTarget(
-                    t.Id,
-                    t.DisplayName,
-                    [
-                        .. (t.ModifiedProperties ?? []).Select(mp => new OperationModifiedProperty(
-                            mp.DisplayName
-                        ))
-                    ]
-                )),
-                []
-            ));
-
-            var user = new SimpleUser(uid, userCtx.DisplayName ?? uid, null, null);
-            var userCurrentActiveRoles =
-                userCtx.ActiveRoleIds.Select(async id => await cache.GetRoleByIdAsync(Guid.Parse(id)));
-            var userCurrentEligiblePimRoles =
-                userCtx.EligibleRoleIds.Select(async id => await cache.GetRoleByIdAsync(Guid.Parse(id)));
-            var roles = await Task.WhenAll(userCurrentActiveRoles);
-            var pimRoles = await Task.WhenAll(userCurrentEligiblePimRoles);
-            user = user with
-            {
-                CurrentActiveRoles = [.. roles.Where(r => r is not null).Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))],
-                CurrentEligiblePimRoles = [.. pimRoles.Where(r => r is not null).Select(r => new SimpleRole(r.Id.ToString(), r.DisplayName))]
-            };
-            consolidatedRoles =
-            [
-                .. consolidatedRoles.Distinct(new RoleComparer()).Where(r =>
-                    roles.All(role => role?.Id != r.Id) || pimRoles.Any(pimRole => pimRole?.Id == r.Id))
-            ];
-            var removedRoles = roles.Where(r => r is not null && !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
-            removedRoles = pimRoles.Where(r => r is not null && !consolidatedRoles.Any(cr => cr.Id == r.Id)).ToList();
-
-            var review = new UserReview(user, reviewedActivities, consolidatedRoles.ConvertAll(r => new SimpleRole
-            (
-                r.Id.ToString(),
-                r.DisplayName
-            )), removedRoles.Select(r => new SimpleRole
-            (
-                r.Id.ToString(),
-                r.DisplayName
-            )).ToList());
-            results.Add(review);
         }
 
         return new ReviewResponse(results);

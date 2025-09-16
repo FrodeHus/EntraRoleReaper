@@ -1,13 +1,15 @@
 ﻿using System.Security.Claims;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 
 namespace EntraRoleReaper.Api.Review;
 
 public interface IUserService
 {
     Task<UserContext> GetCurrentUser();
+    Task<UserContext> GetUserById(string userId);
 }
 
-public class UserService(IHttpContextAccessor httpContextAccessor) : IUserService
+public class UserService(IHttpContextAccessor httpContextAccessor, IGraphService graphService) : IUserService
 {
     public Task<UserContext> GetCurrentUser()
     {
@@ -23,6 +25,24 @@ public class UserService(IHttpContextAccessor httpContextAccessor) : IUserServic
             throw new UnauthorizedAccessException("User ID claim is missing.");
         }
         var tenantId = string.IsNullOrEmpty(tenantIdValue) ? Guid.Empty : Guid.Parse(tenantIdValue);
-        return Task.FromResult(new UserContext { UserId = userId, TenantId = tenantId });
+        return Task.FromResult(new UserContext
+        {
+            UserId = userId, TenantId = tenantId
+        });
+    }
+
+    public async Task<UserContext> GetUserById(string userId)
+    {
+        var currentUser = await GetCurrentUser();
+        var userData = await graphService.GetUserAndRolesAsync(userId);
+        return new UserContext
+        {
+            UserId = userId,
+            TenantId = currentUser.TenantId,
+            DisplayName = userData.DisplayName,
+            ActiveRoleIds = userData.ActiveRoleIds,
+            EligibleRoleIds = userData.EligibleRoleIds,
+            PimActiveRoleIds = userData.PimActiveRoleIds
+        };
     }
 }

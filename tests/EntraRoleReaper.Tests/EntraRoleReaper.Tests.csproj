@@ -24,4 +24,8 @@
     <ProjectReference Include="..\..\server\EntraRoleReaper.Api.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Review\" />
+  </ItemGroup>
+
 </Project>
