@@ -1,21 +1,69 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import customRolePermissionsRaw from "../../../customrole-permissions.json";
 import { useNavigate, useParams } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../../components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card";
 import { toast } from "sonner";
 import { X, Layers } from "lucide-react";
 
-interface RolePermissionActionDto { id: string; action: string; privileged: boolean; }
-interface RolePermissionSetDto { condition?: string | null; actions: RolePermissionActionDto[] }
-interface RoleSummaryDto { id: string; displayName: string; description: string; isBuiltIn: boolean; permissionSets: { id?: string; condition?: string | null; resourceActions?: { id: string; action: string; isPrivileged: boolean }[] }[] }
-interface GetRoleResponse { id: string; displayName: string; description: string; rolePermissions: RolePermissionSetDto[]; }
+interface RolePermissionActionDto {
+  id: string;
+  action: string;
+  privileged: boolean;
+}
+interface RolePermissionSetDto {
+  condition?: string | null;
+  actions: RolePermissionActionDto[];
+}
+interface RoleSummaryDto {
+  id: string;
+  displayName: string;
+  description: string;
+  isBuiltIn: boolean;
+  permissionSets: {
+    id?: string;
+    condition?: string | null;
+    resourceActions?: { id: string; action: string; isPrivileged: boolean }[];
+  }[];
+}
 
-interface ResourceActionSearchItem { id: string; action: string; isPrivileged: boolean }
+interface ResourceActionSearchItem {
+  id: string;
+  action: string;
+  isPrivileged: boolean;
+}
 
-export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string | null; apiBase: string; }) {
+export function RoleEditorPage({
+  accessToken,
+  apiBase,
+}: {
+  accessToken: string | null;
+  apiBase: string;
+}) {
+  // Supported actions for custom roles
+  // Vite/TS imports JSON as array, not object
+  const supportedActions: Set<string> = useMemo(() => {
+    return new Set(
+      (customRolePermissionsRaw.supportedCustomRoles ?? []).filter(
+        (x: any) => typeof x === "string"
+      )
+    );
+  }, []);
   const { id } = useParams();
   const navigate = useNavigate();
   const editing = !!id;
@@ -25,14 +73,47 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
   const [description, setDescription] = useState("");
   const [isBuiltIn, setIsBuiltIn] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
+  // Server-side validation / error messages
+  const [serverErrors, setServerErrors] = useState<string[]>([]);
 
-  const [selectedActions, setSelectedActions] = useState<ResourceActionSearchItem[]>([]);
-  const selectedActionIds = useMemo(() => new Set(selectedActions.map(a => a.id)), [selectedActions]);
+  // Duplicate name validation state
+  const [duplicateStatus, setDuplicateStatus] = useState<
+    "idle" | "checking" | "duplicate" | "ok"
+  >("idle");
+  const [duplicateMessage, setDuplicateMessage] = useState<string | null>(null);
 
-  // Resource action search
+  // Only allow supported actions in selectedActions
+  const [selectedActions, setSelectedActions] = useState<
+    ResourceActionSearchItem[]
+  >([]);
+  const selectedActionIds = useMemo(
+    () => new Set(selectedActions.map((a) => a.id)),
+    [selectedActions]
+  );
+  // Filter selectedActions if permissions change (e.g. after combinator)
+  useEffect(() => {
+    setSelectedActions((prev) =>
+      prev.filter((a) => supportedActions.has(a.action))
+    );
+  }, [supportedActions]);
+
+  // Resource action search (local only)
   const [actionQuery, setActionQuery] = useState("");
-  const [actionResults, setActionResults] = useState<ResourceActionSearchItem[]>([]);
-  const [searchingActions, setSearchingActions] = useState(false);
+  // Build local action list from supportedActions
+  const allActions: ResourceActionSearchItem[] = useMemo(() => {
+    return Array.from(supportedActions).map((action) => ({
+      id: action,
+      action,
+      isPrivileged: false, // No privilege info in JSON, default to false
+    }));
+  }, [supportedActions]);
+  // Filtered results for search
+  const actionResults: ResourceActionSearchItem[] = useMemo(() => {
+    const q = actionQuery.trim().toLowerCase();
+    if (!q) return allActions;
+    return allActions.filter((a) => a.action.toLowerCase().includes(q));
+  }, [actionQuery, allActions]);
+  const searchingActions = false;
 
   // Combinator modal
   const [combinatorOpen, setCombinatorOpen] = useState(false);
@@ -40,7 +121,9 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
   const [subtractSearch, setSubtractSearch] = useState("");
   const [roleSearchLoading, setRoleSearchLoading] = useState(false);
   const [cloneCandidates, setCloneCandidates] = useState<RoleSummaryDto[]>([]);
-  const [subtractCandidates, setSubtractCandidates] = useState<RoleSummaryDto[]>([]);
+  const [subtractCandidates, setSubtractCandidates] = useState<
+    RoleSummaryDto[]
+  >([]);
   const [cloneRoles, setCloneRoles] = useState<RoleSummaryDto[]>([]);
   const [subtractRoles, setSubtractRoles] = useState<RoleSummaryDto[]>([]);
   // Combobox dropdown visibility
@@ -50,8 +133,16 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
   const subtractRef = useRef<HTMLDivElement | null>(null);
 
   // Preview filters
-  const [addFilters, setAddFilters] = useState({ included: true, subtracted: true, suppressed: true });
-  const [removeFilters, setRemoveFilters] = useState({ effective: true, kept: true, noEffect: true });
+  const [addFilters, setAddFilters] = useState({
+    included: true,
+    subtracted: true,
+    suppressed: true,
+  });
+  const [removeFilters, setRemoveFilters] = useState({
+    effective: true,
+    kept: true,
+    noEffect: true,
+  });
 
   // Fetch existing role if editing
   useEffect(() => {
@@ -59,21 +150,50 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(new URL(`/api/roles/${id}`, apiBase), { headers: { Authorization: `Bearer ${accessToken}` } });
+        const res = await fetch(new URL(`/api/roles/${id}`, apiBase), {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
         if (!res.ok) throw new Error();
-        const json: GetRoleResponse = await res.json();
+        const json = await res.json();
         setRoleName(json.displayName);
         setDescription(json.description || "");
         // We need IsBuiltIn flag -> fetch summary single search by name as fallback
-        const summaryRes = await fetch(new URL(`/api/roles/summary?search=${encodeURIComponent(json.displayName)}`, apiBase), { headers: { Authorization: `Bearer ${accessToken}` } });
+        const summaryRes = await fetch(
+          new URL(
+            `/api/roles/summary?search=${encodeURIComponent(json.displayName)}`,
+            apiBase
+          ),
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
         if (summaryRes.ok) {
           const sJson = await summaryRes.json();
-          const match = (sJson.roles || sJson.Roles || []).find((r: any) => r.id === id || r.id === json.id);
+          const match = (sJson.roles || sJson.Roles || []).find(
+            (r: any) => r.id === id || r.id === json.id
+          );
           if (match) setIsBuiltIn(match.isBuiltIn);
         }
         // flatten actions
         const acts: ResourceActionSearchItem[] = [];
-        json.rolePermissions.forEach(ps => ps.actions.forEach(a => { if (!acts.some(x => x.id === a.id)) acts.push({ id: a.id, action: a.action, isPrivileged: a.privileged }); }));
+        (
+          json.rolePermissions as Array<{
+            actions: Array<{ id: string; action: string; privileged: boolean }>;
+          }>
+        ).forEach((ps) =>
+          (
+            ps.actions as Array<{
+              id: string;
+              action: string;
+              privileged: boolean;
+            }>
+          ).forEach((a) => {
+            if (!acts.some((x) => x.id === a.id))
+              acts.push({
+                id: a.id,
+                action: a.action,
+                isPrivileged: a.privileged,
+              });
+          })
+        );
         setSelectedActions(acts);
       } catch {
         toast.error("Failed to load role");
@@ -91,65 +211,144 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
     }
   }, [editing, isBuiltIn]);
 
-  const searchResourceActions = useCallback(async (q: string) => {
+  // Duplicate name check (debounced)
+  useEffect(() => {
     if (!accessToken) return;
-    try {
-      setSearchingActions(true);
-      const url = new URL("/api/resourceaction/search", apiBase);
-      if (q.trim()) url.searchParams.set("q", q);
-      url.searchParams.set("limit", "60");
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-      if (!res.ok) throw new Error();
-      const arr = await res.json() as Array<{ id: string; action: string; isPrivileged: boolean }>;
-      setActionResults(arr);
-    } catch {
-      setActionResults([]);
-    } finally {
-      setSearchingActions(false);
+    const name = roleName.trim();
+    if (name.length < 3) {
+      setDuplicateStatus("idle");
+      setDuplicateMessage(null);
+      return;
     }
-  }, [accessToken, apiBase]);
+    let cancelled = false;
+    setDuplicateStatus("checking");
+    setDuplicateMessage(null);
+    const t = setTimeout(async () => {
+      try {
+        const url = new URL("/api/roles/summary", apiBase);
+        url.searchParams.set("search", name);
+        url.searchParams.set("pageSize", "40");
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) throw new Error("search failed");
+        const json = await res.json();
+        const list: Array<any> = json.roles || json.Roles || [];
+        const match = list.find(
+          (r) => r.displayName?.toLowerCase() === name.toLowerCase()
+        );
+        if (!cancelled) {
+          if (match && (!editing || match.id !== id)) {
+            setDuplicateStatus("duplicate");
+            setDuplicateMessage("A role with this name already exists");
+          } else {
+            setDuplicateStatus("ok");
+            setDuplicateMessage(null);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          // On failure, don't block saving unless we explicitly see a duplicate later
+          setDuplicateStatus("idle");
+          setDuplicateMessage(null);
+        }
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [roleName, accessToken, apiBase, editing, id]);
 
-  useEffect(() => { const t = setTimeout(() => searchResourceActions(actionQuery), 300); return () => clearTimeout(t); }, [actionQuery, searchResourceActions]);
+  // Remove API resource action search and use local filter only
 
   function toggleAction(item: ResourceActionSearchItem) {
-    setSelectedActions(prev => prev.some(a => a.id === item.id) ? prev.filter(a => a.id !== item.id) : [...prev, item]);
+    if (!supportedActions.has(item.action)) return;
+    setSelectedActions((prev) =>
+      prev.some((a) => a.id === item.id)
+        ? prev.filter((a) => a.id !== item.id)
+        : [...prev, item]
+    );
   }
 
   // Role search for combinator (shared helper)
-  const searchRoles = useCallback(async (q: string, setFn: (r: RoleSummaryDto[]) => void) => {
-    if (!accessToken) return; setRoleSearchLoading(true);
-    try {
-      const url = new URL("/api/roles/summary", apiBase);
-      if (q) url.searchParams.set("search", q);
-      url.searchParams.set("pageSize", "50");
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-      if (!res.ok) throw new Error();
-      const json = await res.json();
-      const list: RoleSummaryDto[] = (json.roles || json.Roles || []).map((r: any) => ({
-        id: r.id, displayName: r.displayName, description: r.description, isBuiltIn: r.isBuiltIn, permissionSets: r.permissionSets || r.PermissionSets || []
-      }));
-      // Include all roles (built-in + custom) for combination source
-      setFn(list);
-    } catch { setFn([]); } finally { setRoleSearchLoading(false); }
-  }, [accessToken, apiBase]);
+  const searchRoles = useCallback(
+    async (q: string, setFn: (r: RoleSummaryDto[]) => void) => {
+      if (!accessToken) return;
+      setRoleSearchLoading(true);
+      try {
+        const url = new URL("/api/roles/summary", apiBase);
+        if (q) url.searchParams.set("search", q);
+        url.searchParams.set("pageSize", "50");
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) throw new Error();
+        const json = await res.json();
+        const list: RoleSummaryDto[] = (json.roles || json.Roles || []).map(
+          (r: any) => ({
+            id: r.id,
+            displayName: r.displayName,
+            description: r.description,
+            isBuiltIn: r.isBuiltIn,
+            permissionSets: r.permissionSets || r.PermissionSets || [],
+          })
+        );
+        // Include all roles (built-in + custom) for combination source
+        setFn(list);
+      } catch {
+        setFn([]);
+      } finally {
+        setRoleSearchLoading(false);
+      }
+    },
+    [accessToken, apiBase]
+  );
 
-  useEffect(() => { const t = setTimeout(() => searchRoles(cloneSearch, setCloneCandidates), 300); return () => clearTimeout(t); }, [cloneSearch, searchRoles]);
-  useEffect(() => { const t = setTimeout(() => searchRoles(subtractSearch, setSubtractCandidates), 300); return () => clearTimeout(t); }, [subtractSearch, searchRoles]);
+  useEffect(() => {
+    const t = setTimeout(
+      () => searchRoles(cloneSearch, setCloneCandidates),
+      300
+    );
+    return () => clearTimeout(t);
+  }, [cloneSearch, searchRoles]);
+  useEffect(() => {
+    const t = setTimeout(
+      () => searchRoles(subtractSearch, setSubtractCandidates),
+      300
+    );
+    return () => clearTimeout(t);
+  }, [subtractSearch, searchRoles]);
 
   // Close comboboxes on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (cloneRef.current && !cloneRef.current.contains(e.target as Node)) setCloneOpen(false);
-      if (subtractRef.current && !subtractRef.current.contains(e.target as Node)) setSubtractOpen(false);
+      if (cloneRef.current && !cloneRef.current.contains(e.target as Node))
+        setCloneOpen(false);
+      if (
+        subtractRef.current &&
+        !subtractRef.current.contains(e.target as Node)
+      )
+        setSubtractOpen(false);
     }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  function addClone(role: RoleSummaryDto) { if (cloneRoles.some(r => r.id === role.id)) return; setCloneRoles(r => [...r, role]); }
-  function addSubtract(role: RoleSummaryDto) { if (subtractRoles.some(r => r.id === role.id)) return; setSubtractRoles(r => [...r, role]); }
-  function removeClone(id: string) { setCloneRoles(r => r.filter(x => x.id !== id)); }
-  function removeSubtract(id: string) { setSubtractRoles(r => r.filter(x => x.id !== id)); }
+  function addClone(role: RoleSummaryDto) {
+    if (cloneRoles.some((r) => r.id === role.id)) return;
+    setCloneRoles((r) => [...r, role]);
+  }
+  function addSubtract(role: RoleSummaryDto) {
+    if (subtractRoles.some((r) => r.id === role.id)) return;
+    setSubtractRoles((r) => [...r, role]);
+  }
+  function removeClone(id: string) {
+    setCloneRoles((r) => r.filter((x) => x.id !== id));
+  }
+  function removeSubtract(id: string) {
+    setSubtractRoles((r) => r.filter((x) => x.id !== id));
+  }
 
   // Combination preview (diff)
   const [comboPreview, setComboPreview] = useState<null | {
@@ -157,21 +356,49 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
     additions: ResourceActionSearchItem[]; // raw clone union
     removals: ResourceActionSearchItem[]; // raw subtract union
     suppressedIds: string[]; // suppressed additions
-    excludedReason: Record<string, 'suppressed' | 'subtracted'>; // additions not ending in final
-    removalReason: Record<string, 'no-effect' | 'kept' | 'effective'>; // classification for raw removal entries
+    excludedReason: Record<string, "suppressed" | "subtracted">; // additions not ending in final
+    removalReason: Record<string, "no-effect" | "kept" | "effective">; // classification for raw removal entries
   }>(null);
 
   function computeCombinationPreview() {
-    // Raw unions
+    // Raw unions (only supported actions)
     const cloneActions = new Map<string, ResourceActionSearchItem>();
-    cloneRoles.forEach(r => r.permissionSets.forEach(ps => (ps.resourceActions || []).forEach(a => { if (!cloneActions.has(a.id)) cloneActions.set(a.id, { id: a.id, action: a.action, isPrivileged: a.isPrivileged }); })));
+    cloneRoles.forEach((r) =>
+      r.permissionSets.forEach((ps) =>
+        (ps.resourceActions || [])
+          .filter((a) => supportedActions.has(a.action))
+          .forEach((a) => {
+            if (!cloneActions.has(a.id))
+              cloneActions.set(a.id, {
+                id: a.id,
+                action: a.action,
+                isPrivileged: a.isPrivileged,
+              });
+          })
+      )
+    );
     const subtractActions = new Map<string, ResourceActionSearchItem>();
-    subtractRoles.forEach(r => r.permissionSets.forEach(ps => (ps.resourceActions || []).forEach(a => { if (!subtractActions.has(a.id)) subtractActions.set(a.id, { id: a.id, action: a.action, isPrivileged: a.isPrivileged }); })));
+    subtractRoles.forEach((r) =>
+      r.permissionSets.forEach((ps) =>
+        (ps.resourceActions || [])
+          .filter((a) => supportedActions.has(a.action))
+          .forEach((a) => {
+            if (!subtractActions.has(a.id))
+              subtractActions.set(a.id, {
+                id: a.id,
+                action: a.action,
+                isPrivileged: a.isPrivileged,
+              });
+          })
+      )
+    );
     const subtractIds = new Set(subtractActions.keys());
 
     // Preliminary final before suppression
-    const preliminary = [...cloneActions.values()].filter(a => !subtractIds.has(a.id));
-    const currentIds = new Set(selectedActions.map(a => a.id));
+    const preliminary = [...cloneActions.values()].filter(
+      (a) => !subtractIds.has(a.id)
+    );
+    const currentIds = new Set(selectedActions.map((a) => a.id));
 
     // Raw lists for preview
     const additions = [...cloneActions.values()];
@@ -180,14 +407,14 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
     // Suppressed candidates (clone actions that are subtracted but not currently selected) are tracked via exclusion logic later
     // Build removalBaseSet / removalFieldMap from subtract list (raw intent) + current selection removal effects
     const removalBaseSet = new Set(
-      removals.map(r => {
-        const parts = r.action.split('/');
-        return parts.slice(0, parts.length - 1).join('/');
+      removals.map((r) => {
+        const parts = r.action.split("/");
+        return parts.slice(0, parts.length - 1).join("/");
       })
     );
     const removalFieldMap = new Map<string, Set<string>>();
-    removals.forEach(r => {
-      const p = r.action.split('/');
+    removals.forEach((r) => {
+      const p = r.action.split("/");
       if (p.length >= 4) {
         const key = `${p[0]}/${p[1]}`;
         if (!removalFieldMap.has(key)) removalFieldMap.set(key, new Set());
@@ -197,44 +424,60 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
 
     const additionallyRemoved: ResourceActionSearchItem[] = [];
     const filteredFinal: ResourceActionSearchItem[] = [];
-    preliminary.forEach(a => {
-      const parts = a.action.split('/');
+    preliminary.forEach((a) => {
+      const parts = a.action.split("/");
       const last = parts[parts.length - 1];
-      const isWildcardBroadener = last === 'allTasks' || last === 'allProperties';
-      const base = parts.slice(0, parts.length - 1).join('/');
+      const isWildcardBroadener =
+        last === "allTasks" || last === "allProperties";
+      const base = parts.slice(0, parts.length - 1).join("/");
       let suppress = false;
       if (isWildcardBroadener && removalBaseSet.has(base)) suppress = true;
-      if (!suppress && parts.length >= 4 && parts[2] === 'allProperties') {
+      if (!suppress && parts.length >= 4 && parts[2] === "allProperties") {
         const key = `${parts[0]}/${parts[1]}`;
         const removedFields = removalFieldMap.get(key);
-        if (removedFields && [...removedFields].some(f => f !== 'allProperties')) suppress = true;
+        if (
+          removedFields &&
+          [...removedFields].some((f) => f !== "allProperties")
+        )
+          suppress = true;
       }
-      if (suppress) { additionallyRemoved.push(a); return; }
+      if (suppress) {
+        additionallyRemoved.push(a);
+        return;
+      }
       filteredFinal.push(a);
     });
 
-    const finalIdSet = new Set(filteredFinal.map(a => a.id));
-    const suppressedIdSet = new Set(additionallyRemoved.map(a => a.id));
-    const excludedReason: Record<string, 'suppressed' | 'subtracted'> = {};
-    additions.forEach(a => {
+    const finalIdSet = new Set(filteredFinal.map((a) => a.id));
+    const suppressedIdSet = new Set(additionallyRemoved.map((a) => a.id));
+    const excludedReason: Record<string, "suppressed" | "subtracted"> = {};
+    additions.forEach((a) => {
       if (!finalIdSet.has(a.id)) {
-        if (suppressedIdSet.has(a.id)) excludedReason[a.id] = 'suppressed';
-        else if (subtractIds.has(a.id)) excludedReason[a.id] = 'subtracted';
+        if (suppressedIdSet.has(a.id)) excludedReason[a.id] = "suppressed";
+        else if (subtractIds.has(a.id)) excludedReason[a.id] = "subtracted";
       }
     });
 
     // Classify removal entries
-    const removalReason: Record<string, 'no-effect' | 'kept' | 'effective'> = {};
-    const cloneIdSet = new Set(additions.map(a => a.id));
-    removals.forEach(r => {
+    const removalReason: Record<string, "no-effect" | "kept" | "effective"> =
+      {};
+    const cloneIdSet = new Set(additions.map((a) => a.id));
+    removals.forEach((r) => {
       const inClone = cloneIdSet.has(r.id);
       const removedFromFinal = !finalIdSet.has(r.id); // if not in final, removal was effective if it was in prelim
-      if (!inClone) removalReason[r.id] = 'no-effect';
-      else if (inClone && removedFromFinal) removalReason[r.id] = 'effective';
-      else removalReason[r.id] = 'kept';
+      if (!inClone) removalReason[r.id] = "no-effect";
+      else if (inClone && removedFromFinal) removalReason[r.id] = "effective";
+      else removalReason[r.id] = "kept";
     });
 
-    setComboPreview({ final: filteredFinal, additions, removals, suppressedIds: additionallyRemoved.map(a => a.id), excludedReason, removalReason });
+    setComboPreview({
+      final: filteredFinal,
+      additions,
+      removals,
+      suppressedIds: additionallyRemoved.map((a) => a.id),
+      excludedReason,
+      removalReason,
+    });
   }
 
   function applyCombinationConfirmed() {
@@ -245,7 +488,137 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
     toast.success("Combination applied");
   }
 
-  function resetPreview() { setComboPreview(null); }
+  function resetPreview() {
+    setComboPreview(null);
+  }
+
+  // --- Save (Create role) ---
+  const canSave =
+    !editing &&
+    !isBuiltIn &&
+    roleName.trim().length > 2 &&
+    selectedActions.length > 0 &&
+    !loading &&
+    duplicateStatus !== "duplicate" &&
+    duplicateStatus !== "checking";
+
+  // Dirty state tracking
+  const snapshotRef = useRef<string | null>(null);
+  const makeSnapshot = useCallback(
+    () =>
+      JSON.stringify({
+        roleName: roleName.trim(),
+        description: description.trim(),
+        actions: selectedActions
+          .map((a) => a.id)
+          .slice()
+          .sort(),
+      }),
+    [roleName, description, selectedActions]
+  );
+
+  // Initialize snapshot after initial load (for edit) or on first render for create
+  useEffect(() => {
+    if (!snapshotRef.current) {
+      // For edits wait until initialLoaded
+      if (editing && !initialLoaded) return;
+      snapshotRef.current = makeSnapshot();
+    }
+  }, [editing, initialLoaded, makeSnapshot]);
+
+  const isDirty = useMemo(() => {
+    if (!snapshotRef.current) return false;
+    return snapshotRef.current !== makeSnapshot();
+  }, [makeSnapshot]);
+
+  // Warn on tab close / refresh
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = ""; // Chrome requires returnValue to show prompt
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  function handleBack() {
+    if (isDirty) {
+      const confirmLeave = window.confirm(
+        "You have unsaved changes. Discard and leave this page?"
+      );
+      if (!confirmLeave) return;
+    }
+    navigate(-1);
+  }
+
+  async function handleSave() {
+    if (!accessToken || !canSave) return;
+    try {
+      setLoading(true);
+      setServerErrors([]);
+      const body = {
+        displayName: roleName.trim(),
+        description: description.trim(),
+        resourceActions: selectedActions.map((a) => a.action),
+      };
+      const res = await fetch(new URL("/api/roles", apiBase), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        let errs: string[] = [];
+        try {
+          const txt = await res.text();
+          try {
+            const parsed = JSON.parse(txt);
+            if (Array.isArray(parsed)) errs = parsed;
+            else if (parsed?.errors) {
+              if (Array.isArray(parsed.errors)) errs = parsed.errors;
+              else if (typeof parsed.errors === "object") {
+                Object.values(parsed.errors).forEach((v: any) => {
+                  if (Array.isArray(v)) errs.push(...v.map(String));
+                  else if (v) errs.push(String(v));
+                });
+              }
+            } else if (parsed?.message) errs.push(parsed.message);
+            else if (parsed?.title) errs.push(parsed.title);
+            else if (txt) errs.push(txt);
+          } catch {
+            if (txt) errs.push(txt);
+          }
+        } catch {}
+        if (res.status === 409 && !errs.length) {
+          errs.push("Server reports duplicate role name");
+        }
+        if (!errs.length) errs.push("Failed to create role");
+        setServerErrors(errs);
+        toast.error(errs[0]);
+        return;
+      }
+      // API returns CreatedAt with location header or similar; try to extract id from Location if present
+      const location = res.headers.get("Location");
+      let newId: string | null = null;
+      if (location) {
+        const m = location.match(/\/api\/roles\/(.*)$/i);
+        if (m && m[1]) newId = m[1];
+      }
+      toast.success("Role created");
+      // Reset dirty baseline
+      snapshotRef.current = makeSnapshot();
+      if (newId) navigate(`/role/editor/${encodeURIComponent(newId)}`);
+      else navigate("/roles");
+    } catch (e: any) {
+      toast.error("Failed to create role");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <section className="space-y-6">
@@ -266,18 +639,28 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
             variant="secondary"
             size="sm"
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
           >
             Back
           </Button>
-          {/* Save button placeholder - future implementation */}
           <Button
             variant="default"
             size="sm"
-            disabled
-            title="Saving not yet implemented"
+            disabled={!canSave}
+            onClick={handleSave}
+            title={
+              editing
+                ? "Editing built-in or existing role saving not implemented yet"
+                : canSave
+                ? "Save new custom role"
+                : duplicateStatus === "duplicate"
+                ? "Duplicate role name"
+                : duplicateStatus === "checking"
+                ? "Checking for duplicates..."
+                : "Enter name (>=3 chars), ensure unique, and add at least one action"
+            }
           >
-            Save
+            {loading ? "Saving..." : editing ? "Save (disabled)" : "Save"}
           </Button>
         </div>
       </div>
@@ -285,6 +668,16 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
         <div className="text-xs rounded border border-amber-400/40 bg-amber-100/40 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 p-2">
           Built-in roles cannot be edited. You may clone its actions using the
           Role combinator.
+        </div>
+      )}
+      {serverErrors.length > 0 && (
+        <div className="text-xs rounded border border-rose-400/40 bg-rose-100/50 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200 p-2 space-y-1">
+          <div className="font-semibold">Validation errors</div>
+          <ul className="list-disc pl-4 space-y-0.5">
+            {serverErrors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
         </div>
       )}
       <div className="space-y-6">
@@ -303,6 +696,22 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
                 disabled={isBuiltIn}
                 placeholder="Enter role name"
               />
+              {duplicateStatus === "checking" &&
+                roleName.trim().length >= 3 && (
+                  <div className="text-[10px] text-muted-foreground">
+                    Checking name…
+                  </div>
+                )}
+              {duplicateStatus === "duplicate" && duplicateMessage && (
+                <div className="text-[10px] text-rose-600">
+                  {duplicateMessage}
+                </div>
+              )}
+              {duplicateStatus === "ok" && roleName.trim().length >= 3 && (
+                <div className="text-[10px] text-emerald-600">
+                  Name is available
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium">Description</label>
@@ -313,6 +722,11 @@ export function RoleEditorPage({ accessToken, apiBase }: { accessToken: string |
                 disabled={isBuiltIn}
                 placeholder="Describe this role"
               />
+              {isDirty && !editing && (
+                <div className="text-[10px] text-muted-foreground">
+                  Unsaved changes
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -1,4 +1,5 @@
 using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,18 +14,17 @@ public class PostRole : IEndpoint
             .RequireAuthorization();
     }
 
-    private static async Task<CreatedAtRoute> Handle(RoleRequest req, [FromServices] IGraphService graphService)
+    private static async Task<Created> Handle(RoleRequest req, [FromServices] IGraphService graphService)
     {
         var result = await graphService.CreateCustomRole(
             req.DisplayName,
             req.Description,
             req.ResourceActions
         );
-        return TypedResults.CreatedAtRoute(
-            nameof(GetRole), new RouteValueDictionary(new { id = result })
-        );
+        return TypedResults.Created(new Uri($"/roles/{result}", UriKind.Relative));
     }
 
+    [UsedImplicitly]
     private record RoleRequest(
         string DisplayName,
         string Description,
