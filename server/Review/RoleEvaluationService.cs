@@ -6,9 +6,9 @@ namespace EntraRoleReaper.Api.Review;
 
 public class RoleEvaluationService(IUserService userService, IRoleService roleService, IEnumerable<IEvaluateRole> evaluators, IEnumerable<IRoleRequirement>? roleRequirements = null)
 {
-    public async Task<RoleEvaluationResult> Evaluate(string userId, Activity activity, List<ReviewTargetResource> targets)
+    public async Task<RoleEvaluationResult> Evaluate(string userId, Guid tenantId, Activity activity, List<ReviewTargetResource> targets)
     {
-        var userContext = await userService.GetUserById(userId);
+        var userContext = await userService.GetUserById(userId, tenantId);
         var roles = await roleService.GetAllRolesAsync();
         var results = new List<RoleEvaluationResult>();
         foreach (var context in from role in roles from target in targets select new RoleEvaluationContext(role, activity, target, userContext))

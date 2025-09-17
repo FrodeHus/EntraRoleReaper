@@ -98,7 +98,7 @@ public class ReviewCoordinator : IReviewCoordinator
             var tokenCtx = scope.ServiceProvider.GetRequiredService<AccessTokenContext>();
             tokenCtx.UserAccessToken = _tokenProtector.Unprotect(job.UserAccessToken);
             var reviewService = scope.ServiceProvider.GetRequiredService<IReviewService>();
-            var result = await reviewService.ReviewAsync(job.Request);
+            var result = await reviewService.ReviewAsync(job.Request, job.TenantId);
             job.Result = result;
             job.Status = ReviewJobStatus.Completed;
             job.CompletedAt = DateTimeOffset.UtcNow;

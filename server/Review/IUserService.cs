@@ -6,7 +6,7 @@ namespace EntraRoleReaper.Api.Review;
 public interface IUserService
 {
     Task<UserContext> GetCurrentUser();
-    Task<UserContext> GetUserById(string userId);
+    Task<UserContext> GetUserById(string userId, Guid tenantId);
 }
 
 public class UserService(IHttpContextAccessor httpContextAccessor, IGraphService graphService) : IUserService
@@ -31,14 +31,13 @@ public class UserService(IHttpContextAccessor httpContextAccessor, IGraphService
         });
     }
 
-    public async Task<UserContext> GetUserById(string userId)
+    public async Task<UserContext> GetUserById(string userId, Guid tenantId)
     {
-        var currentUser = await GetCurrentUser();
         var userData = await graphService.GetUserAndRolesAsync(userId);
         return new UserContext
         {
             UserId = userId,
-            TenantId = currentUser.TenantId,
+            TenantId = tenantId,
             DisplayName = userData.DisplayName,
             ActiveRoleIds = userData.ActiveRoleIds,
             EligibleRoleIds = userData.EligibleRoleIds,

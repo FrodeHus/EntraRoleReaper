@@ -14,7 +14,7 @@ public class ReviewService(
     RoleEvaluationService roleEvaluationService
 ) : IReviewService
 {
-    public async Task<ReviewResponse> ReviewAsync(ReviewRequest request)
+    public async Task<ReviewResponse> ReviewAsync(ReviewRequest request, Guid tenantId)
     {
         var userIds = await graphService.ExpandUsersOrGroupsAsync(request.UsersOrGroups);
 
@@ -50,7 +50,7 @@ public class ReviewService(
                     ModifiedProperties = t.ModifiedProperties
                 }) ?? [];
 
-                var result = await roleEvaluationService.Evaluate(uid, activity, targets);
+                var result = await roleEvaluationService.Evaluate(uid, tenantId, activity, targets);
 
             }
 
