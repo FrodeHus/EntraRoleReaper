@@ -148,15 +148,15 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
     }
 
     public async Task<List<AuditActivity>> CollectAuditActivitiesAsync(
+        string uid,
         DateTimeOffset from,
-        DateTimeOffset to,
-        string uid
+        DateTimeOffset to
     )
     {
         string[] validTargetResources = ["User", "Group", "Device", "App", "Role", "Policy", "Other", "Directory"];
         var auditEntries = new List<AuditActivity>();
 
-        DirectoryAuditCollectionResponse? audits = await GetAuditEntriesInitiatedBy(from, to, uid);
+        DirectoryAuditCollectionResponse? audits = await GetAuditEntriesInitiatedBy(uid, from, to);
         if (audits?.Value != null)
         {
             foreach (var a in audits.Value)

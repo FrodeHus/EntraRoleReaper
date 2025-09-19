@@ -1,9 +1,11 @@
 using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using JetBrains.Annotations;
 
 namespace EntraRoleReaper.Api.Endpoints.Review;
 
+[UsedImplicitly]
 public class GetReviewJobs : IEndpoint
 {
     public static void Map(IEndpointRouteBuilder builder)
@@ -36,11 +38,11 @@ public class GetReviewJobs : IEndpoint
             startedAt = j.StartedAt,
             completedAt = j.CompletedAt,
             error = j.Error,
-            targetCount = j.Request.UsersOrGroups?.Count ?? 0,
+            targetCount = j.UsersOrGroups?.Count ?? 0,
             userCount = j.Result?.Results?.Count ?? null,
             requestedBy = j.RequestedBy,
-            from = j.Request.From,
-            to = j.Request.To
+            from = j.AuditFrom,
+            to = j.AuditTo
         });
         return Results.Ok(shaped);
     }

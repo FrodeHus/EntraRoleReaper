@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using EntraRoleReaper.Api.Endpoints.Review;
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Extensions.Caching.Memory;
@@ -13,7 +14,7 @@ public class ReviewCoordinator : IReviewCoordinator
     private readonly ILogger<ReviewCoordinator> _logger;
     private readonly SemaphoreSlim _semaphore;
     private readonly ConcurrentQueue<Guid> _queue = new();
-    private readonly string CacheKeyPrefix = "ReviewJob:";
+    private const string CacheKeyPrefix = "ReviewJob:";
     private readonly ITokenProtector _tokenProtector;
 
     public ReviewCoordinator(IMemoryCache cache, IServiceScopeFactory scopeFactory, IOptions<ReviewOptions> options, ILogger<ReviewCoordinator> logger, ITokenProtector tokenProtector)
@@ -26,23 +27,14 @@ public class ReviewCoordinator : IReviewCoordinator
         _semaphore = new SemaphoreSlim(max, max);
     }
 
-    public Guid Enqueue(Guid tenantId, string requestedBy, ReviewRequest request, string? userAccessToken = null)
+    public Guid Enqueue(ReviewJob job, string? userAccessToken = null)
     {
         var protectedToken = _tokenProtector.Protect(userAccessToken);
-        var job = new ReviewJob(Guid.NewGuid(), requestedBy, request, tenantId, DateTimeOffset.UtcNow, protectedToken);
+        job = job with { UserAccessToken = protectedToken, EnqueuedAt = DateTimeOffset.UtcNow, Status = ReviewJobStatus.Queued };
         SetJob(job);
         _queue.Enqueue(job.Id);
-        _logger.LogInformation("Enqueued review job {JobId} by {User} with {Count} subjects", job.Id, requestedBy, request.UsersOrGroups?.Count ?? 0);
+        _logger.LogInformation("Enqueued review job {JobId} by {User} with {Count} subjects", job.Id, job.RequestedBy, job.UsersOrGroups?.Count ?? 0);
         return job.Id;
-    }
-
-    public bool ExistsDuplicate(string requestedBy, ReviewRequest request)
-    {
-        var existing = List();
-        var targets = new HashSet<string>(request.UsersOrGroups ?? [], StringComparer.OrdinalIgnoreCase);
-        return existing.Any(j => j.RequestedBy.Equals(requestedBy, StringComparison.OrdinalIgnoreCase)
-                                 && j.Status is ReviewJobStatus.Queued or ReviewJobStatus.Running
-                                 && new HashSet<string>(j.Request.UsersOrGroups ?? [], StringComparer.OrdinalIgnoreCase).SetEquals(targets));
     }
 
     public ReviewJob? Get(Guid id) => _cache.TryGetValue(CacheKeyPrefix + id, out ReviewJob? job) ? job : null;
@@ -98,8 +90,8 @@ public class ReviewCoordinator : IReviewCoordinator
             var tokenCtx = scope.ServiceProvider.GetRequiredService<AccessTokenContext>();
             tokenCtx.UserAccessToken = _tokenProtector.Unprotect(job.UserAccessToken);
             var reviewService = scope.ServiceProvider.GetRequiredService<IReviewService>();
-            var result = await reviewService.ReviewAsync(job.Request, job.TenantId);
-            job.Result = result;
+            var result = await reviewService.ReviewAsync(job.UsersOrGroups, job.AuditFrom, job.AuditTo, job.TenantId);
+            job.Result = new ReviewJobResult(result);
             job.Status = ReviewJobStatus.Completed;
             job.CompletedAt = DateTimeOffset.UtcNow;
             // clear token after successful completion

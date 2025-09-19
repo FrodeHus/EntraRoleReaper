@@ -1,3 +1,4 @@
+using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Models;
 
 namespace EntraRoleReaper.Api.Services.Models;
@@ -14,7 +15,9 @@ public enum ReviewJobStatus
 public record ReviewJob(
     Guid Id,
     string RequestedBy,
-    ReviewRequest Request,
+    List<string> UsersOrGroups,
+    DateTimeOffset AuditFrom,
+    DateTimeOffset AuditTo,
     Guid TenantId,
     DateTimeOffset EnqueuedAt,
     string? UserAccessToken = null
@@ -24,5 +27,9 @@ public record ReviewJob(
     public DateTimeOffset? StartedAt { get; set; }
     public DateTimeOffset? CompletedAt { get; set; }
     public string? Error { get; set; }
-    public ReviewResponse? Result { get; set; }
+    public ReviewJobResult? Result { get; set; }
 }
+
+public record ReviewJobResult(
+    List<ActivityReviewResult>? Results
+);

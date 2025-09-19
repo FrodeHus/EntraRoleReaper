@@ -20,7 +20,7 @@ public class GetReviewResult : IEndpoint
         var job = coordinator.Get(id);
         if (job is null) return Results.NotFound();
         if (job.TenantId != tenantId) return Results.Forbid();
-        return job.Status == ReviewJobStatus.Completed && job.Result is not null
+        return job is { Status: ReviewJobStatus.Completed, Result: not null }
             ? Results.Ok(job.Result)
             : Results.StatusCode(StatusCodes.Status202Accepted);
     }
