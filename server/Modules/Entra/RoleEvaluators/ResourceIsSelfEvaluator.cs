@@ -15,13 +15,14 @@ public class ResourceIsSelfEvaluator : IEvaluateRole
         {
             return Task.FromResult(new RoleScoreCard
             {
+                EvaluatorName = nameof(ResourceIsSelfEvaluator),
                 Score = 100,
                 Justification = "User is the same as the target resource"
             });
         }
         else
         {
-            return Task.FromResult(new RoleScoreCard { Score = 0, Justification = "User is not the same as the target resource" });
+            return Task.FromResult(new RoleScoreCard { EvaluatorName = nameof(ResourceIsSelfEvaluator), Score = 0, Justification = "User is not the same as the target resource" });
         }
     }
 }

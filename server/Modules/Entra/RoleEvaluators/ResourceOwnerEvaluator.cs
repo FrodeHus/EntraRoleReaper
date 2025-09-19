@@ -16,6 +16,7 @@ public class ResourceOwnerEvaluator(IGraphService graphService) : IEvaluateRole
 
         return new RoleScoreCard
         {
+            EvaluatorName = nameof(ResourceOwnerEvaluator),
             Score = isOwner ? 100 : 0,
             Justification = isOwner ? "User is an owner of the resource" : "User is not an owner of the resource"
         };

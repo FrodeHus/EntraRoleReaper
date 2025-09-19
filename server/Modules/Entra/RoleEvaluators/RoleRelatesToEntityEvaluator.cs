@@ -17,6 +17,7 @@ public class RoleRelatesToEntityEvaluator : IEvaluateRole
         {
             return Task.FromResult(new RoleScoreCard
             {
+                EvaluatorName = nameof(RoleRelatesToEntityEvaluator),
                 Score = 0,
                 Justification = "No resource actions found for activity"
             });
@@ -29,6 +30,7 @@ public class RoleRelatesToEntityEvaluator : IEvaluateRole
         {
             return Task.FromResult(new RoleScoreCard
             {
+                EvaluatorName = nameof(RoleRelatesToEntityEvaluator),
                 Score = 0,
                 Justification = "Role has no permissions"
             });
@@ -38,6 +40,7 @@ public class RoleRelatesToEntityEvaluator : IEvaluateRole
 
         return Task.FromResult(new RoleScoreCard
         {
+            EvaluatorName = nameof(RoleRelatesToEntityEvaluator),
             Score = (int)(numberOfPermissionsForEntity / (double)rolePermissions.Count * 1000),
             Justification = "Role has " + numberOfPermissionsForEntity + " out of " + rolePermissions.Count + " permissions related to the activity entity"
         });

@@ -23,6 +23,7 @@ public class RoleHasRelevantPermissionsEvaluator : IEvaluateRole
         var score = matchingActions == 0 ? -100 : (int)((matchingActions / (double)totalActions) * 1000);
         return Task.FromResult(new RoleScoreCard
         {
+            EvaluatorName = nameof(RoleHasRelevantPermissionsEvaluator),
             Score = score,
             Justification = $"Role has {matchingActions} out of {totalActions} relevant permissions for the activity"
         });
