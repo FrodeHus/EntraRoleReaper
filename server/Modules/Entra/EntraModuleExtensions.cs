@@ -13,7 +13,7 @@ namespace EntraRoleReaper.Api.Modules.Entra;
 
 public static class EntraModuleExtensions
 {
-    public static IServiceCollection AddEntraModule(this IServiceCollection services, WebApplication app, IConfiguration configuration)
+    public static IServiceCollection AddEntraModule(this IServiceCollection services)
     {
 
         services.AddTransient<RoleEvaluationService>();
@@ -24,6 +24,9 @@ public static class EntraModuleExtensions
     private static void RegisterEntraRoleEvaluators(this IServiceCollection services)
     {
         services.AddTransient<IEvaluateRole, ResourceOwnerEvaluator>();
+        services.AddTransient<IEvaluateRole, ResourceIsSelfEvaluator>();
+        services.AddTransient<IEvaluateRole, RoleIsPrivilegedEvaluator>();
+        services.AddTransient<IEvaluateRole, RoleHasRelevantPermissionsEvaluator>();
     }
 
     public static WebApplication UseEntraModule(this WebApplication app)

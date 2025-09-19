@@ -2,7 +2,7 @@ using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 
 namespace EntraRoleReaper.Api.Services.Dto;
 
-public record ActivityDto(Guid Id, string ActivityName, string? Category = null, string? Service = null, ICollection<TargetResourceDto>? TargetResources = null)
+public record ActivityDto(Guid Id, string ActivityName, string? Category = null, string? Service = null, ICollection<TargetResourceDto>? TargetResources = null, ICollection<ResourceActionDto>? ResourceActions = null)
 {
 
     public static ActivityDto FromActivity(Activity activity, bool includeProperties = false)
@@ -11,7 +11,8 @@ public record ActivityDto(Guid Id, string ActivityName, string? Category = null,
             Id: activity.Id,
             ActivityName: activity.Name,
             Category: activity.AuditCategory,
-            Service: activity.Service
+            Service: activity.Service,
+            ResourceActions: activity.MappedResourceActions?.Select(ResourceActionDto.FromResourceAction).ToList()
         );
 
         if (includeProperties)

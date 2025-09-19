@@ -49,9 +49,9 @@ public class ReviewService(
                     Type = t.Type,
                     ModifiedProperties = t.ModifiedProperties
                 }) ?? [];
-
-                var (user, result) = await roleEvaluationService.Evaluate(uid, tenantId, activity, targets);
-                var activityReviewResult = new ActivityReviewResult(ActivityDto.FromActivity(activity), result);
+                var activityDto = ActivityDto.FromActivity(activity, true);
+                var (user, result) = await roleEvaluationService.Evaluate(uid, tenantId, activityDto, targets);
+                var activityReviewResult = new ActivityReviewResult(activityDto, result);
                 if(userResults is null)
                 {
                     userResults = new UserReviewResult(user, [activityReviewResult]);

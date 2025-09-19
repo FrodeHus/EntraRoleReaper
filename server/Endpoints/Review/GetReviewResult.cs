@@ -1,5 +1,6 @@
 using EntraRoleReaper.Api.Services.Interfaces;
 using EntraRoleReaper.Api.Services.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EntraRoleReaper.Api.Endpoints.Review;
@@ -13,15 +14,15 @@ public class GetReviewResult : IEndpoint
             .RequireAuthorization();
     }
 
-    private static IResult Handle([FromRoute] Guid id, [FromServices] IReviewCoordinator coordinator, HttpContext httpContext)
+    private static Results<Ok<ReviewJobResult>,BadRequest<string>, NotFound, ForbidHttpResult, Accepted> Handle([FromRoute] Guid id, [FromServices] IReviewCoordinator coordinator, HttpContext httpContext)
     {
         var tenantId = httpContext.Items["TenantId"] as Guid?;
-        if (tenantId is null) return Results.BadRequest(new { error = "TenantId is required" });
+        if (tenantId is null) return TypedResults.BadRequest("TenantId is required");
         var job = coordinator.Get(id);
-        if (job is null) return Results.NotFound();
-        if (job.TenantId != tenantId) return Results.Forbid();
+        if (job is null) return TypedResults.NotFound();
+        if (job.TenantId != tenantId) return TypedResults.Forbid();
         return job is { Status: ReviewJobStatus.Completed, Result: not null }
-            ? Results.Ok(job.Result)
-            : Results.StatusCode(StatusCodes.Status202Accepted);
+            ? TypedResults.Ok(job.Result)
+            : TypedResults.Accepted("Review job is not completed yet");
     }
 }

@@ -3,6 +3,7 @@ using EntraRoleReaper.Api;
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Data.Seed;
+using EntraRoleReaper.Api.Modules.Entra;
 using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services;
@@ -43,6 +44,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDataProtection();
+builder.Services.AddEntraModule();
 
 // SQLite cache path is configurable via Cache:SqliteConnection or Cache:SqlitePath
 var sqliteConn = builder.Configuration.GetValue<string>("Database:SqliteConnection");

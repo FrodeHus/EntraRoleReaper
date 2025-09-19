@@ -1,12 +1,13 @@
 ﻿using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services;
+using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Api.Review;
 
 public class RoleEvaluationService(IUserService userService, IRoleService roleService, IEnumerable<IEvaluateRole> evaluators, IEnumerable<IRoleRequirement>? roleRequirements = null)
 {
-    public async Task<(UserContext,RoleEvaluationResult)> Evaluate(string userId, Guid tenantId, Activity activity, List<ReviewTargetResource> targets)
+    public async Task<(UserContext,RoleEvaluationResult)> Evaluate(string userId, Guid tenantId, ActivityDto activity, List<ReviewTargetResource> targets)
     {
         var userContext = await userService.GetUserById(userId, tenantId);
         var roles = await roleService.GetAllRolesAsync();
@@ -16,7 +17,7 @@ public class RoleEvaluationService(IUserService userService, IRoleService roleSe
             var result = await EvaluateAsync(context);
             results.Add(result);
         }
-        return (userContext, results.OrderByDescending(r => r.TotalScore).FirstOrDefault() ?? new RoleEvaluationResult(activity, -1000, []));
+        return (userContext, results.OrderByDescending(r => r.TotalScore).FirstOrDefault() ?? new RoleEvaluationResult(new RoleDefinitionDto(), -1000, []));
     }
 
     private async Task<RoleEvaluationResult> EvaluateAsync(RoleEvaluationContext context)

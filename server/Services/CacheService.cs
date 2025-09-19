@@ -1,4 +1,5 @@
 using EntraRoleReaper.Api.Data.Models;
+using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services.Dto;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -47,7 +48,20 @@ public class CacheService(IMemoryCache memoryCache, ILogger<CacheService> logger
         }, TimeSpan.FromHours(1));
         logger.LogInformation("Cache service initialized successfully.");
     }
+
+    public UserContext? GetUserContext(string userId, Guid tenantId)
+    {
+        var cacheKey = $"UserContext_{tenantId}_{userId}";
+        var userContext = Get<UserContext>(cacheKey);
+        return userContext;
+    }
     
+    public void SetUserContext(UserContext userContext)
+    {
+        var cacheKey = $"UserContext_{userContext.TenantId}_{userContext.UserId}";
+        Set(cacheKey, userContext, TimeSpan.FromMinutes(30));
+    }
+
     public CacheMetadata GetCacheMetadata()
     {
         if (memoryCache.TryGetValue("CacheMetadata", out CacheMetadata? metadata) && metadata is not null)
@@ -136,5 +150,7 @@ public interface ICacheService
     Task InitializeAsync(bool forceRefresh = false);
     Task<RoleDefinitionDto?> GetRoleByIdAsync(Guid roleId);
     Task<ActivityDto?> GetActivityByIdAsync(Guid activityId);
+    UserContext? GetUserContext(string userId, Guid tenantId);
+    void SetUserContext(UserContext userContext);
     CacheMetadata GetCacheMetadata();   
 }
