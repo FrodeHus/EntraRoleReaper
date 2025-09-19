@@ -24,6 +24,13 @@ import {
 } from "../components/ui/table";
 import { JobQueue } from "./JobQueue";
 import { Progress } from "../components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 export function ReviewPanel({
   accessToken,
@@ -168,18 +175,22 @@ export function ReviewPanel({
           <label className="block text-sm text-muted-foreground">
             Time range
           </label>
-          <select
-            title="Time range"
+          <Select
             value={selectedRange}
-            onChange={(e) => setSelectedRange(e.target.value)}
+            onValueChange={(v: string) => setSelectedRange(v)}
             disabled={loading}
           >
-            {timeRanges.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="mt-1 w-48" aria-label="Time range">
+              <SelectValue placeholder="Select range" />
+            </SelectTrigger>
+            <SelectContent>
+              {timeRanges.map((r) => (
+                <SelectItem key={r.value} value={r.value}>
+                  {r.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Button
           onClick={run}
