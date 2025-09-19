@@ -3,8 +3,8 @@ using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
-using System.Text.Json;
 using Microsoft.Graph.Models.ODataErrors;
+using System.Text.Json;
 using ModifiedProperty = EntraRoleReaper.Api.Services.Models.ModifiedProperty;
 
 namespace EntraRoleReaper.Api.Modules.Entra.Graph.Common;
@@ -148,13 +148,15 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
     }
 
     public async Task<List<AuditActivity>> CollectAuditActivitiesAsync(
-        ReviewRequest request,
+        DateTimeOffset from,
+        DateTimeOffset to,
         string uid
     )
     {
+        string[] validTargetResources = ["User", "Group", "Device", "App", "Role", "Policy", "Other", "Directory"];
         var auditEntries = new List<AuditActivity>();
 
-        DirectoryAuditCollectionResponse? audits = await GetAuditEntriesInitiatedBy(request, uid);
+        DirectoryAuditCollectionResponse? audits = await GetAuditEntriesInitiatedBy(from, to, uid);
         if (audits?.Value != null)
         {
             foreach (var a in audits.Value)
@@ -167,6 +169,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
                     continue;
                 var updatedProperties = a
                     .TargetResources
+                    .Where(t => validTargetResources.Contains(t.Type) && Guid.TryParse(t.Id, out _))
                     .SelectMany(tr => tr.ModifiedProperties ?? [])
                     .FirstOrDefault(t => t.DisplayName == "Included Updated Properties")?
                     .NewValue?.Replace("\"", string.Empty).Replace(" ", string.Empty)
@@ -323,14 +326,15 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
     }
 
     private async Task<DirectoryAuditCollectionResponse?> GetAuditEntriesInitiatedBy(
-        ReviewRequest request,
-        string uid
+        string uid,
+        DateTimeOffset from,
+        DateTimeOffset to
     )
     {
         return await GraphClient.AuditLogs.DirectoryAudits.GetAsync(q =>
         {
             q.QueryParameters.Filter =
-                $"activityDateTime ge {request.From:O} and activityDateTime le {request.To:O} and initiatedBy/user/id eq '{uid}'";
+                $"activityDateTime ge {from:O} and activityDateTime le {to:O} and initiatedBy/user/id eq '{uid}'";
             q.QueryParameters.Top = 250;
         });
     }
@@ -371,7 +375,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
             return null;
         }
     }
-    
+
     public async Task<string?> ActivatePIMRole(string roleId, int durationMinutes = 60)
     {
         var assignments = await GraphClient.RoleManagement.Directory.RoleEligibilitySchedules.GetAsync(q =>
@@ -417,17 +421,17 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
     public async Task<string?> CreateCustomRole(string roleName, string description, List<string> permissions)
     {
         var definition = new UnifiedRoleDefinition
-            {
-                DisplayName = roleName,
-                Description = description,
-                IsEnabled = true,
-                RolePermissions = [
+        {
+            DisplayName = roleName,
+            Description = description,
+            IsEnabled = true,
+            RolePermissions = [
                     new UnifiedRolePermission
                     {
                         AllowedResourceActions = permissions
                     }
                 ]
-            }
+        }
         ;
         var result = await GraphClient.RoleManagement.Directory.RoleDefinitions.PostAsync(definition);
         return result?.Id ?? null;

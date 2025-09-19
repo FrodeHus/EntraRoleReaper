@@ -1,7 +1,9 @@
 using EntraRoleReaper.Api.Data.Models;
+using System.Diagnostics;
 
 namespace EntraRoleReaper.Api.Services.Dto;
 
+[DebuggerDisplay("RoleDefinition: {DisplayName} ({IsPrivileged})")]
 public class RoleDefinitionDto
 {
     public Guid Id { get; set; }

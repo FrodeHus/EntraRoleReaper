@@ -4,9 +4,10 @@ using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Models;
 
 namespace EntraRoleReaper.Tests;
+
 internal class SimpleGraphService(Dictionary<string, bool> targetOwners) : IGraphService
 {
-    public Task<List<AuditActivity>> CollectAuditActivitiesAsync(ReviewRequest request, string uid)
+    public Task<List<AuditActivity>> CollectAuditActivitiesAsync(string uid, DateTimeOffset from, DateTimeOffset to)
     {
         return Task.FromResult<List<AuditActivity>>([]);
     }

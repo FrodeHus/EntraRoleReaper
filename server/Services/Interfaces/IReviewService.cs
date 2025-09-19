@@ -1,8 +1,8 @@
-using EntraRoleReaper.Api.Services.Models;
+using EntraRoleReaper.Api.Review.Models;
 
 namespace EntraRoleReaper.Api.Services.Interfaces;
 
 public interface IReviewService
 {
-    Task<ReviewResponse> ReviewAsync(ReviewRequest request, Guid tenantId);
+    Task<List<ActivityReviewResult>> ReviewAsync(List<string> usersOrGroups, DateTimeOffset from, DateTimeOffset to, Guid tenantId);
 }

@@ -1,5 +1,8 @@
-﻿namespace EntraRoleReaper.Api.Review;
+﻿using System.Diagnostics;
 
+namespace EntraRoleReaper.Api.Review;
+
+[DebuggerDisplay("UserContext: {DisplayName} ({UserId})")]
 public class UserContext
 {
     public required object UserId { get; set; }

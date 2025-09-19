@@ -16,14 +16,14 @@ public class RoleEvaluationService(IUserService userService, IRoleService roleSe
             var result = await EvaluateAsync(context);
             results.Add(result);
         }
-        return results.OrderByDescending(r => r.TotalScore).FirstOrDefault() ?? new RoleEvaluationResult(activity, -1000, []);
+        return results.OrderByDescending(r => r.TotalScore).FirstOrDefault() ?? new RoleEvaluationResult(userContext, activity, -1000, []);
     }
 
     private async Task<RoleEvaluationResult> EvaluateAsync(RoleEvaluationContext context)
     {
         if (!MeetsAllRequirements(context))
         {
-            return new RoleEvaluationResult(context.RoleDefinition, -1000, []);
+            return new RoleEvaluationResult(context.User, context.RoleDefinition, -1000, []);
         }
 
         var roleScoreCards = new List<RoleScoreCard>();
@@ -34,7 +34,7 @@ public class RoleEvaluationService(IUserService userService, IRoleService roleSe
         }
 
         var score = roleScoreCards.Sum(r => r.Score);
-        return new RoleEvaluationResult(context.RoleDefinition, score, roleScoreCards);
+        return new RoleEvaluationResult(context.User, context.RoleDefinition, score, roleScoreCards);
     }
 
     private bool MeetsAllRequirements(RoleEvaluationContext context)
@@ -54,4 +54,4 @@ public class RoleEvaluationService(IUserService userService, IRoleService roleSe
     }
 }
 
-public record RoleEvaluationResult(object RoleDefinition, int TotalScore, IEnumerable<RoleScoreCard> RoleScoreCards);
+public record RoleEvaluationResult(UserContext User, object RoleDefinition, int TotalScore, IEnumerable<RoleScoreCard> RoleScoreCards);

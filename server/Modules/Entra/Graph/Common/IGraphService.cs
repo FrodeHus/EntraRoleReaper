@@ -4,9 +4,10 @@ using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph.Models;
 
 namespace EntraRoleReaper.Api.Modules.Entra.Graph.Common;
+
 public interface IGraphService
 {
-    Task<List<AuditActivity>> CollectAuditActivitiesAsync(ReviewRequest request, string uid);
+    Task<List<AuditActivity>> CollectAuditActivitiesAsync(string uid, DateTimeOffset from, DateTimeOffset to);
     Task<HashSet<string>> ExpandUsersOrGroupsAsync(IEnumerable<string> usersOrGroups);
     Task<List<UnifiedRoleDefinition>?> GetAllRoleDefinitions();
     Task<Dictionary<string, bool>> GetResourceActionMetadataAsync();

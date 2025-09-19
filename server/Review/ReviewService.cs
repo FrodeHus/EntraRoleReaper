@@ -14,22 +14,22 @@ public class ReviewService(
     RoleEvaluationService roleEvaluationService
 ) : IReviewService
 {
-    public async Task<ReviewResponse> ReviewAsync(ReviewRequest request, Guid tenantId)
+    public async Task<List<ActivityReviewResult>> ReviewAsync(List<string> usersOrGroups, DateTimeOffset from, DateTimeOffset to, Guid tenantId)
     {
-        var userIds = await graphService.ExpandUsersOrGroupsAsync(request.UsersOrGroups);
+        var userIds = await graphService.ExpandUsersOrGroupsAsync(usersOrGroups);
 
 
-        var results = new List<UserReview>();
+        var results = new List<ActivityReviewResult>();
         foreach (var uid in userIds)
         {
             // Audit operations + targets
-            var auditActivities = await graphService.CollectAuditActivitiesAsync(request, uid);
+            var auditActivities = await graphService.CollectAuditActivitiesAsync(uid, from, to);
             await SaveActivitiesAsync(auditActivities);
 
             var mappedActivities = auditActivities.Count > 0
-                ? await activityService.GetActivitiesAsync(auditActivities.Select(a => a.ActivityName).ToList())
+                ? await activityService.GetActivitiesAsync(auditActivities.ConvertAll(a => a.ActivityName))
                 : [];
-            var activities = mappedActivities as Activity[] ?? mappedActivities.ToArray();
+            var activities = mappedActivities as Activity[] ?? [.. mappedActivities];
             var allSuggestedRoles = new List<RoleDefinitionDto>();
             foreach (var activity in activities)
             {
@@ -51,12 +51,13 @@ public class ReviewService(
                 }) ?? [];
 
                 var result = await roleEvaluationService.Evaluate(uid, tenantId, activity, targets);
-
+                var activityReviewResult = new ActivityReviewResult(activity, result);
+                results.Add(activityReviewResult);
             }
 
         }
 
-        return new ReviewResponse(results);
+        return results;
     }
 
     private async Task SaveActivitiesAsync(IEnumerable<AuditActivity> activities)

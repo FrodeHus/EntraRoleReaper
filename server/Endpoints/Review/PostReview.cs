@@ -7,6 +7,8 @@ namespace EntraRoleReaper.Api.Endpoints.Review;
 
 public class PostReview : IEndpoint
 {
+    public record ReviewRequest(List<string> UsersOrGroups, DateTimeOffset From, DateTimeOffset To);
+
     public static void Map(IEndpointRouteBuilder builder)
     {
         builder.MapPost("/", Handle)
@@ -26,7 +28,7 @@ public class PostReview : IEndpoint
         {
             return TypedResults.BadRequest(new { error = "TenantId is required" });
         }
-  
+
         string requestedBy =
             user.FindFirst(ClaimTypes.Upn)?.Value
             ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value
