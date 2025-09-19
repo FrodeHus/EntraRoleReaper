@@ -14,12 +14,12 @@ public class ReviewService(
     RoleEvaluationService roleEvaluationService
 ) : IReviewService
 {
-    public async Task<List<ActivityReviewResult>> ReviewAsync(List<string> usersOrGroups, DateTimeOffset from, DateTimeOffset to, Guid tenantId)
+    public async Task<List<UserReviewResult>> ReviewAsync(List<string> usersOrGroups, DateTimeOffset from, DateTimeOffset to, Guid tenantId)
     {
         var userIds = await graphService.ExpandUsersOrGroupsAsync(usersOrGroups);
 
 
-        var results = new List<ActivityReviewResult>();
+        var results = new List<UserReviewResult>();
         foreach (var uid in userIds)
         {
             // Audit operations + targets
@@ -30,7 +30,7 @@ public class ReviewService(
                 ? await activityService.GetActivitiesAsync(auditActivities.ConvertAll(a => a.ActivityName))
                 : [];
             var activities = mappedActivities as Activity[] ?? [.. mappedActivities];
-            var allSuggestedRoles = new List<RoleDefinitionDto>();
+            UserReviewResult? userResults = null;
             foreach (var activity in activities)
             {
                 if (activity.IsExcluded)
@@ -50,13 +50,19 @@ public class ReviewService(
                     ModifiedProperties = t.ModifiedProperties
                 }) ?? [];
 
-                var result = await roleEvaluationService.Evaluate(uid, tenantId, activity, targets);
-                var activityReviewResult = new ActivityReviewResult(activity, result);
-                results.Add(activityReviewResult);
+                var (user, result) = await roleEvaluationService.Evaluate(uid, tenantId, activity, targets);
+                var activityReviewResult = new ActivityReviewResult(ActivityDto.FromActivity(activity), result);
+                if(userResults is null)
+                {
+                    userResults = new UserReviewResult(user, [activityReviewResult]);
+                }
+                else
+                {
+                    userResults.ActivityResults.Add(activityReviewResult);
+                }
             }
-
+            if(userResults is not null) results.Add(userResults);
         }
-
         return results;
     }
 

@@ -6,7 +6,7 @@ namespace EntraRoleReaper.Api.Review;
 
 public class RoleEvaluationService(IUserService userService, IRoleService roleService, IEnumerable<IEvaluateRole> evaluators, IEnumerable<IRoleRequirement>? roleRequirements = null)
 {
-    public async Task<RoleEvaluationResult> Evaluate(string userId, Guid tenantId, Activity activity, List<ReviewTargetResource> targets)
+    public async Task<(UserContext,RoleEvaluationResult)> Evaluate(string userId, Guid tenantId, Activity activity, List<ReviewTargetResource> targets)
     {
         var userContext = await userService.GetUserById(userId, tenantId);
         var roles = await roleService.GetAllRolesAsync();
@@ -16,14 +16,14 @@ public class RoleEvaluationService(IUserService userService, IRoleService roleSe
             var result = await EvaluateAsync(context);
             results.Add(result);
         }
-        return results.OrderByDescending(r => r.TotalScore).FirstOrDefault() ?? new RoleEvaluationResult(userContext, activity, -1000, []);
+        return (userContext, results.OrderByDescending(r => r.TotalScore).FirstOrDefault() ?? new RoleEvaluationResult(activity, -1000, []));
     }
 
     private async Task<RoleEvaluationResult> EvaluateAsync(RoleEvaluationContext context)
     {
         if (!MeetsAllRequirements(context))
         {
-            return new RoleEvaluationResult(context.User, context.RoleDefinition, -1000, []);
+            return new RoleEvaluationResult(context.RoleDefinition, -1000, []);
         }
 
         var roleScoreCards = new List<RoleScoreCard>();
@@ -34,24 +34,13 @@ public class RoleEvaluationService(IUserService userService, IRoleService roleSe
         }
 
         var score = roleScoreCards.Sum(r => r.Score);
-        return new RoleEvaluationResult(context.User, context.RoleDefinition, score, roleScoreCards);
+        return new RoleEvaluationResult(context.RoleDefinition, score, roleScoreCards);
     }
 
     private bool MeetsAllRequirements(RoleEvaluationContext context)
     {
-        if (roleRequirements?.Any() != true)
-        {
-            return true;
-        }
-        foreach (var requirement in roleRequirements)
-        {
-            if (!requirement.IsSatisfied(context))
-            {
-                return false;
-            }
-        }
-        return true;
+        return roleRequirements?.Any() != true || roleRequirements.All(requirement => requirement.IsSatisfied(context));
     }
 }
 
-public record RoleEvaluationResult(UserContext User, object RoleDefinition, int TotalScore, IEnumerable<RoleScoreCard> RoleScoreCards);
+public record RoleEvaluationResult(object RoleDefinition, int TotalScore, IEnumerable<RoleScoreCard> RoleScoreCards);

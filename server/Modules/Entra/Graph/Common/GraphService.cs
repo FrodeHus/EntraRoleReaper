@@ -153,7 +153,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
         DateTimeOffset to
     )
     {
-        string[] validTargetResources = ["User", "Group", "Device", "App", "Role", "Policy", "Other", "Directory"];
+        string[] validTargetResources = ["User", "Group", "Device", "Application", "Role", "Policy", "Other", "Directory"];
         var auditEntries = new List<AuditActivity>();
 
         DirectoryAuditCollectionResponse? audits = await GetAuditEntriesInitiatedBy(uid, from, to);
@@ -169,13 +169,12 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
                     continue;
                 var updatedProperties = a
                     .TargetResources
-                    .Where(t => validTargetResources.Contains(t.Type) && Guid.TryParse(t.Id, out _))
                     .SelectMany(tr => tr.ModifiedProperties ?? [])
                     .FirstOrDefault(t => t.DisplayName == "Included Updated Properties")?
                     .NewValue?.Replace("\"", string.Empty).Replace(" ", string.Empty)
                     .Split(',') ?? [];
 
-                foreach (var tr in a.TargetResources)
+                foreach (var tr in a.TargetResources.Where(t => validTargetResources.Contains(t.Type)))
                 {
                     var upn = tr?.UserPrincipalName;
                     var display = tr?.DisplayName;
@@ -206,7 +205,7 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
             .Select(df => new AuditActivity
             {
                 ActivityName = df.Key,
-                TargetResources = [.. df.SelectMany(a => a.TargetResources)],
+                TargetResources = [.. df.SelectMany(a => a.TargetResources).DistinctBy(tr => tr.Id).ToList()],
             })
             .ToList();
         return groupedByActivity;
