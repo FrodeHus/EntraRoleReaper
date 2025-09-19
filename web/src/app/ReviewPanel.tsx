@@ -3,7 +3,7 @@ import { formatISO, subHours, subDays } from "date-fns";
 import { Button } from "../components/ui/button";
 import { Download, Minus, LogsIcon, Info } from "lucide-react";
 import { RoleDetailsSheet } from "./review/RoleDetailsSheet";
-import { OperationsSheet } from "./review/OperationsSheet";
+import { ActivitiesSheet } from "./review/ActivitiesSheet";
 import { OperationMappingSheet } from "./review/OperationMappingSheet";
 import { RoleChangeDetailsSheet } from "./review/RoleChangeDetailsSheet";
 import { ScoreSheet } from "./review/ScoreSheet";
@@ -343,18 +343,14 @@ export function ReviewPanel({
             </TableBody>
           </Table>
           {/* Activities Sheet */}
-          <OperationsSheet
+          <ActivitiesSheet
             open={!!openActivitiesFor}
             onOpenChange={(o) => {
               if (!o) setOpenActivitiesFor(null);
             }}
             review={openActivitiesFor}
-            roleNameLookup={(id) => id}
-            openMapping={() => {}}
-            hasMapping={() => false}
-            mappingCount={() => 0}
-            apiBase={import.meta.env.VITE_API_URL}
           />
+
           {/* Roles Sheet */}
           <RoleDetailsSheet
             open={!!openRolesFor}
