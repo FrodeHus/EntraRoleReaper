@@ -111,30 +111,33 @@ export function OperationsSheet({
     if (!review) return [];
     const opLower = opFilter.trim().toLowerCase();
     const permLower = permFilter.trim().toLowerCase();
-    // Use activityResults if present, else fallback to operations for legacy support
     const activities: any[] = Array.isArray((review as any).activityResults)
       ? (review as any).activityResults
       : Array.isArray((review as any).operations)
       ? (review as any).operations
       : [];
-    // Get active role IDs from user object if present
     const userObj = (review as any).user ?? review;
     const activeRoleIdsArr = Array.isArray(userObj.activeRoleIds)
       ? userObj.activeRoleIds
       : [];
     const currentRoleIds = new Set(activeRoleIdsArr);
     return activities
-      .filter(
-        (a: any) =>
-          !opLower ||
-          (a.activity ?? a.operation ?? "").toLowerCase().includes(opLower)
-      )
-      .map((a: any) => {
-        // Each activityResult may have permissions, targets, etc. Adapt as needed
+      .filter((item: any) => {
+        const activityName =
+          item.activity?.activity ?? item.activity ?? item.operation ?? "";
+        return !opLower || activityName.toLowerCase().includes(opLower);
+      })
+      .map((item: any) => {
+        const activityName =
+          item.activity?.activity ?? item.activity ?? item.operation ?? "";
+        const permissions = Array.isArray(item.activity?.permissions)
+          ? item.activity.permissions
+          : Array.isArray(item.permissions)
+          ? item.permissions
+          : [];
         const groups = new Map<string, Map<string, Set<string>>>();
         const matchedByRole = new Map<string, Map<string, string>>();
         const uncovered: string[] = [];
-        const permissions = Array.isArray(a.permissions) ? a.permissions : [];
         for (const p of permissions) {
           if (!p.grantedByRoleIds || p.grantedByRoleIds.length === 0) {
             uncovered.push(p.name);
@@ -153,7 +156,6 @@ export function OperationsSheet({
             });
           }
         }
-        // Compute mapped permissions subset the user actually has with privilege flag
         const grantedMapped = Array.from(
           new Map(
             permissions
@@ -193,24 +195,27 @@ export function OperationsSheet({
               }))
               .filter((g) => g.permissions.length > 0)
           : initialGroups;
-        const targets = Array.isArray(a.targets)
-          ? a.targets
-              .map((t: any) => ({
-                name: t.displayName || t.id || "",
-                modified: (t.modifiedProperties || []).map((mp: any) => ({
-                  displayName: mp.displayName || "(property)",
-                  oldValue: mp.oldValue,
-                  newValue: mp.newValue,
-                })),
-              }))
-              .filter((t: any) => t.name)
+        const targets = Array.isArray(item.activity?.targets)
+          ? item.activity.targets
+          : Array.isArray(item.targets)
+          ? item.targets
           : [];
+        const targetsVM = targets
+          .map((t: any) => ({
+            name: t.displayName || t.id || "",
+            modified: (t.modifiedProperties || []).map((mp: any) => ({
+              displayName: mp.displayName || "(property)",
+              oldValue: mp.oldValue,
+              newValue: mp.newValue,
+            })),
+          }))
+          .filter((t: any) => t.name);
         const filteredUncovered = permLower
           ? uncovered.filter((p) => p.toLowerCase().includes(permLower))
           : uncovered;
         return {
-          op: a.activity ?? a.operation ?? "",
-          targets,
+          op: activityName,
+          targets: targetsVM,
           permGroups,
           uncovered: filteredUncovered,
           grantedMapped: grantedMapped.map((p: any) => ({
@@ -218,9 +223,8 @@ export function OperationsSheet({
             isPrivileged: p.isPrivileged,
           })),
           mappedMatches: (() => {
-            const mappedSet = mappedActions[a.activity ?? a.operation ?? ""];
+            const mappedSet = mappedActions[activityName];
             if (!mappedSet || mappedSet.size === 0) return [];
-            // Use currentRoleIds from above
             const byAction = new Map<
               string,
               {
@@ -230,10 +234,9 @@ export function OperationsSheet({
               }
             >();
             for (const p of permissions) {
-              if (!mappedSet.has(p.name)) continue; // only mapped actions
-              // Determine which granting roles are currently active
+              if (!mappedSet.has(p.name)) continue;
               p.grantedByRoleIds.forEach((rid: string, idx: number) => {
-                if (!currentRoleIds.has(rid)) return; // only active roles
+                if (!currentRoleIds.has(rid)) return;
                 if (!byAction.has(p.name))
                   byAction.set(p.name, {
                     name: p.name,
@@ -244,7 +247,6 @@ export function OperationsSheet({
                 byAction.get(p.name)!.roles.push({ roleId: rid, matched });
               });
             }
-            // Sort roles inside each action (by roleId for stability)
             const arr = Array.from(byAction.values()).map((a) => ({
               ...a,
               roles: a.roles.sort((r1, r2) =>
@@ -253,7 +255,6 @@ export function OperationsSheet({
                 })
               ),
             }));
-            // Sort actions (privileged first, then name)
             arr.sort((a: any, b: any) => {
               if (a.isPrivileged !== b.isPrivileged)
                 return a.isPrivileged ? -1 : 1;
@@ -264,61 +265,8 @@ export function OperationsSheet({
             return arr;
           })(),
         };
-      }) as OperationVM[];
+      });
   }, [review, opFilter, permFilter]);
-
-  // Load mapped actions for currently displayed operations (operation-level only; property-level mapping could be added similarly)
-  useEffect(() => {
-    if (!review || !accessToken) return;
-    const opsToLoad = review.operations
-      .map((o) => o.operation)
-      .filter((op) => hasMapping(op) && !mappedActions[op]);
-    if (opsToLoad.length === 0) return;
-    let cancelled = false;
-    (async () => {
-      setLoadingMappings(true);
-      try {
-        const entries: [string, Set<string>][] = [];
-        for (const op of opsToLoad) {
-          try {
-            const res = await fetch(
-              new URL(
-                `/api/activity/mapping/${encodeURIComponent(op)}`,
-                apiBase
-              ),
-              {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              }
-            );
-            if (!res.ok) continue;
-            const json = await res.json();
-            const mapped = Array.isArray(json?.MappedActions)
-              ? (json.MappedActions as any[]).map((a) => String(a))
-              : Array.isArray(json?.mapped)
-              ? (json.mapped as any[]).map((a) => String(a))
-              : [];
-            const unionSet = new Set<string>();
-            for (const a of mapped) if (a) unionSet.add(a);
-            entries.push([op, unionSet]);
-          } catch {
-            // ignore per-op failure
-          }
-        }
-        if (!cancelled && entries.length > 0) {
-          setMappedActions((prev) => {
-            const next = { ...prev };
-            for (const [k, v] of entries) next[k] = v;
-            return next;
-          });
-        }
-      } finally {
-        if (!cancelled) setLoadingMappings(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [review, accessToken, apiBase, hasMapping]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

@@ -51,7 +51,9 @@ export function ScoreSheet({
             {accordionOpen && (
               <div className="border rounded bg-muted/30 p-2 text-xs max-h-48 overflow-auto">
                 {resourceActions.length === 0 ? (
-                  <div className="text-muted-foreground">No resource actions.</div>
+                  <div className="text-muted-foreground">
+                    No resource actions.
+                  </div>
                 ) : (
                   <ul className="list-disc pl-4">
                     {resourceActions.map((ra: any, i: number) => (
@@ -66,15 +68,21 @@ export function ScoreSheet({
             Total Score: {evaluationResult.totalScore ?? "N/A"}
           </div>
           {scoreCards.length === 0 ? (
-            <div className="text-muted-foreground">No score cards available.</div>
+            <div className="text-muted-foreground">
+              No score cards available.
+            </div>
           ) : (
             scoreCards.map((card: any, idx: number) => (
-              <div key={idx} className="border rounded p-3 bg-card text-card-foreground">
+              <div
+                key={idx}
+                className="border rounded p-3 bg-card text-card-foreground"
+              >
                 <div className="font-semibold text-base mb-1">
-                  {card.title ?? card.name ?? `Score Card ${idx + 1}`}
+                  {card.evaluatorName ?? card.name ?? `Score Card ${idx + 1}`}
                 </div>
                 <div className="text-sm mb-2">
-                  Score: <span className="font-bold">{card.score ?? "N/A"}</span>
+                  Score:{" "}
+                  <span className="font-bold">{card.score ?? "N/A"}</span>
                 </div>
                 {card.description && (
                   <div className="text-xs text-muted-foreground mb-1">
@@ -83,10 +91,14 @@ export function ScoreSheet({
                 )}
                 {/* Render any additional fields if present */}
                 {Object.entries(card)
-                  .filter(([key]) => !["title", "name", "score", "description"].includes(key))
+                  .filter(
+                    ([key]) =>
+                      !["title", "name", "score", "description"].includes(key)
+                  )
                   .map(([key, value]) => (
                     <div key={key} className="text-xs">
-                      <span className="font-semibold">{key}:</span> {String(value)}
+                      <span className="font-semibold">{key}:</span>{" "}
+                      {String(value)}
                     </div>
                   ))}
               </div>
