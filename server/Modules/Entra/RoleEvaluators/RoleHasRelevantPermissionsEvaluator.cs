@@ -20,7 +20,7 @@ public class RoleHasRelevantPermissionsEvaluator : IEvaluateRole
         var rolePermissions = roleDefinition.PermissionSets.FirstOrDefault(ps => ps.Condition == null)?.ResourceActions ?? [];
         var totalActions = rolePermissions?.Count ?? 0;
         var matchingActions = entraActivity.ResourceActions?.Count(ra => rolePermissions != null && rolePermissions.Any(r => r.Action == ra.Action)) ?? 0;
-        var score = totalActions == 0 ? 0 : (int)((matchingActions / (double)totalActions) * 1000);
+        var score = matchingActions == 0 ? -100 : (int)((matchingActions / (double)totalActions) * 1000);
         return Task.FromResult(new RoleScoreCard
         {
             Score = score,

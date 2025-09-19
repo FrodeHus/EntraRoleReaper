@@ -111,25 +111,41 @@ export function OperationsSheet({
     if (!review) return [];
     const opLower = opFilter.trim().toLowerCase();
     const permLower = permFilter.trim().toLowerCase();
-    return review.operations
-      .filter((o) => !opLower || o.operation.toLowerCase().includes(opLower))
-      .map((o) => {
-        // Group permissions by granting role id(s) with conditions
-        const groups = new Map<string, Map<string, Set<string>>>(); // roleId -> permName -> conditions
-        const matchedByRole = new Map<string, Map<string, string>>(); // roleId -> permName -> matched condition (single)
+    // Use activityResults if present, else fallback to operations for legacy support
+    const activities: any[] = Array.isArray((review as any).activityResults)
+      ? (review as any).activityResults
+      : Array.isArray((review as any).operations)
+      ? (review as any).operations
+      : [];
+    // Get active role IDs from user object if present
+    const userObj = (review as any).user ?? review;
+    const activeRoleIdsArr = Array.isArray(userObj.activeRoleIds)
+      ? userObj.activeRoleIds
+      : [];
+    const currentRoleIds = new Set(activeRoleIdsArr);
+    return activities
+      .filter(
+        (a: any) =>
+          !opLower ||
+          (a.activity ?? a.operation ?? "").toLowerCase().includes(opLower)
+      )
+      .map((a: any) => {
+        // Each activityResult may have permissions, targets, etc. Adapt as needed
+        const groups = new Map<string, Map<string, Set<string>>>();
+        const matchedByRole = new Map<string, Map<string, string>>();
         const uncovered: string[] = [];
-        const currentRoleIds = new Set(review.activeRoles.map((r) => r.id));
-        for (const p of o.permissions) {
+        const permissions = Array.isArray(a.permissions) ? a.permissions : [];
+        for (const p of permissions) {
           if (!p.grantedByRoleIds || p.grantedByRoleIds.length === 0) {
             uncovered.push(p.name);
           } else {
-            p.grantedByRoleIds.forEach((rid, idx) => {
+            p.grantedByRoleIds.forEach((rid: string, idx: number) => {
               if (!groups.has(rid)) groups.set(rid, new Map());
               if (!matchedByRole.has(rid)) matchedByRole.set(rid, new Map());
               const permMap = groups.get(rid)!;
               if (!permMap.has(p.name)) permMap.set(p.name, new Set());
               const condSet = permMap.get(p.name)!;
-              (p.grantConditions || []).forEach((c) => condSet.add(c));
+              (p.grantConditions || []).forEach((c: string) => condSet.add(c));
               const matched = p.matchedConditionsPerRole?.[idx];
               if (matched !== undefined) {
                 matchedByRole.get(rid)!.set(p.name, matched || "");
@@ -140,13 +156,15 @@ export function OperationsSheet({
         // Compute mapped permissions subset the user actually has with privilege flag
         const grantedMapped = Array.from(
           new Map(
-            o.permissions
-              .filter((p) =>
-                p.grantedByRoleIds?.some((rid) => currentRoleIds.has(rid))
+            permissions
+              .filter((p: any) =>
+                p.grantedByRoleIds?.some((rid: string) =>
+                  currentRoleIds.has(rid)
+                )
               )
-              .map((p) => [p.name, p])
+              .map((p: any) => [p.name, p])
           ).values()
-        ).sort((a, b) =>
+        ).sort((a: any, b: any) =>
           a.name.localeCompare(b.name, "en", { sensitivity: "base" })
         );
         const initialGroups = Array.from(groups.entries()).map(
@@ -155,12 +173,12 @@ export function OperationsSheet({
             permissions: Array.from(permMap.entries())
               .map(([perm, conds]) => ({
                 name: perm,
-                conditions: Array.from(conds).sort((a, b) =>
+                conditions: Array.from(conds).sort((a: string, b: string) =>
                   a.localeCompare(b, "en", { sensitivity: "base" })
                 ),
                 matched: matchedByRole.get(roleId)?.get(perm) || "",
               }))
-              .sort((a, b) =>
+              .sort((a: any, b: any) =>
                 a.name.localeCompare(b.name, "en", { sensitivity: "base" })
               ),
           })
@@ -169,39 +187,40 @@ export function OperationsSheet({
           ? initialGroups
               .map((g) => ({
                 roleId: g.roleId,
-                permissions: g.permissions.filter((p) =>
+                permissions: g.permissions.filter((p: any) =>
                   p.name.toLowerCase().includes(permLower)
                 ),
               }))
               .filter((g) => g.permissions.length > 0)
           : initialGroups;
-        const targets = o.targets
-          .map((t) => ({
-            name: t.displayName || t.id || "",
-            modified: (t.modifiedProperties || []).map((mp) => ({
-              displayName: mp.displayName || "(property)",
-              oldValue: mp.oldValue,
-              newValue: mp.newValue,
-            })),
-          }))
-          .filter((t) => t.name);
+        const targets = Array.isArray(a.targets)
+          ? a.targets
+              .map((t: any) => ({
+                name: t.displayName || t.id || "",
+                modified: (t.modifiedProperties || []).map((mp: any) => ({
+                  displayName: mp.displayName || "(property)",
+                  oldValue: mp.oldValue,
+                  newValue: mp.newValue,
+                })),
+              }))
+              .filter((t: any) => t.name)
+          : [];
         const filteredUncovered = permLower
           ? uncovered.filter((p) => p.toLowerCase().includes(permLower))
           : uncovered;
         return {
-          op: o.operation,
+          op: a.activity ?? a.operation ?? "",
           targets,
           permGroups,
           uncovered: filteredUncovered,
-          grantedMapped: grantedMapped.map((p) => ({
+          grantedMapped: grantedMapped.map((p: any) => ({
             name: p.name,
             isPrivileged: p.isPrivileged,
           })),
           mappedMatches: (() => {
-            const mappedSet = mappedActions[o.operation];
+            const mappedSet = mappedActions[a.activity ?? a.operation ?? ""];
             if (!mappedSet || mappedSet.size === 0) return [];
-            const activeRoleIds = new Set(review.activeRoles.map((r) => r.id));
-            // Build matches from permissions list
+            // Use currentRoleIds from above
             const byAction = new Map<
               string,
               {
@@ -210,11 +229,11 @@ export function OperationsSheet({
                 roles: { roleId: string; matched: string }[];
               }
             >();
-            for (const p of o.permissions) {
+            for (const p of permissions) {
               if (!mappedSet.has(p.name)) continue; // only mapped actions
               // Determine which granting roles are currently active
-              p.grantedByRoleIds.forEach((rid, idx) => {
-                if (!activeRoleIds.has(rid)) return; // only active roles
+              p.grantedByRoleIds.forEach((rid: string, idx: number) => {
+                if (!currentRoleIds.has(rid)) return; // only active roles
                 if (!byAction.has(p.name))
                   byAction.set(p.name, {
                     name: p.name,
@@ -235,7 +254,7 @@ export function OperationsSheet({
               ),
             }));
             // Sort actions (privileged first, then name)
-            arr.sort((a, b) => {
+            arr.sort((a: any, b: any) => {
               if (a.isPrivileged !== b.isPrivileged)
                 return a.isPrivileged ? -1 : 1;
               return a.name.localeCompare(b.name, "en", {

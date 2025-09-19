@@ -6,6 +6,7 @@ import { RoleDetailsSheet } from "./review/RoleDetailsSheet";
 import { OperationsSheet } from "./review/OperationsSheet";
 import { OperationMappingSheet } from "./review/OperationMappingSheet";
 import { RoleChangeDetailsSheet } from "./review/RoleChangeDetailsSheet";
+import { ScoreSheet } from "./review/ScoreSheet";
 import type {
   ReviewRequest,
   UserReview,
@@ -33,6 +34,10 @@ export function ReviewPanel({
 }) {
   const [openActivitiesFor, setOpenActivitiesFor] = useState<any | null>(null);
   const [openRolesFor, setOpenRolesFor] = useState<any | null>(null);
+  const [openScoreSheet, setOpenScoreSheet] = useState(false);
+  const [selectedEvaluationResult, setSelectedEvaluationResult] = useState<
+    any | null
+  >(null);
   // Time range selection
   const timeRanges = [
     {
@@ -234,20 +239,39 @@ export function ReviewPanel({
                 <TableHead>User</TableHead>
                 <TableHead>Activities</TableHead>
                 <TableHead>Roles</TableHead>
-                <TableHead>Suggested Changes</TableHead>
+                <TableHead>Suggested Roles</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {reviewResult.results.map((userReview: any, idx: number) => {
-                const user = userReview.user;
-                const activitiesCount = userReview.operations?.length ?? 0;
-                const rolesCount = [
-                  ...(userReview.activeRoles ?? []),
-                  ...(userReview.eligiblePimRoles ?? []),
-                  ...(userReview.pimRoles ?? []),
-                  ...(userReview.otherRoles ?? []),
-                ].length;
-                const suggested = userReview.suggestedRoles ?? [];
+                const user = userReview.user ?? userReview.User ?? userReview;
+                // Activities: activityResults array, each item has "activity"
+                const activityResults = userReview.activityResults ?? [];
+                const activitiesCount = Array.isArray(activityResults)
+                  ? activityResults.length
+                  : 0;
+                // Roles: sum of activeRoleIds, eligibleRoleIds, pimActiveRoleIds in user object
+                const activeRoleIds = Array.isArray(user?.activeRoleIds)
+                  ? user.activeRoleIds.length
+                  : 0;
+                const eligibleRoleIds = Array.isArray(user?.eligibleRoleIds)
+                  ? user.eligibleRoleIds.length
+                  : 0;
+                const pimActiveRoleIds = Array.isArray(user?.pimActiveRoleIds)
+                  ? user.pimActiveRoleIds.length
+                  : 0;
+                const rolesCount =
+                  activeRoleIds + eligibleRoleIds + pimActiveRoleIds;
+                // Suggested roles: collect all activityResults[*].evaluationResult.roleDefinition
+                // Collect suggested roles and their evaluationResults
+                const suggestedRoles = Array.isArray(activityResults)
+                  ? activityResults
+                      .map((ar: any) => ({
+                        role: ar.evaluationResult?.roleDefinition,
+                        evaluationResult: ar.evaluationResult,
+                      }))
+                      .filter((rd: any) => !!rd.role)
+                  : [];
                 return (
                   <TableRow key={user?.id ?? idx}>
                     <TableCell>
@@ -265,6 +289,11 @@ export function ReviewPanel({
                           View
                         </Button>
                       )}
+                      {activitiesCount === 0 && (
+                        <span className="text-muted-foreground ml-2">
+                          No activities
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {rolesCount}
@@ -278,18 +307,33 @@ export function ReviewPanel({
                           View
                         </Button>
                       )}
+                      {rolesCount === 0 && (
+                        <span className="text-muted-foreground ml-2">
+                          No roles
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
-                      {suggested.length === 0 ? (
+                      {suggestedRoles.length === 0 ? (
                         <span className="text-muted-foreground">None</span>
                       ) : (
-                        suggested.map((role: any, i: number) => (
-                          <span
+                        suggestedRoles.map((item: any, i: number) => (
+                          <button
                             key={i}
-                            className="inline-block bg-muted/30 rounded px-2 py-0.5 mr-1 text-xs"
+                            className="inline-block bg-muted/30 rounded px-2 py-0.5 mr-1 text-xs hover:bg-muted/50 transition"
+                            onClick={() => {
+                              setSelectedEvaluationResult(
+                                item.evaluationResult
+                              );
+                              setOpenScoreSheet(true);
+                            }}
+                            type="button"
                           >
-                            {role.name}
-                          </span>
+                            {item.role.displayName ??
+                              item.role.name ??
+                              item.role.id ??
+                              "Unknown"}
+                          </button>
                         ))
                       )}
                     </TableCell>
@@ -321,12 +365,25 @@ export function ReviewPanel({
               openRolesFor
                 ? {
                     name: openRolesFor.user?.displayName ?? "",
-                    requiredPerms: [],
+                    requiredPerms: [
+                      ...(openRolesFor.user?.activeRoleIds ?? []),
+                      ...(openRolesFor.user?.eligibleRoleIds ?? []),
+                      ...(openRolesFor.user?.pimActiveRoleIds ?? []),
+                    ],
                   }
                 : null
             }
-            details={null}
+            details={openRolesFor?.user ?? null}
             loading={false}
+          />
+          {/* Score Sheet for suggested roles */}
+          <ScoreSheet
+            open={openScoreSheet}
+            onOpenChange={(o: boolean) => {
+              setOpenScoreSheet(o);
+              if (!o) setSelectedEvaluationResult(null);
+            }}
+            evaluationResult={selectedEvaluationResult}
           />
         </div>
       )}
