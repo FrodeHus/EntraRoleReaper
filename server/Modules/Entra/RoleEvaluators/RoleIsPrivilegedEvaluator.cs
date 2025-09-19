@@ -9,11 +9,7 @@ public class RoleIsPrivilegedEvaluator : IEvaluateRole
     public Task<RoleScoreCard> Evaluate(RoleEvaluationContext context)
     {
         if (context.RoleDefinition is not RoleDefinitionDto role)
-            return Task.FromResult(new RoleScoreCard
-            {
-                Score = -1000,
-                Justification = "RoleDefinition is not of type RoleDefinitionDto"
-            });
+            throw new InvalidOperationException("RoleDefinition is not of type RoleDefinitionDto");
      
         return Task.FromResult(new RoleScoreCard
         {

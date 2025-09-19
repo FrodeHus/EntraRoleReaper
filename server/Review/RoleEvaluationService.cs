@@ -7,17 +7,16 @@ namespace EntraRoleReaper.Api.Review;
 
 public class RoleEvaluationService(IUserService userService, IRoleService roleService, IEnumerable<IEvaluateRole> evaluators, IEnumerable<IRoleRequirement>? roleRequirements = null)
 {
-    public async Task<(UserContext,RoleEvaluationResult)> Evaluate(string userId, Guid tenantId, ActivityDto activity, List<ReviewTargetResource> targets)
+    public async Task<(UserContext,RoleEvaluationResult)> Evaluate(string userId, Guid tenantId, ActivityDto activity, List<ReviewTargetResource> targets, List<RoleDefinitionDto> roleDefinitions)
     {
         var userContext = await userService.GetUserById(userId, tenantId);
-        var roles = await roleService.GetAllRolesAsync();
         var results = new List<RoleEvaluationResult>();
-        foreach (var context in from role in roles from target in targets select new RoleEvaluationContext(role, activity, target, userContext))
+        foreach (var context in from role in roleDefinitions from target in targets select new RoleEvaluationContext(role, activity, target, userContext))
         {
             var result = await EvaluateAsync(context);
             results.Add(result);
         }
-        return (userContext, results.OrderByDescending(r => r.TotalScore).FirstOrDefault() ?? new RoleEvaluationResult(new RoleDefinitionDto(), -1000, []));
+        return (userContext, results.MaxBy(r => r.TotalScore) ?? new RoleEvaluationResult(new RoleDefinitionDto(), -1000, []));
     }
 
     private async Task<RoleEvaluationResult> EvaluateAsync(RoleEvaluationContext context)

@@ -27,6 +27,7 @@ public static class EntraModuleExtensions
         services.AddTransient<IEvaluateRole, ResourceIsSelfEvaluator>();
         services.AddTransient<IEvaluateRole, RoleIsPrivilegedEvaluator>();
         services.AddTransient<IEvaluateRole, RoleHasRelevantPermissionsEvaluator>();
+        services.AddTransient<IEvaluateRole, RoleRelatesToEntityEvaluator>();
     }
 
     public static WebApplication UseEntraModule(this WebApplication app)

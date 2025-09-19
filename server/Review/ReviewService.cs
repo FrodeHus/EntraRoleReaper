@@ -11,6 +11,7 @@ namespace EntraRoleReaper.Api.Review;
 public class ReviewService(
     IGraphService graphService,
     IActivityService activityService,
+    IRoleService roleService,
     RoleEvaluationService roleEvaluationService
 ) : IReviewService
 {
@@ -50,8 +51,10 @@ public class ReviewService(
                     ModifiedProperties = t.ModifiedProperties
                 }) ?? [];
                 var activityDto = ActivityDto.FromActivity(activity, true);
-                var (user, result) = await roleEvaluationService.Evaluate(uid, tenantId, activityDto, targets);
-                var activityReviewResult = new ActivityReviewResult(activityDto, result.TotalScore > 0 ? result : null);
+                var roles = await roleService.GetAllRolesAsync();
+                var (user, result) = await roleEvaluationService.Evaluate(uid, tenantId, activityDto, targets, roles);
+                if(result.TotalScore <= 0) continue; // No role matched
+                var activityReviewResult = new ActivityReviewResult(activityDto, result);
                 if(userResults is null)
                 {
                     userResults = new UserReviewResult(user, [activityReviewResult]);
