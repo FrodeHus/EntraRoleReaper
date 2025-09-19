@@ -14,7 +14,7 @@ public class RoleIsPrivilegedEvaluator : IEvaluateRole
         return Task.FromResult(new RoleScoreCard
         {
             EvaluatorName = nameof(RoleIsPrivilegedEvaluator),
-            Score = role.IsPrivileged ? -100 : 0,
+            Score = role.IsPrivileged ? -50 : 50,
             Justification = role.IsPrivileged ? "Role is privileged" : "Role is not privileged"
         });
     }
