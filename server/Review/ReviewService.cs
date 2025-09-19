@@ -51,7 +51,7 @@ public class ReviewService(
                 }) ?? [];
                 var activityDto = ActivityDto.FromActivity(activity, true);
                 var (user, result) = await roleEvaluationService.Evaluate(uid, tenantId, activityDto, targets);
-                var activityReviewResult = new ActivityReviewResult(activityDto, result);
+                var activityReviewResult = new ActivityReviewResult(activityDto, result.TotalScore > 0 ? result : null);
                 if(userResults is null)
                 {
                     userResults = new UserReviewResult(user, [activityReviewResult]);

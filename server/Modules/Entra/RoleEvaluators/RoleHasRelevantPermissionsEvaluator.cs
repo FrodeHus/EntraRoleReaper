@@ -11,19 +11,11 @@ public class RoleHasRelevantPermissionsEvaluator : IEvaluateRole
     {
         if (context.Activity is not ActivityDto entraActivity)
         {
-            return Task.FromResult(new RoleScoreCard
-            {
-                Score = -100,
-                Justification = "Activity is not of type ActivityDto"
-            });
+            throw new InvalidOperationException("Activity is not of type ActivityDto");
         }
 
         if (context.RoleDefinition is not RoleDefinitionDto roleDefinition)
-            return Task.FromResult(new RoleScoreCard
-            {
-                Score = -100,
-                Justification = "RoleDefinition is not of type RoleDefinitionDto"
-            });
+            throw new InvalidOperationException("RoleDefinition is not of type RoleDefinitionDto");
 
         var rolePermissions = roleDefinition.PermissionSets.FirstOrDefault(ps => ps.Condition == null)?.ResourceActions ?? [];
         var totalActions = rolePermissions?.Count ?? 0;
