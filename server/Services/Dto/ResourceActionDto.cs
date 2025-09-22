@@ -6,6 +6,8 @@ public class ResourceActionDto
 {
     public Guid Id { get; set; }
     public string Action { get; set; } = string.Empty;
+    public string? Description { get; set; } = string.Empty;
+    public string? ActionVerb { get; set; } = string.Empty;
     public bool IsPrivileged { get; set; }
     public string Namespace
     {

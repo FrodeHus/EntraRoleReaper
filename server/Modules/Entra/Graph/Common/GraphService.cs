@@ -5,6 +5,7 @@ using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.ODataErrors;
 using System.Text.Json;
+using EntraRoleReaper.Api.Services.Dto;
 using ModifiedProperty = EntraRoleReaper.Api.Services.Models.ModifiedProperty;
 
 namespace EntraRoleReaper.Api.Modules.Entra.Graph.Common;
@@ -283,9 +284,9 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
         return (eligibleRoleIds, pimActiveRoleIds);
     }
 
-    public async Task<Dictionary<string, bool>> GetResourceActionMetadataAsync()
+    public async Task<List<ResourceActionDto>> GetResourceActionMetadataAsync()
     {
-        var resourceActionsData = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        var resourceActionsData = new List<ResourceActionDto>();
         var nsBuilder = GraphClient.RoleManagement.Directory.ResourceNamespaces;
         var nsResponse = await nsBuilder.GetAsync();
         while (nsResponse != null)
@@ -312,7 +313,13 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
                                 _ => false
                             };
                         }
-                        resourceActionsData.TryAdd(name, isPrivileged);
+                        resourceActionsData.Add(new ResourceActionDto
+                        {
+                            Action = name,
+                            Description = ra.Description,
+                            ActionVerb = ra.ActionVerb,
+                            IsPrivileged = isPrivileged
+                        });
                     }
                     if (string.IsNullOrEmpty(raResponse.OdataNextLink)) break;
                     raResponse = await actionsBuilder.WithUrl(raResponse.OdataNextLink).GetAsync();

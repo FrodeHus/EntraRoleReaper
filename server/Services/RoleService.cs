@@ -50,10 +50,12 @@ public class RoleService(
 
             logger.LogInformation("Initializing roles from Graph API, found {RoleCount} roles.", roles.Count);
             var resourceActionMetadata = await graphService.GetResourceActionMetadataAsync();
-            var resourceActions = resourceActionMetadata.Select(kvp => new ResourceAction
+            var resourceActions = resourceActionMetadata.Select(ra => new ResourceAction
             {
-                Action = kvp.Key,
-                IsPrivileged = kvp.Value
+                Action = ra.Action,
+                IsPrivileged = ra.IsPrivileged,
+                Description = ra.Description,
+                ActionVerb = ra.ActionVerb
             }).ToList();
             var addedResourceActions = _resourceActionRepository.AddRange(resourceActions);
             var addedRoles = new List<RoleDefinition>();

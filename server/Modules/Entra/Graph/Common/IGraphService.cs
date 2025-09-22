@@ -1,5 +1,6 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Review.Models;
+using EntraRoleReaper.Api.Services.Dto;
 using EntraRoleReaper.Api.Services.Models;
 using Microsoft.Graph.Models;
 
@@ -10,7 +11,7 @@ public interface IGraphService
     Task<List<AuditActivity>> CollectAuditActivitiesAsync(string uid, DateTimeOffset from, DateTimeOffset to);
     Task<HashSet<string>> ExpandUsersOrGroupsAsync(IEnumerable<string> usersOrGroups);
     Task<List<UnifiedRoleDefinition>?> GetAllRoleDefinitions();
-    Task<Dictionary<string, bool>> GetResourceActionMetadataAsync();
+    Task<List<ResourceActionDto>> GetResourceActionMetadataAsync();
     Task<(string DisplayName, List<string> ActiveRoleIds, List<string> EligibleRoleIds, HashSet<string> PimActiveRoleIds)> GetUserAndRolesAsync(string uid);
     Task<bool> IsOwnerAsync(string userId, ReviewTargetResource target);
     Task<Tenant?> FetchTenantMetadataAsync(Guid tenantId, CancellationToken ct = default);
