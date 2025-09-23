@@ -194,6 +194,7 @@ public class RoleService(
             return [];
         }
     }
+    
 
     public async Task<IEnumerable<RoleDefinitionDto>> GetUserRolesAsync(string userId)
     {
