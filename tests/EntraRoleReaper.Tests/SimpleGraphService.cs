@@ -1,6 +1,7 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
 using EntraRoleReaper.Api.Review.Models;
+using EntraRoleReaper.Api.Services.Dto;
 using EntraRoleReaper.Api.Services.Models;
 
 namespace EntraRoleReaper.Tests;
@@ -22,9 +23,9 @@ internal class SimpleGraphService(Dictionary<string, bool> targetOwners) : IGrap
         return Task.FromResult<List<Microsoft.Graph.Models.UnifiedRoleDefinition>?>([]);
     }
 
-    public Task<Dictionary<string, bool>> GetResourceActionMetadataAsync()
+    public Task<List<ResourceActionDto>> GetResourceActionMetadataAsync()
     {
-        return Task.FromResult<Dictionary<string, bool>>([]);
+        return Task.FromResult<List<ResourceActionDto>>([]);
     }
 
     public Task<(string DisplayName, List<string> ActiveRoleIds, List<string> EligibleRoleIds, HashSet<string> PimActiveRoleIds)> GetUserAndRolesAsync(string uid)
