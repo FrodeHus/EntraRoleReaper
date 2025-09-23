@@ -225,6 +225,8 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
         });
         return assignments?.Value?.Select(a => a.RoleDefinitionId).ToList() ?? [];
     }
+    
+    
     private async Task<(
         List<string> eligibleRoleIds,
         HashSet<string> pimActiveRoleIds
@@ -381,6 +383,8 @@ public class GraphService(IGraphServiceFactory graphServiceFactory, ILogger<Grap
             return null;
         }
     }
+    
+    
 
     public async Task<string?> ActivatePIMRole(string roleId, int durationMinutes = 60)
     {
