@@ -1,7 +1,8 @@
-using EntraRoleReaper.Api.Data.Models;
+using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Modules.Entra.Tenants.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace EntraRoleReaper.Api.Data.Repositories;
+namespace EntraRoleReaper.Api.Modules.Entra.Tenants.Repositories;
 
 public interface ITenantRepository
 {

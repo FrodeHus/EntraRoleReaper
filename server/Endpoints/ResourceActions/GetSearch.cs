@@ -1,4 +1,4 @@
-using EntraRoleReaper.Api.Data.Repositories;
+using EntraRoleReaper.Api.Modules.Entra.Roles.Repositories;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 

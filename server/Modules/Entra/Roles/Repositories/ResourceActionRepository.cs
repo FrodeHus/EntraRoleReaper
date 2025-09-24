@@ -1,8 +1,9 @@
-﻿using EntraRoleReaper.Api.Data.Models;
+﻿using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Modules.Entra.Roles.Models;
 using EntraRoleReaper.Api.Services.Dto;
 using Microsoft.EntityFrameworkCore;
 
-namespace EntraRoleReaper.Api.Data.Repositories;
+namespace EntraRoleReaper.Api.Modules.Entra.Roles.Repositories;
 
 public class ResourceActionRepository(ReaperDbContext dbContext) : Repository<ResourceAction>(dbContext), IResourceActionRepository
 {

@@ -1,4 +1,3 @@
-using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Services;
 
 namespace EntraRoleReaper.Api.Middlewares;

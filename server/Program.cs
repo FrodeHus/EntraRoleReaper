@@ -1,10 +1,12 @@
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using EntraRoleReaper.Api;
 using EntraRoleReaper.Api.Data;
-using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Data.Seed;
 using EntraRoleReaper.Api.Modules.Entra;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Repositories;
 using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
+using EntraRoleReaper.Api.Modules.Entra.Roles.Repositories;
+using EntraRoleReaper.Api.Modules.Entra.Tenants.Repositories;
 using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;

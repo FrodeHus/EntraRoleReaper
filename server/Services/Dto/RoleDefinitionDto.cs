@@ -1,5 +1,6 @@
 using EntraRoleReaper.Api.Data.Models;
 using System.Diagnostics;
+using EntraRoleReaper.Api.Modules.Entra.Roles.Models;
 
 namespace EntraRoleReaper.Api.Services.Dto;
 

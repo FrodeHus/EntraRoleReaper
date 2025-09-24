@@ -1,7 +1,7 @@
-﻿using EntraRoleReaper.Api.Data.Models;
+﻿using EntraRoleReaper.Api.Modules.Entra.Roles.Models;
 using EntraRoleReaper.Api.Services.Dto;
 
-namespace EntraRoleReaper.Api.Data.Repositories;
+namespace EntraRoleReaper.Api.Modules.Entra.Roles.Repositories;
 public interface IResourceActionRepository
 {
     Task<ResourceAction> AddAsync(ResourceAction resourceAction);

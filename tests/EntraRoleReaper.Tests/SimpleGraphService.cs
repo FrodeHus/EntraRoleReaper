@@ -1,5 +1,6 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
+using EntraRoleReaper.Api.Modules.Entra.Tenants.Models;
 using EntraRoleReaper.Api.Review.Models;
 using EntraRoleReaper.Api.Services.Dto;
 using EntraRoleReaper.Api.Services.Models;

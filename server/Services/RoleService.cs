@@ -1,7 +1,8 @@
 using EntraRoleReaper.Api.Data;
 using EntraRoleReaper.Api.Data.Models;
-using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Modules.Entra.Graph.Common;
+using EntraRoleReaper.Api.Modules.Entra.Roles.Models;
+using EntraRoleReaper.Api.Modules.Entra.Roles.Repositories;
 using EntraRoleReaper.Api.Services.Dto;
 
 namespace EntraRoleReaper.Api.Services;

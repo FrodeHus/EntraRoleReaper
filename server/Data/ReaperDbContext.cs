@@ -1,5 +1,7 @@
 using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
+using EntraRoleReaper.Api.Modules.Entra.Roles.Models;
+using EntraRoleReaper.Api.Modules.Entra.Tenants.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace EntraRoleReaper.Api.Data;

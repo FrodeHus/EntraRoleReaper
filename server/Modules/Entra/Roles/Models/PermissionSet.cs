@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using EntraRoleReaper.Api.Data.Models;
 
-namespace EntraRoleReaper.Api.Data.Models;
+namespace EntraRoleReaper.Api.Modules.Entra.Roles.Models;
 
 public class PermissionSet : Entity
 {

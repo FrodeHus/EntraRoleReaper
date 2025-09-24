@@ -1,7 +1,8 @@
-﻿using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
+﻿using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace EntraRoleReaper.Api.Data.Repositories;
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Repositories;
 
 public class ActivityRepository(ReaperDbContext dbContext) : Repository<Activity>(dbContext), IActivityRepository
 {

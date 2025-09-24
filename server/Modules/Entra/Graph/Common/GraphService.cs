@@ -5,6 +5,7 @@ using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.ODataErrors;
 using System.Text.Json;
+using EntraRoleReaper.Api.Modules.Entra.Tenants.Models;
 using EntraRoleReaper.Api.Services.Dto;
 using ModifiedProperty = EntraRoleReaper.Api.Services.Models.ModifiedProperty;
 

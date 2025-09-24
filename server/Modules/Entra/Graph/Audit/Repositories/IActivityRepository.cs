@@ -1,6 +1,6 @@
 ﻿using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 
-namespace EntraRoleReaper.Api.Data.Repositories;
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Repositories;
 
 public interface IActivityRepository
 {

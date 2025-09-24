@@ -1,6 +1,7 @@
-﻿using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
+﻿using EntraRoleReaper.Api.Data;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 
-namespace EntraRoleReaper.Api.Data.Repositories;
+namespace EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Repositories;
 
 public class TargetResourceRepository(ReaperDbContext context) : Repository<TargetResource>(context)
 {

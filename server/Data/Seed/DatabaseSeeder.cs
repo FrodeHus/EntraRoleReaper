@@ -1,6 +1,6 @@
-using EntraRoleReaper.Api.Data.Repositories;
 using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 using System.Text.Json;
+using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Repositories;
 
 namespace EntraRoleReaper.Api.Data.Seed;
 

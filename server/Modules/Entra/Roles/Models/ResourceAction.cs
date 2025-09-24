@@ -1,8 +1,9 @@
+using System.ComponentModel.DataAnnotations;
+using EntraRoleReaper.Api.Data.Models;
 using EntraRoleReaper.Api.Modules.Entra.Graph.Audit.Models;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
-namespace EntraRoleReaper.Api.Data.Models;
+namespace EntraRoleReaper.Api.Modules.Entra.Roles.Models;
 
 [Index(nameof(Action), IsUnique = true)]
 public class ResourceAction : Entity

@@ -1,4 +1,5 @@
 ﻿using EntraRoleReaper.Api.Data.Models;
+using EntraRoleReaper.Api.Modules.Entra.Roles.Models;
 
 namespace EntraRoleReaper.Api.Review.Models;
 

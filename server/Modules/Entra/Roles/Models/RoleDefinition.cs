@@ -1,7 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using EntraRoleReaper.Api.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace EntraRoleReaper.Api.Data.Models;
+namespace EntraRoleReaper.Api.Modules.Entra.Roles.Models;
 
 [Index(nameof(Id), nameof(DisplayName), IsUnique = true)]
 public class RoleDefinition : TenantEntity
