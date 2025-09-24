@@ -49,6 +49,10 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : Repository<Re
             if (existingAction != null)
             {
                 addedActions.Add(existingAction);
+                existingAction.Description = action.Description;
+                existingAction.IsPrivileged = action.IsPrivileged;
+                existingAction.ActionVerb = action.ActionVerb;
+                Update(existingAction);
             }
             else
             {

@@ -6,6 +6,12 @@ import { Button } from "../../../components/ui/button";
 import { Switch } from "../../../components/ui/switch";
 import { Checkbox } from "../../../components/ui/checkbox";
 import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "../../../components/ui/hover-card";
+import { Info } from "lucide-react";
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -17,6 +23,7 @@ type MappingMode = "create" | "edit";
 type ResourceActionDto = {
   id: string;
   action: string;
+  description: string;
   isPrivileged: boolean;
   namespace: string;
   resourceGroup: string;
@@ -166,6 +173,7 @@ export function ActivityMappingDialog({
       const all: ResourceActionDto[] = rawAll.map((a) => ({
         id: String(a?.id ?? a?.Id ?? a?.ID ?? ""),
         action: String(a?.action ?? a?.Action ?? ""),
+        description: String(a?.description ?? a?.Description ?? ""),
         isPrivileged: Boolean(a?.isPrivileged ?? a?.IsPrivileged ?? false),
         namespace: String(a?.namespace ?? a?.Namespace ?? ""),
         resourceGroup: String(a?.resourceGroup ?? a?.ResourceGroup ?? ""),
@@ -202,7 +210,14 @@ export function ActivityMappingDialog({
     } finally {
       setLoading(false);
     }
-  }, [accessToken, apiBase, activityName, selectedPropIds.size, mode, preselectedIds]);
+  }, [
+    accessToken,
+    apiBase,
+    activityName,
+    selectedPropIds.size,
+    mode,
+    preselectedIds,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -249,21 +264,21 @@ export function ActivityMappingDialog({
                     mappedResourceActions: Array.isArray(
                       p?.mappedResourceActions ?? p?.MappedResourceActions
                     )
-                      ? (p?.mappedResourceActions ?? p?.MappedResourceActions).map(
-                          (ra: any) => ({
-                            id: String(ra?.id ?? ra?.Id ?? ra?.ID ?? ""),
-                            action: String(ra?.action ?? ra?.Action ?? ""),
-                            isPrivileged: Boolean(
-                              ra?.isPrivileged ?? ra?.IsPrivileged ?? false
-                            ),
-                            namespace: String(
-                              ra?.namespace ?? ra?.Namespace ?? ""
-                            ),
-                            resourceGroup: String(
-                              ra?.resourceGroup ?? ra?.ResourceGroup ?? ""
-                            ),
-                          })
-                        )
+                      ? (
+                          p?.mappedResourceActions ?? p?.MappedResourceActions
+                        ).map((ra: any) => ({
+                          id: String(ra?.id ?? ra?.Id ?? ra?.ID ?? ""),
+                          action: String(ra?.action ?? ra?.Action ?? ""),
+                          isPrivileged: Boolean(
+                            ra?.isPrivileged ?? ra?.IsPrivileged ?? false
+                          ),
+                          namespace: String(
+                            ra?.namespace ?? ra?.Namespace ?? ""
+                          ),
+                          resourceGroup: String(
+                            ra?.resourceGroup ?? ra?.ResourceGroup ?? ""
+                          ),
+                        }))
                       : [],
                   }))
                 : [],
@@ -607,6 +622,26 @@ export function ActivityMappingDialog({
                     <span className="font-mono text-xs break-all flex-1">
                       {a.action}
                     </span>
+                    {a.description && a.description.trim() && (
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <button
+                            type="button"
+                            className="ml-1 inline-flex p-0.5 rounded hover:bg-muted/50 text-muted-foreground"
+                            aria-label="Show description"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                          >
+                            <Info className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="text-xs leading-snug max-w-xs">
+                          {a.description}
+                        </HoverCardContent>
+                      </HoverCard>
+                    )}
                     {selectedPropIds.size === 0 &&
                       mappedActionNames.has(a.action) && (
                         <span className="text-[10px] px-1 rounded border bg-muted text-muted-foreground">

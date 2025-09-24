@@ -1,5 +1,11 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/ui/sheet";
 import { Button } from "../../components/ui/button";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "../../components/ui/hover-card";
+import { Info } from "lucide-react";
 import React from "react";
 
 export function ScoreSheet({
@@ -56,9 +62,42 @@ export function ScoreSheet({
                   </div>
                 ) : (
                   <ul className="list-disc pl-4">
-                    {resourceActions.map((ra: any, i: number) => (
-                      <li key={i}>{ra}</li>
-                    ))}
+                    {resourceActions.map((ra: any, i: number) => {
+                      const label =
+                        typeof ra === "string"
+                          ? ra
+                          : ra?.name ?? ra?.action ?? String(ra);
+                      const description =
+                        typeof ra === "object" && ra
+                          ? ra.description ?? ra.desc ?? ra.details ?? null
+                          : null;
+                      return (
+                        <li key={label} className="break-words">
+                          <div className="inline-flex items-center gap-1 align-middle">
+                            <span>{label}</span>
+                            {description && (
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="ml-1 inline-flex p-0.5 rounded hover:bg-muted/50 text-muted-foreground"
+                                    aria-label="Show description"
+                                  >
+                                    <Info
+                                      className="h-3.5 w-3.5"
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+                                </HoverCardTrigger>
+                                <HoverCardContent className="text-xs leading-snug max-w-xs">
+                                  {String(description)}
+                                </HoverCardContent>
+                              </HoverCard>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

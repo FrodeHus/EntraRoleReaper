@@ -1,5 +1,11 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/ui/sheet";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "../../components/ui/hover-card";
+import { Info } from "lucide-react";
 
 export function ActivitiesSheet({
   open,
@@ -59,19 +65,28 @@ export function ActivitiesSheet({
                     <div className="flex gap-4 text-xs text-muted-foreground">
                       {category && (
                         <div>
-                          <span className="font-medium text-foreground">Category:</span> {category}
+                          <span className="font-medium text-foreground">
+                            Category:
+                          </span>{" "}
+                          {category}
                         </div>
                       )}
                       {service && (
                         <div>
-                          <span className="font-medium text-foreground">Service:</span> {service}
+                          <span className="font-medium text-foreground">
+                            Service:
+                          </span>{" "}
+                          {service}
                         </div>
                       )}
                     </div>
                     {targets.length > 0 && (
                       <details className="rounded border bg-muted/20">
                         <summary className="cursor-pointer select-none px-3 py-2 font-medium list-none">
-                          Targets <span className="text-xs text-muted-foreground">({targets.length})</span>
+                          Targets{" "}
+                          <span className="text-xs text-muted-foreground">
+                            ({targets.length})
+                          </span>
                         </summary>
                         <div className="px-4 pb-3 pt-1">
                           <ul className="list-disc pl-5 mt-1 space-y-1">
@@ -87,15 +102,57 @@ export function ActivitiesSheet({
                     {resourceActions.length > 0 && (
                       <details className="rounded border bg-muted/20">
                         <summary className="cursor-pointer select-none px-3 py-2 font-medium list-none">
-                          Resource actions <span className="text-xs text-muted-foreground">({resourceActions.length})</span>
+                          Resource actions{" "}
+                          <span className="text-xs text-muted-foreground">
+                            ({resourceActions.length})
+                          </span>
                         </summary>
                         <div className="px-4 pb-3 pt-1">
                           <ul className="list-disc pl-5 mt-1 space-y-1">
-                            {resourceActions.map((ra: any, i: number) => (
-                              <li key={i} className="font-mono text-xs break-all">
-                                {typeof ra === "string" ? ra : ra?.name ?? JSON.stringify(ra)}
-                              </li>
-                            ))}
+                            {resourceActions.map((ra: any, i: number) => {
+                              const label =
+                                typeof ra === "string"
+                                  ? ra
+                                  : ra?.name ??
+                                    ra?.action ??
+                                    JSON.stringify(ra);
+                              const description =
+                                typeof ra === "object" && ra
+                                  ? ra?.description ??
+                                    ra?.desc ??
+                                    ra?.details ??
+                                    null
+                                  : null;
+                              return (
+                                <li
+                                  key={i}
+                                  className="font-mono text-xs break-all"
+                                >
+                                  <div className="inline-flex items-center gap-1 align-middle">
+                                    <span>{label}</span>
+                                    {description && (
+                                      <HoverCard>
+                                        <HoverCardTrigger asChild>
+                                          <button
+                                            type="button"
+                                            className="ml-1 inline-flex p-0.5 rounded hover:bg-muted/50 text-muted-foreground"
+                                            aria-label="Show description"
+                                          >
+                                            <Info
+                                              className="h-3.5 w-3.5"
+                                              aria-hidden="true"
+                                            />
+                                          </button>
+                                        </HoverCardTrigger>
+                                        <HoverCardContent className="text-xs leading-snug max-w-xs">
+                                          {String(description)}
+                                        </HoverCardContent>
+                                      </HoverCard>
+                                    )}
+                                  </div>
+                                </li>
+                              );
+                            })}
                           </ul>
                         </div>
                       </details>

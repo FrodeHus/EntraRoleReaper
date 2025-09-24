@@ -46,6 +46,8 @@ public class ResourceActionDto
         {
             Id = action.Id,
             Action = action.Action,
+            Description = action.Description,
+            ActionVerb = action.ActionVerb,
             IsPrivileged = action.IsPrivileged
         };
     }
