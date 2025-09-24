@@ -9,7 +9,7 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : Repository<Re
 {
     public async Task<ResourceAction> AddAsync(ResourceAction resourceAction)
     {
-        if (resourceAction == null) throw new ArgumentNullException(nameof(resourceAction));
+        ArgumentNullException.ThrowIfNull(resourceAction);
 
         try
         {
@@ -17,6 +17,10 @@ public class ResourceActionRepository(ReaperDbContext dbContext) : Repository<Re
                 .FirstOrDefaultAsync(x => x.Action == resourceAction.Action);
             if (existingAction != null)
             {
+                existingAction.Description = resourceAction.Description;
+                existingAction.IsPrivileged = resourceAction.IsPrivileged;
+                existingAction.ActionVerb = resourceAction.ActionVerb;
+                dbSet.Update(existingAction);
                 return existingAction;
             }
             dbSet.Add(resourceAction);

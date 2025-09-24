@@ -11,10 +11,10 @@ public class ResourceAction : Entity
     [MaxLength(255)]
     public string Action { get; init; } = string.Empty; // unique
     [MaxLength(255)]
-    public string? Description { get; init; } = string.Empty;
+    public string? Description { get; set; } = string.Empty;
     [MaxLength(20)]
-    public string? ActionVerb { get; init; } = string.Empty;
-    public bool IsPrivileged { get; init; }
+    public string? ActionVerb { get; set; } = string.Empty;
+    public bool IsPrivileged { get; set; }
     public virtual ICollection<PermissionSet> PermissionSets { get; init; } = [];
     public virtual ICollection<TargetResourceProperty> MappedTargetResourceProperties { get; init; } = [];
     public virtual ICollection<Activity> MappedActivities { get; init; } = [];
