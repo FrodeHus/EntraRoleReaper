@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.9" />
     <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.4" />
     <PackageReference Include="StackExchange.Redis" Version="2.9.25" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.5" />
   <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
   <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.9" />
   <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.9" />
