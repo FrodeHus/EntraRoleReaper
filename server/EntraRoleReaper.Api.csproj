@@ -9,7 +9,7 @@
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.9" />
-  <PackageReference Include="Microsoft.Identity.Client" Version="4.76.0" />
+  <PackageReference Include="Microsoft.Identity.Client" Version="4.77.1" />
   <PackageReference Include="Microsoft.Identity.Web" Version="3.14.1" />
   <PackageReference Include="Azure.Identity" Version="1.16.0" />
     <PackageReference Include="Microsoft.Graph" Version="5.93.0" />
