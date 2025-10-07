@@ -53,10 +53,27 @@ function parseAction(a: ResourceActionLike): Parsed {
     .split("/")
     .map((p) => p.trim())
     .filter(Boolean)
+
   const namespace = parts[0] ?? ""
   const entity = parts[1] ?? (parts[0] ?? full)
-  const propertySet = parts[2] ?? ""
-  const actionName = parts[3] ?? (parts.length > 1 ? parts[parts.length - 1] : "")
+
+  let propertySet = "";
+  let actionName = "";
+
+  if (parts.length >= 4) {
+    // namespace/entity/propertySet/action
+    propertySet = parts[2] ?? "";
+    actionName = parts[3] ?? "";
+  } else if (parts.length === 3) {
+    // namespace/entity/action (no property set)
+    actionName = parts[2] ?? "";
+  } else if (parts.length === 2) {
+    // namespace/entity (best-effort)
+    actionName = parts[1] ?? "";
+  } else {
+    actionName = full;
+  }
+
   return { namespace, entity, propertySet, actionName, full }
 }
 
