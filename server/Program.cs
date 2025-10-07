@@ -120,12 +120,16 @@ if (!string.IsNullOrWhiteSpace(cs))
 builder.Services.Configure<ReviewOptions>(builder.Configuration.GetSection("Review"));
 builder.Services.AddSingleton<IReviewCoordinator, ReviewCoordinator>();
 builder.Services.AddHostedService<ReviewWorker>();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 builder.Services.ConfigureServices();
 
 var app = builder.Build();
 
 await app.ConfigureApplication(corsOrigins);
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Run seeders after database is ready
 using (var scope = app.Services.CreateScope())
