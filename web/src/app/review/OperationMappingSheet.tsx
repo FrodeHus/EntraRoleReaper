@@ -2,9 +2,9 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/ui/sheet";
 import { Button } from "../../components/ui/button";
-import { Checkbox } from "../../components/ui/checkbox";
 import { RefreshCw } from "lucide-react";
 import { Switch } from "../../components/ui/switch";
+import ResourceActionList from "@/components/ResourceActionList";
 
 interface MappingAction {
   id: string; // Guid
@@ -38,8 +38,7 @@ export function OperationMappingSheet({
   const [originalSelected, setOriginalSelected] = useState<Set<string>>(
     new Set()
   );
-  const [filter, setFilter] = useState("");
-  const [debouncedFilter, setDebouncedFilter] = useState("");
+  // ResourceActionList provides built-in search; remove local text filter
   const [error, setError] = useState<string | null>(null);
   const [showMappedOnly, setShowMappedOnly] = useState(true);
 
@@ -157,67 +156,46 @@ export function OperationMappingSheet({
       setData(null);
       setSelected(new Set());
       setOriginalSelected(new Set());
-      setFilter("");
+      // no local filter to reset
       setError(null);
     }
   }, [open, load]);
 
   // Remote search has been removed; backend returns complete 'all' list.
 
-  // Debounce filter input to reduce fetch frequency
-  useEffect(() => {
-    const handle = setTimeout(() => setDebouncedFilter(filter), 300);
-    return () => clearTimeout(handle);
-  }, [filter]);
-
-  // Client-side filter only
-
-  const combinedList = useMemo(() => {
-    if (!data) return [] as MappingAction[];
+  // Build action strings for ResourceActionList based on Mapped-only filter
+  const visibleActions = useMemo(() => {
+    if (!data) return [] as string[];
     let list = data.all.slice();
-    // Keep deterministic order: mapped first, then action name
-    const sel = selected;
-    list.sort((a, b) => {
-      const aMapped = sel.has(a.id) ? 0 : 1;
-      const bMapped = sel.has(b.id) ? 0 : 1;
-      if (aMapped !== bMapped) return aMapped - bMapped;
-      return a.action.localeCompare(b.action);
-    });
-    const term = debouncedFilter.trim().toLowerCase();
-    if (showMappedOnly) {
-      const sel = selected;
-      list = list.filter((a) => sel.has(a.id));
-    }
-    if (term) list = list.filter((a) => a.action.toLowerCase().includes(term));
-    return list;
-  }, [data, debouncedFilter, showMappedOnly, selected]);
+    if (showMappedOnly) list = list.filter((a) => selected.has(a.id));
+    return list.map((a) => a.action);
+  }, [data, showMappedOnly, selected]);
 
-  // Highlight helper
-  const highlight = useCallback(
-    (text: string) => {
-      const term = debouncedFilter.trim();
-      if (!term) return text;
-      try {
-        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const regex = new RegExp(`(${escaped})`, "ig");
-        const parts = text.split(regex);
-        return parts.map((part, i) =>
-          regex.test(part) ? (
-            <mark
-              key={i}
-              className="bg-yellow-200 dark:bg-yellow-800/60 rounded px-0.5"
-            >
-              {part}
-            </mark>
-          ) : (
-            <span key={i}>{part}</span>
-          )
-        );
-      } catch {
-        return text; // fallback if regex fails
+  // Map action strings <-> ids for selection bridging
+  const selectedStrings = useMemo(() => {
+    if (!data) return [] as string[];
+    const byId = new Map<string, string>(
+      data.all.map((a) => [String(a.id), a.action])
+    );
+    return Array.from(selected)
+      .map((id) => byId.get(String(id)))
+      .filter((v): v is string => Boolean(v));
+  }, [data, selected]);
+
+  const applySelectedStrings = useCallback(
+    (vals: string[]) => {
+      if (!data) return;
+      const idByAction = new Map<string, string>(
+        data.all.map((a) => [a.action.toLowerCase(), String(a.id)])
+      );
+      const next = new Set<string>();
+      for (const s of vals) {
+        const id = idByAction.get(s.toLowerCase());
+        if (id) next.add(id);
       }
+      setSelected(next);
     },
-    [debouncedFilter]
+    [data]
   );
 
   const mappedIds = useMemo(
@@ -369,12 +347,6 @@ export function OperationMappingSheet({
             {error && <div className="text-red-600 text-xs">{error}</div>}
             {data && (
               <div className="flex items-center gap-3">
-                <input
-                  placeholder="Filter actions"
-                  className="border rounded px-2 py-1 text-xs w-full bg-background"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                />
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">
                     Mapped only
@@ -386,66 +358,22 @@ export function OperationMappingSheet({
                     disabled={loading}
                   />
                 </div>
-                {filter && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => setFilter("")}
-                  >
-                    Clear
-                  </Button>
-                )}
               </div>
             )}
             <div className="border rounded h-[60vh] overflow-auto p-2 bg-card text-card-foreground">
               {loading && (
                 <div className="text-xs text-muted-foreground">Loading...</div>
               )}
-              {!loading && data && combinedList.length === 0 && (
+              {!loading && data && visibleActions.length === 0 && (
                 <div className="text-xs text-muted-foreground">No actions.</div>
               )}
-              {!loading && data && combinedList.length > 0 && (
-                <ul className="space-y-1">
-                  {combinedList.map((a) => {
-                    const checked = selected.has(a.id);
-                    const originallyMapped = mappedIds.has(a.id);
-                    return (
-                      <li
-                        key={a.id}
-                        className="flex items-center gap-2 text-xs px-1 py-0.5 rounded hover:bg-muted/50"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={() => toggle(a.id)}
-                          aria-label={`Map ${a.action}`}
-                        />
-                        <span
-                          className={`flex-1 font-mono ${
-                            checked ? "" : "text-muted-foreground"
-                          }`}
-                        >
-                          {highlight(a.action)}
-                        </span>
-                        {a.isPrivileged && (
-                          <span className="text-[10px] px-1 rounded border bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300">
-                            priv
-                          </span>
-                        )}
-                        {originallyMapped && !checked && (
-                          <span className="text-[10px] text-red-600">
-                            removed
-                          </span>
-                        )}
-                        {!originallyMapped && checked && (
-                          <span className="text-[10px] text-emerald-600">
-                            added
-                          </span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+              {!loading && data && visibleActions.length > 0 && (
+                <ResourceActionList
+                  actions={visibleActions}
+                  isSelectable
+                  selected={selectedStrings}
+                  onSelectedChange={applySelectedStrings}
+                />
               )}
             </div>
             {saving && (

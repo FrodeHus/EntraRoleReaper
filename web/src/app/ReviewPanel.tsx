@@ -2,9 +2,22 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { formatISO, subHours, subDays } from "date-fns";
 import { Button } from "../components/ui/button";
 import { Download, Minus, LogsIcon, Info } from "lucide-react";
-import { RoleDetailsSheet } from "./review/RoleDetailsSheet";
-import { ActivitiesSheet } from "./review/ActivitiesSheet";
-import { OperationMappingSheet } from "./review/OperationMappingSheet";
+import { Suspense, lazy } from "react";
+const RoleDetailsSheet = lazy(() =>
+  import("./review/RoleDetailsSheet").then((m) => ({
+    default: m.RoleDetailsSheet,
+  }))
+);
+const ActivitiesSheet = lazy(() =>
+  import("./review/ActivitiesSheet").then((m) => ({
+    default: m.ActivitiesSheet,
+  }))
+);
+const OperationMappingSheet = lazy(() =>
+  import("./review/OperationMappingSheet").then((m) => ({
+    default: m.OperationMappingSheet,
+  }))
+);
 import { RoleChangeDetailsSheet } from "./review/RoleChangeDetailsSheet";
 import { ScoreSheet } from "./review/ScoreSheet";
 import type {
@@ -39,6 +52,7 @@ export function ReviewPanel({
   accessToken: string | null;
   selectedIds: string[];
 }) {
+  const headerControlsRef = useRef<HTMLDivElement | null>(null);
   const [openActivitiesFor, setOpenActivitiesFor] = useState<any | null>(null);
   const [openRolesFor, setOpenRolesFor] = useState<any | null>(null);
   const [openScoreSheet, setOpenScoreSheet] = useState(false);
@@ -170,7 +184,7 @@ export function ReviewPanel({
   // ...existing code...
   return (
     <div className="space-y-4">
-      <div className="flex items-end gap-2">
+      <div ref={headerControlsRef} className="flex items-end gap-2">
         <div>
           <label className="block text-sm text-muted-foreground">
             Time range
@@ -183,7 +197,7 @@ export function ReviewPanel({
             <SelectTrigger className="mt-1 w-48" aria-label="Time range">
               <SelectValue placeholder="Select range" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent container={headerControlsRef.current}>
               {timeRanges.map((r) => (
                 <SelectItem key={r.value} value={r.value}>
                   {r.label}
@@ -354,35 +368,39 @@ export function ReviewPanel({
             </TableBody>
           </Table>
           {/* Activities Sheet */}
-          <ActivitiesSheet
-            open={!!openActivitiesFor}
-            onOpenChange={(o) => {
-              if (!o) setOpenActivitiesFor(null);
-            }}
-            review={openActivitiesFor}
-          />
+          <Suspense fallback={null}>
+            <ActivitiesSheet
+              open={!!openActivitiesFor}
+              onOpenChange={(o) => {
+                if (!o) setOpenActivitiesFor(null);
+              }}
+              review={openActivitiesFor}
+            />
+          </Suspense>
 
           {/* Roles Sheet */}
-          <RoleDetailsSheet
-            open={!!openRolesFor}
-            onOpenChange={(o) => {
-              if (!o) setOpenRolesFor(null);
-            }}
-            role={
-              openRolesFor
-                ? {
-                    name: openRolesFor.user?.displayName ?? "",
-                    requiredPerms: [
-                      ...(openRolesFor.user?.activeRoleIds ?? []),
-                      ...(openRolesFor.user?.eligibleRoleIds ?? []),
-                      ...(openRolesFor.user?.pimActiveRoleIds ?? []),
-                    ],
-                  }
-                : null
-            }
-            details={openRolesFor?.user ?? null}
-            loading={false}
-          />
+          <Suspense fallback={null}>
+            <RoleDetailsSheet
+              open={!!openRolesFor}
+              onOpenChange={(o) => {
+                if (!o) setOpenRolesFor(null);
+              }}
+              role={
+                openRolesFor
+                  ? {
+                      name: openRolesFor.user?.displayName ?? "",
+                      requiredPerms: [
+                        ...(openRolesFor.user?.activeRoleIds ?? []),
+                        ...(openRolesFor.user?.eligibleRoleIds ?? []),
+                        ...(openRolesFor.user?.pimActiveRoleIds ?? []),
+                      ],
+                    }
+                  : null
+              }
+              details={openRolesFor?.user ?? null}
+              loading={false}
+            />
+          </Suspense>
           {/* Score Sheet for suggested roles */}
           <ScoreSheet
             open={openScoreSheet}

@@ -3,9 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { toast } from "sonner";
 import { RolesTab } from "./config/RolesTab";
-import { RoleDetailsSheet } from "../review/RoleDetailsSheet";
-import ActivityMappingDialog from "./config/ActivityMappingDialog";
-import { OperationMappingSheet } from "../review/OperationMappingSheet";
+import { Suspense, lazy } from "react";
+const RoleDetailsSheet = lazy(() =>
+  import("../review/RoleDetailsSheet").then((m) => ({
+    default: m.RoleDetailsSheet,
+  }))
+);
+const ActivityMappingDialog = lazy(() =>
+  import("./config/ActivityMappingDialog").then((m) => ({ default: m.default }))
+);
+const OperationMappingSheet = lazy(() =>
+  import("../review/OperationMappingSheet").then((m) => ({
+    default: m.OperationMappingSheet,
+  }))
+);
 import type { RoleDetails } from "../review/types";
 
 export function RolesPage({
@@ -132,7 +143,12 @@ export function RolesPage({
     <section className="border bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-sm font-medium tracking-wide">Roles</h2>
-        <Button size="sm" variant="default" type="button" onClick={() => navigate('/role/editor')}>
+        <Button
+          size="sm"
+          variant="default"
+          type="button"
+          onClick={() => navigate("/role/editor")}
+        >
           Create custom role
         </Button>
       </div>
@@ -145,54 +161,60 @@ export function RolesPage({
         }}
         onEditRole={(id) => navigate(`/role/editor/${encodeURIComponent(id)}`)}
       />
-      <RoleDetailsSheet
-        open={roleDetailsOpen}
-        onOpenChange={(o) => {
-          setRoleDetailsOpen(o);
-          if (!o) {
-            setSelectedRole(null);
-            setRoleDetails(null);
+      <Suspense fallback={null}>
+        <RoleDetailsSheet
+          open={roleDetailsOpen}
+          onOpenChange={(o) => {
+            setRoleDetailsOpen(o);
+            if (!o) {
+              setSelectedRole(null);
+              setRoleDetails(null);
+            }
+          }}
+          role={
+            selectedRole ? { name: selectedRole.name, requiredPerms: [] } : null
           }
-        }}
-        role={
-          selectedRole ? { name: selectedRole.name, requiredPerms: [] } : null
-        }
-        details={
-          roleDetails ||
-          ({
-            name: selectedRole?.name || "",
-            description: "",
-            resourceScopes: [],
-            resourceScopesDetailed: [],
-            rolePermissions: [],
-          } as any)
-        }
-        loading={roleDetailsLoading}
-      />
-      <ActivityMappingDialog
-        open={mappingModalOpen}
-        onOpenChange={(o) => {
-          setMappingModalOpen(o);
-          if (!o) {
-            setPreselectedActionIds(null);
+          details={
+            roleDetails ||
+            ({
+              name: selectedRole?.name || "",
+              description: "",
+              resourceScopes: [],
+              resourceScopesDetailed: [],
+              rolePermissions: [],
+            } as any)
           }
-        }}
-        accessToken={accessToken}
-        apiBase={apiBase}
-        initialActivityName={mappingModalName}
-        mode={mappingModalMode}
-        preselectedIds={preselectedActionIds ?? undefined}
-        onSaved={() => {
-          window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
-        }}
-      />
-      <OperationMappingSheet
-        open={opSheetOpen}
-        onOpenChange={(o) => setOpSheetOpen(o)}
-        operationName={opSheetOperationName}
-        accessToken={accessToken}
-        apiBase={apiBase}
-      />
+          loading={roleDetailsLoading}
+        />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ActivityMappingDialog
+          open={mappingModalOpen}
+          onOpenChange={(o) => {
+            setMappingModalOpen(o);
+            if (!o) {
+              setPreselectedActionIds(null);
+            }
+          }}
+          accessToken={accessToken}
+          apiBase={apiBase}
+          initialActivityName={mappingModalName}
+          mode={mappingModalMode}
+          preselectedIds={preselectedActionIds ?? undefined}
+          onSaved={() => {
+            window.dispatchEvent(new CustomEvent("operation-mappings-updated"));
+          }}
+        />
+      </Suspense>
+      <Suspense fallback={null}>
+        <OperationMappingSheet
+          open={opSheetOpen}
+          onOpenChange={(o) => setOpSheetOpen(o)}
+          operationName={opSheetOperationName}
+          accessToken={accessToken}
+          apiBase={apiBase}
+        />
+      </Suspense>
     </section>
   );
 }

@@ -80,6 +80,9 @@ export function StatusNav({
             reviewerName={reviewerName}
             tenantDomain={tenantDomain}
             onLogout={onLogout}
+            authed={authed}
+            accessToken={accessToken}
+            apiBase={apiBase}
           />
         </div>
       </div>

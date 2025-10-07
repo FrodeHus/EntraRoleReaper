@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Input } from "../../../components/ui/input";
+import ResourceActionList, {
+  type ResourceActionListHandle,
+} from "@/components/ResourceActionList";
 import { Button } from "../../../components/ui/button";
 import { Switch } from "../../../components/ui/switch";
 import { Checkbox } from "../../../components/ui/checkbox";
+import { ResourceActionPill } from "../../../components/ResourceActionPill";
 import {
   HoverCard,
   HoverCardContent,
@@ -84,7 +88,7 @@ export function ActivityMappingDialog({
   const [selectedActionIds, setSelectedActionIds] = useState<Set<string>>(
     new Set()
   );
-  const [actionSearch, setActionSearch] = useState("");
+  // ResourceActionList provides built-in search; remove local search
 
   // Target resources
   const [targetResources, setTargetResources] = useState<TargetResourceDto[]>(
@@ -344,18 +348,27 @@ export function ActivityMappingDialog({
     setExpandedTr(openKeys);
   }, [selectAllProps, targetResources]);
 
-  const filteredActions = useMemo(() => {
-    const t = actionSearch.trim().toLowerCase();
-    let list = allActions;
-    if (t) list = list.filter((a) => a.action.toLowerCase().includes(t));
-    // Keep deterministic order: selected first, then by name
-    return list.slice().sort((a, b) => {
+  // Keep deterministic order: selected first, then by name (for mapping only)
+  const orderedActions = useMemo(() => {
+    return allActions.slice().sort((a, b) => {
       const as = selectedActionIds.has(a.id) ? 0 : 1;
       const bs = selectedActionIds.has(b.id) ? 0 : 1;
       if (as !== bs) return as - bs;
       return a.action.localeCompare(b.action);
     });
-  }, [allActions, actionSearch, selectedActionIds]);
+  }, [allActions, selectedActionIds]);
+
+  // Maps for id <-> action bridging with ResourceActionList
+  const idToAction = useMemo(
+    () => new Map(allActions.map((a) => [String(a.id), a.action])),
+    [allActions]
+  );
+  const actionToId = useMemo(
+    () =>
+      new Map(allActions.map((a) => [a.action.toLowerCase(), String(a.id)])),
+    [allActions]
+  );
+  const listRef = useRef<ResourceActionListHandle | null>(null);
 
   const toggleAction = (id: string) => {
     setSelectedActionIds((prev) => {
@@ -589,12 +602,24 @@ export function ActivityMappingDialog({
             {/* Right column 2/3 width: resource actions */}
             <div className="col-span-2 min-h-0 overflow-auto border rounded p-2">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <Input
-                  value={actionSearch}
-                  onChange={(e) => setActionSearch(e.target.value)}
-                  placeholder="Search resource actions…"
-                  className="max-w-sm"
-                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => listRef.current?.selectAll()}
+                    title="Select all currently visible items"
+                  >
+                    Select all filtered
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => listRef.current?.clearSelection()}
+                    title="Clear selected"
+                  >
+                    Clear
+                  </Button>
+                </div>
                 <div className="text-[11px] text-muted-foreground">
                   {selectedPropIds.size > 0
                     ? `Mapping to ${selectedPropIds.size} propert${
@@ -608,59 +633,28 @@ export function ActivityMappingDialog({
                   ? "Checked items indicate actions currently mapped to the activity."
                   : "Pick actions to map to the selected properties."}
               </div>
-              <div className="divide-y">
-                {filteredActions.map((a) => (
-                  <label
-                    key={a.id}
-                    className="flex items-center gap-2 py-1 text-sm cursor-pointer hover:bg-muted/40 px-1 rounded"
-                  >
-                    <Checkbox
-                      checked={selectedActionIds.has(a.id)}
-                      onCheckedChange={() => toggleAction(a.id)}
-                      aria-label={`Toggle ${a.action}`}
-                    />
-                    <span className="font-mono text-xs break-all flex-1">
-                      {a.action}
-                    </span>
-                    {a.description && a.description.trim() && (
-                      <HoverCard>
-                        <HoverCardTrigger asChild>
-                          <button
-                            type="button"
-                            className="ml-1 inline-flex p-0.5 rounded hover:bg-muted/50 text-muted-foreground"
-                            aria-label="Show description"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                          >
-                            <Info className="h-3.5 w-3.5" aria-hidden="true" />
-                          </button>
-                        </HoverCardTrigger>
-                        <HoverCardContent className="text-xs leading-snug max-w-xs">
-                          {a.description}
-                        </HoverCardContent>
-                      </HoverCard>
-                    )}
-                    {selectedPropIds.size === 0 &&
-                      mappedActionNames.has(a.action) && (
-                        <span className="text-[10px] px-1 rounded border bg-muted text-muted-foreground">
-                          mapped
-                        </span>
-                      )}
-                    {a.isPrivileged && (
-                      <span className="text-[10px] px-1 rounded border bg-amber-100/40 text-amber-800">
-                        privileged
-                      </span>
-                    )}
-                  </label>
-                ))}
-                {filteredActions.length === 0 && (
-                  <div className="text-xs text-muted-foreground p-2">
-                    No actions
-                  </div>
-                )}
-              </div>
+              {/* Use ResourceActionList for hierarchical, selectable actions */}
+              <ResourceActionList
+                ref={listRef}
+                actions={orderedActions.map((a) => a.action)}
+                isSelectable
+                selected={Array.from(selectedActionIds)
+                  .map((id) => idToAction.get(String(id)))
+                  .filter((v): v is string => Boolean(v))}
+                onSelectedChange={(names) => {
+                  const next = new Set<string>();
+                  for (const name of names) {
+                    const id = actionToId.get(name.toLowerCase());
+                    if (id) next.add(id);
+                  }
+                  setSelectedActionIds(next);
+                }}
+              />
+              {allActions.length === 0 && (
+                <div className="text-xs text-muted-foreground p-2">
+                  No actions
+                </div>
+              )}
             </div>
           </div>
         </div>

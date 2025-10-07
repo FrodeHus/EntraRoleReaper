@@ -6,6 +6,7 @@ import {
   HoverCardTrigger,
 } from "../../components/ui/hover-card";
 import { Info } from "lucide-react";
+import { ResourceActionPill } from "@/components/ResourceActionPill";
 
 export function ActivitiesSheet({
   open,
@@ -26,144 +27,159 @@ export function ActivitiesSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      {review && (
+      {review ? (
         <SheetContent side="right">
           <SheetHeader>
             <SheetTitle>
-              Activities for {review.user?.displayName ?? review.user?.id ?? "User"}
+              Activities for{" "}
+              {review.user?.displayName ?? review.user?.id ?? "User"}
             </SheetTitle>
           </SheetHeader>
           <div className="p-2 space-y-3">
-            {items.length === 0 && (
-              <div className="text-sm text-muted-foreground">No activities in period.</div>
-            )}
-            {items.map((it: any, idx: number) => {
-              const act = it.activity ?? it;
-              const title =
-                (typeof act === "string" ? act : (act?.activityName ?? act?.activity ?? act?.name)) ??
-                "(activity)";
-              const category = (typeof act === "object" && act) ? (act.category ?? act.type) : undefined;
-              const service = (typeof act === "object" && act) ? act.service : undefined;
-              const targets: any[] =
-                (typeof act === "object" && act && Array.isArray(act.targetResources))
-                  ? act.targetResources
-                  : Array.isArray(it.targets)
-                  ? it.targets
-                  : [];
-              const resourceActions: any[] =
-                (typeof act === "object" && act && Array.isArray(act.resourceActions))
-                  ? act.resourceActions
-                  : Array.isArray(it.resourceActions)
-                  ? it.resourceActions
-                  : [];
-              return (
-                <Card key={idx} className="text-sm">
-                  <CardHeader>
-                    <CardTitle className="text-base">{title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      {category && (
-                        <div>
-                          <span className="font-medium text-foreground">
-                            Category:
-                          </span>{" "}
-                          {category}
-                        </div>
-                      )}
-                      {service && (
-                        <div>
-                          <span className="font-medium text-foreground">
-                            Service:
-                          </span>{" "}
-                          {service}
-                        </div>
-                      )}
-                    </div>
-                    {targets.length > 0 && (
-                      <details className="rounded border bg-muted/20">
-                        <summary className="cursor-pointer select-none px-3 py-2 font-medium list-none">
-                          Targets{" "}
-                          <span className="text-xs text-muted-foreground">
-                            ({targets.length})
-                          </span>
-                        </summary>
-                        <div className="px-4 pb-3 pt-1">
-                          <ul className="list-disc pl-5 mt-1 space-y-1">
-                            {targets.map((t: any, i: number) => (
-                              <li key={i} className="break-words">
-                                {t?.displayName ?? t?.id ?? String(t)}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </details>
-                    )}
-                    {resourceActions.length > 0 && (
-                      <details className="rounded border bg-muted/20">
-                        <summary className="cursor-pointer select-none px-3 py-2 font-medium list-none">
-                          Resource actions{" "}
-                          <span className="text-xs text-muted-foreground">
-                            ({resourceActions.length})
-                          </span>
-                        </summary>
-                        <div className="px-4 pb-3 pt-1">
-                          <ul className="list-disc pl-5 mt-1 space-y-1">
-                            {resourceActions.map((ra: any, i: number) => {
-                              const label =
-                                typeof ra === "string"
-                                  ? ra
-                                  : ra?.name ??
-                                    ra?.action ??
-                                    JSON.stringify(ra);
-                              const description =
-                                typeof ra === "object" && ra
-                                  ? ra?.description ??
-                                    ra?.desc ??
-                                    ra?.details ??
-                                    null
-                                  : null;
-                              return (
-                                <li
-                                  key={i}
-                                  className="font-mono text-xs break-all"
-                                >
-                                  <div className="inline-flex items-center gap-1 align-middle">
-                                    <span>{label}</span>
-                                    {description && (
-                                      <HoverCard>
-                                        <HoverCardTrigger asChild>
-                                          <button
-                                            type="button"
-                                            className="ml-1 inline-flex p-0.5 rounded hover:bg-muted/50 text-muted-foreground"
-                                            aria-label="Show description"
-                                          >
-                                            <Info
-                                              className="h-3.5 w-3.5"
-                                              aria-hidden="true"
-                                            />
-                                          </button>
-                                        </HoverCardTrigger>
-                                        <HoverCardContent className="text-xs leading-snug max-w-xs">
-                                          {String(description)}
-                                        </HoverCardContent>
-                                      </HoverCard>
-                                    )}
-                                  </div>
+            {items.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                No activities in period.
+              </div>
+            ) : (
+              items.map((it: any, idx: number) => {
+                const act = it.activity ?? it;
+                const title =
+                  (typeof act === "string"
+                    ? act
+                    : act?.activityName ?? act?.activity ?? act?.name) ??
+                  "(activity)";
+                const category =
+                  typeof act === "object" && act
+                    ? act.category ?? act.type
+                    : undefined;
+                const service =
+                  typeof act === "object" && act ? act.service : undefined;
+                const targets: any[] =
+                  typeof act === "object" &&
+                  act &&
+                  Array.isArray(act.targetResources)
+                    ? act.targetResources
+                    : Array.isArray(it.targets)
+                    ? it.targets
+                    : [];
+                const resourceActions: any[] =
+                  typeof act === "object" &&
+                  act &&
+                  Array.isArray(act.resourceActions)
+                    ? act.resourceActions
+                    : Array.isArray(it.resourceActions)
+                    ? it.resourceActions
+                    : [];
+                return (
+                  <Card key={idx} className="text-sm">
+                    <CardHeader>
+                      <CardTitle className="text-base">{title}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex gap-4 text-xs text-muted-foreground">
+                        {category && (
+                          <div>
+                            <span className="font-medium text-foreground">
+                              Category:
+                            </span>{" "}
+                            {category}
+                          </div>
+                        )}
+                        {service && (
+                          <div>
+                            <span className="font-medium text-foreground">
+                              Service:
+                            </span>{" "}
+                            {service}
+                          </div>
+                        )}
+                      </div>
+                      {targets.length > 0 && (
+                        <details className="rounded border bg-muted/20">
+                          <summary className="cursor-pointer select-none px-3 py-2 font-medium list-none">
+                            Targets{" "}
+                            <span className="text-xs text-muted-foreground">
+                              ({targets.length})
+                            </span>
+                          </summary>
+                          <div className="px-4 pb-3 pt-1">
+                            <ul className="list-disc pl-5 mt-1 space-y-1">
+                              {targets.map((t: any, i: number) => (
+                                <li key={i} className="break-words">
+                                  {t?.displayName ?? t?.id ?? String(t)}
                                 </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      </details>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                              ))}
+                            </ul>
+                          </div>
+                        </details>
+                      )}
+                      {resourceActions.length > 0 && (
+                        <details className="rounded border bg-muted/20">
+                          <summary className="cursor-pointer select-none px-3 py-2 font-medium list-none">
+                            Resource actions
+                            <span className="text-xs text-muted-foreground">
+                              {" "}
+                              ({resourceActions.length})
+                            </span>
+                          </summary>
+                          <div className="px-4 pb-3 pt-1">
+                            <ul className="list-disc pl-5 mt-1 space-y-1">
+                              {resourceActions.map((ra: any, i: number) => {
+                                const label =
+                                  typeof ra === "string"
+                                    ? ra
+                                    : ra?.name ??
+                                      ra?.action ??
+                                      JSON.stringify(ra);
+                                const description =
+                                  typeof ra === "object" && ra
+                                    ? ra?.description ??
+                                      ra?.desc ??
+                                      ra?.details ??
+                                      null
+                                    : null;
+                                return (
+                                  <li key={i} className="text-xs break-all">
+                                    <div className="inline-flex items-center gap-1 align-middle">
+                                      <ResourceActionPill
+                                        action={label}
+                                        size="sm"
+                                      />
+                                      {description && (
+                                        <HoverCard>
+                                          <HoverCardTrigger asChild>
+                                            <button
+                                              type="button"
+                                              className="ml-1 inline-flex p-0.5 rounded hover:bg-muted/50 text-muted-foreground"
+                                              aria-label="Show description"
+                                            >
+                                              <Info
+                                                className="h-3.5 w-3.5"
+                                                aria-hidden="true"
+                                              />
+                                            </button>
+                                          </HoverCardTrigger>
+                                          <HoverCardContent className="text-xs leading-snug max-w-xs">
+                                            {String(description)}
+                                          </HoverCardContent>
+                                        </HoverCard>
+                                      )}
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        </details>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
           </div>
         </SheetContent>
-      )}
+      ) : null}
     </Sheet>
   );
 }
