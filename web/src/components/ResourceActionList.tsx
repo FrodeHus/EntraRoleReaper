@@ -41,11 +41,13 @@ type Parsed = {
   actionName: string;
   full: string;
   isPrivileged?: boolean;
+  description?: string;
 };
 
 function parseAction(a: ResourceActionLike): Parsed {
   const full = typeof a === "string" ? a : a.action;
   const isPrivileged = typeof a === "string" ? undefined : a.isPrivileged;
+  const description = typeof a === "string" ? undefined : a.description;
   const parts = (full || "")
     .split("/")
     .map((p) => p.trim())
@@ -71,7 +73,15 @@ function parseAction(a: ResourceActionLike): Parsed {
     actionName = full;
   }
 
-  return { namespace, entity, propertySet, actionName, full, isPrivileged };
+  return {
+    namespace,
+    entity,
+    propertySet,
+    actionName,
+    full,
+    isPrivileged,
+    description,
+  };
 }
 
 const PrivBadge: React.FC = () => (
@@ -464,6 +474,7 @@ export const ResourceActionList = React.forwardRef<
                             )}
                             <ResourceActionPill
                               action={p.full}
+                              description={p.description}
                               isPrivileged={p.isPrivileged}
                               size="sm"
                               compact
@@ -536,6 +547,7 @@ export const ResourceActionList = React.forwardRef<
                               )}
                               <ResourceActionPill
                                 action={p.full}
+                                description={p.description}
                                 isPrivileged={p.isPrivileged}
                                 size="sm"
                                 compact
