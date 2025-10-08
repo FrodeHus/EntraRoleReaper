@@ -7,55 +7,52 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-import { ResourceActionPill } from "@/components/ResourceActionPill"
-import { Checkbox } from "@/components/ui/checkbox"
-import { cn } from "@/lib/utils"
+import { TreeView, type TreeDataItem } from "@/components/tree-view";
+import { ResourceActionPill } from "@/components/ResourceActionPill";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 export type ResourceActionLike =
   | string
   | {
-      action: string
-      id?: string
-      isPrivileged?: boolean
-      description?: string
-    }
+      action: string;
+      id?: string;
+      isPrivileged?: boolean;
+      description?: string;
+    };
 
 export type ResourceActionListProps = {
-  actions: ResourceActionLike[]
-  className?: string
-  searchPlaceholder?: string
-  isSelectable?: boolean
-  selected?: string[]
-  defaultSelected?: string[]
-  onSelectedChange?: (selected: string[]) => void
-  hideControls?: boolean
-  defaultExpanded?: boolean
-  compact?: boolean
-}
+  actions: ResourceActionLike[];
+  className?: string;
+  searchPlaceholder?: string;
+  isSelectable?: boolean;
+  selected?: string[];
+  defaultSelected?: string[];
+  onSelectedChange?: (selected: string[]) => void;
+  hideControls?: boolean;
+  defaultExpanded?: boolean;
+  compact?: boolean;
+};
 
 type Parsed = {
-  namespace: string
-  entity: string
-  propertySet: string
-  actionName: string
-  full: string
-}
+  namespace: string;
+  entity: string;
+  propertySet: string;
+  actionName: string;
+  full: string;
+  isPrivileged?: boolean;
+};
 
 function parseAction(a: ResourceActionLike): Parsed {
-  const full = typeof a === "string" ? a : a.action
+  const full = typeof a === "string" ? a : a.action;
+  const isPrivileged = typeof a === "string" ? undefined : a.isPrivileged;
   const parts = (full || "")
     .split("/")
     .map((p) => p.trim())
-    .filter(Boolean)
+    .filter(Boolean);
 
-  const namespace = parts[0] ?? ""
-  const entity = parts[1] ?? (parts[0] ?? full)
+  const namespace = parts[0] ?? "";
+  const entity = parts[1] ?? parts[0] ?? full;
 
   let propertySet = "";
   let actionName = "";
@@ -74,18 +71,27 @@ function parseAction(a: ResourceActionLike): Parsed {
     actionName = full;
   }
 
-  return { namespace, entity, propertySet, actionName, full }
+  return { namespace, entity, propertySet, actionName, full, isPrivileged };
 }
 
-const ALL = "__all__"
+const PrivBadge: React.FC = () => (
+  <span className="ml-2 inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] bg-destructive/10 text-destructive border-destructive/30">
+    Privileged
+  </span>
+);
+
+const ALL = "__all__";
 
 export type ResourceActionListHandle = {
-  getSelected: () => string[]
-  clearSelection: () => void
-  selectAll: () => void
-}
+  getSelected: () => string[];
+  clearSelection: () => void;
+  selectAll: () => void;
+};
 
-export const ResourceActionList = React.forwardRef<ResourceActionListHandle, ResourceActionListProps>(function ResourceActionList(
+export const ResourceActionList = React.forwardRef<
+  ResourceActionListHandle,
+  ResourceActionListProps
+>(function ResourceActionList(
   {
     actions,
     className,
@@ -172,7 +178,7 @@ export const ResourceActionList = React.forwardRef<ResourceActionListHandle, Res
     return list;
   }, [parsed, nsFilter, entityFilter, debounced]);
 
-  // Build hierarchy: ns -> entity -> { noPS: actions without propertySet, psMap: propertySet -> actions[] }
+  // Build hierarchy for TreeView data
   const tree = React.useMemo(() => {
     const map = new Map<
       string,
@@ -194,7 +200,6 @@ export const ResourceActionList = React.forwardRef<ResourceActionListHandle, Res
         bucket.noPS.push(p);
       }
     }
-    // Optional: sort lists in-place
     for (const [, eMap] of map) {
       for (const [, bucket] of eMap) {
         bucket.noPS.sort((a, b) => a.actionName.localeCompare(b.actionName));
@@ -223,7 +228,7 @@ export const ResourceActionList = React.forwardRef<ResourceActionListHandle, Res
 
   // Helpers to collect leaves under a level
   const leavesUnderNamespace = React.useCallback(
-    (ns: string) => {
+    (ns: string): string[] => {
       const eMap = tree.get(ns);
       if (!eMap) return [] as string[];
       const out: string[] = [];
@@ -238,7 +243,7 @@ export const ResourceActionList = React.forwardRef<ResourceActionListHandle, Res
   );
 
   const leavesUnderEntity = React.useCallback(
-    (ns: string, ent: string) => {
+    (ns: string, ent: string): string[] => {
       const eMap = tree.get(ns);
       if (!eMap) return [] as string[];
       const bucket = eMap.get(ent);
@@ -252,7 +257,7 @@ export const ResourceActionList = React.forwardRef<ResourceActionListHandle, Res
   );
 
   const leavesUnderPropertySet = React.useCallback(
-    (ns: string, ent: string, ps: string) => {
+    (ns: string, ent: string, ps: string): string[] => {
       const eMap = tree.get(ns);
       if (!eMap) return [] as string[];
       const bucket = eMap.get(ent);
@@ -320,7 +325,7 @@ export const ResourceActionList = React.forwardRef<ResourceActionListHandle, Res
         </div>
       )}
 
-      {/* Hierarchical list */}
+      {/* Hierarchical list using TreeView */}
       <div
         className={cn(
           "border rounded bg-card text-card-foreground max-h-[60vh] overflow-auto",
@@ -332,314 +337,235 @@ export const ResourceActionList = React.forwardRef<ResourceActionListHandle, Res
             No matching actions
           </div>
         ) : (
-          <Accordion
-            type="multiple"
-            className="w-full"
-            defaultValue={
-              defaultExpanded
-                ? Array.from(tree.keys()).map((ns) => `ns:${ns}`)
-                : undefined
-            }
-          >
-            {Array.from(tree.entries())
+          <TreeView
+            data={Array.from(tree.entries())
               .sort(([a], [b]) => a.localeCompare(b))
-              .map(([ns, eMap]) => (
-                <AccordionItem key={ns} value={`ns:${ns}`}>
-                  <AccordionTrigger className={cn("px-2", compact && "px-1.5")}>
-                    <div className="flex items-center gap-2">
-                      {isSelectable &&
-                        (() => {
-                          const leafs = leavesUnderNamespace(ns);
-                          const selectedCount = leafs.reduce(
-                            (n, f) => n + (selectedSet.has(f) ? 1 : 0),
+              .map(([ns, eMap]) => {
+                const nsLeafs = leavesUnderNamespace(ns);
+                const nsSelectedCount = nsLeafs.reduce(
+                  (n: number, f: string) => n + (selectedSet.has(f) ? 1 : 0),
+                  0
+                );
+                const nsState =
+                  nsSelectedCount === 0
+                    ? false
+                    : nsSelectedCount === nsLeafs.length
+                    ? true
+                    : "indeterminate";
+                const nsHasPrivileged = Array.from(eMap.values()).some(
+                  (bucket) =>
+                    bucket.noPS.some((p) => !!p.isPrivileged) ||
+                    Array.from(bucket.psMap.values()).some((arr) =>
+                      arr.some((p) => !!p.isPrivileged)
+                    )
+                );
+                const nsName = (
+                  <div className="flex items-center gap-2">
+                    {isSelectable && (
+                      <Checkbox
+                        checked={nsState as any}
+                        onCheckedChange={(v) => {
+                          const next = new Set(selectedSet);
+                          if (v) nsLeafs.forEach((f) => next.add(f));
+                          else nsLeafs.forEach((f) => next.delete(f));
+                          updateSelected(next);
+                        }}
+                        aria-label={`Select all in ${ns}`}
+                      />
+                    )}
+                    <span className="font-medium">{ns}</span>
+                    {nsHasPrivileged && <PrivBadge />}
+                    <span className="text-[10px] text-muted-foreground">
+                      {Array.from(eMap.values()).reduce(
+                        (n, bucket) =>
+                          n +
+                          bucket.noPS.length +
+                          Array.from(bucket.psMap.values()).reduce(
+                            (m, arr) => m + arr.length,
                             0
-                          );
-                          const state =
-                            selectedCount === 0
-                              ? false
-                              : selectedCount === leafs.length
-                              ? true
-                              : "indeterminate";
-                          return (
-                            <Checkbox
-                              checked={state as any}
-                              onCheckedChange={(v) => {
-                                const next = new Set(selectedSet);
-                                if (v) leafs.forEach((f) => next.add(f));
-                                else leafs.forEach((f) => next.delete(f));
-                                updateSelected(next);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              aria-label={`Select all in ${ns}`}
-                            />
-                          );
-                        })()}
-                      <span className="font-medium">{ns}</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {Array.from(eMap.values()).reduce(
-                          (n, bucket) =>
-                            n +
-                            bucket.noPS.length +
+                          ),
+                        0
+                      )}{" "}
+                      actions
+                    </span>
+                  </div>
+                );
+
+                const entityNodes: TreeDataItem[] = Array.from(eMap.entries())
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([ent, bucket]) => {
+                    const entLeafs = leavesUnderEntity(ns, ent);
+                    const entSelectedCount = entLeafs.reduce(
+                      (n: number, f: string) =>
+                        n + (selectedSet.has(f) ? 1 : 0),
+                      0
+                    );
+                    const entState =
+                      entSelectedCount === 0
+                        ? false
+                        : entSelectedCount === entLeafs.length
+                        ? true
+                        : "indeterminate";
+                    const entHasPrivileged =
+                      bucket.noPS.some((p) => !!p.isPrivileged) ||
+                      Array.from(bucket.psMap.values()).some((arr) =>
+                        arr.some((p) => !!p.isPrivileged)
+                      );
+                    const entName = (
+                      <div className="flex items-center gap-2">
+                        {isSelectable && (
+                          <Checkbox
+                            checked={entState as any}
+                            onCheckedChange={(v) => {
+                              const next = new Set(selectedSet);
+                              if (v) entLeafs.forEach((f) => next.add(f));
+                              else entLeafs.forEach((f) => next.delete(f));
+                              updateSelected(next);
+                            }}
+                            aria-label={`Select all in ${ns}/${ent}`}
+                          />
+                        )}
+                        <span>{ent}</span>
+                        {entHasPrivileged && <PrivBadge />}
+                        <span className="text-[10px] text-muted-foreground">
+                          {bucket.noPS.length +
                             Array.from(bucket.psMap.values()).reduce(
                               (m, arr) => m + arr.length,
                               0
-                            ),
-                          0
-                        )}{" "}
-                        actions
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <Accordion
-                      type="multiple"
-                      className="ml-3 border-l pl-2"
-                      defaultValue={
-                        defaultExpanded
-                          ? Array.from(eMap.keys()).map(
-                              (ent) => `ent:${ns}|${ent}`
-                            )
-                          : undefined
-                      }
-                    >
-                      {Array.from(eMap.entries())
-                        .sort(([a], [b]) => a.localeCompare(b))
-                        .map(([ent, bucket]) => (
-                          <AccordionItem
-                            key={`${ns}|${ent}`}
-                            value={`ent:${ns}|${ent}`}
-                          >
-                            <AccordionTrigger
-                              className={cn("px-2", compact && "px-1.5")}
-                            >
-                              <div className="flex items-center gap-2">
-                                {isSelectable &&
-                                  (() => {
-                                    const leafs = leavesUnderEntity(ns, ent);
-                                    const selectedCount = leafs.reduce(
-                                      (n, f) =>
-                                        n + (selectedSet.has(f) ? 1 : 0),
-                                      0
-                                    );
-                                    const state =
-                                      selectedCount === 0
-                                        ? false
-                                        : selectedCount === leafs.length
-                                        ? true
-                                        : "indeterminate";
-                                    return (
-                                      <Checkbox
-                                        checked={state as any}
-                                        onCheckedChange={(v) => {
-                                          const next = new Set(selectedSet);
-                                          if (v)
-                                            leafs.forEach((f) => next.add(f));
-                                          else
-                                            leafs.forEach((f) =>
-                                              next.delete(f)
-                                            );
-                                          updateSelected(next);
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                        aria-label={`Select all in ${ns}/${ent}`}
-                                      />
-                                    );
-                                  })()}
-                                <span>{ent}</span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {bucket.noPS.length +
-                                    Array.from(bucket.psMap.values()).reduce(
-                                      (m, arr) => m + arr.length,
-                                      0
-                                    )}{" "}
-                                  actions
-                                </span>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              <div className="ml-3 border-l pl-2">
-                                {/* Render actions without property set directly under the entity */}
-                                {bucket.noPS.length > 0 && (
-                                  <ul
-                                    className={cn(
-                                      "ml-2",
-                                      compact ? "space-y-0.5" : "space-y-1"
-                                    )}
-                                  >
-                                    {bucket.noPS.map((p, i) => (
-                                      <li
-                                        key={`${p.full}-${i}`}
-                                        className={cn(
-                                          "flex items-center",
-                                          compact ? "gap-1.5" : "gap-2"
-                                        )}
-                                      >
-                                        {isSelectable && (
-                                          <Checkbox
-                                            checked={selectedSet.has(p.full)}
-                                            onCheckedChange={(v) => {
-                                              const next = new Set(selectedSet);
-                                              if (v) next.add(p.full);
-                                              else next.delete(p.full);
-                                              updateSelected(next);
-                                            }}
-                                            aria-label={`Select ${p.full}`}
-                                          />
-                                        )}
-                                        <ResourceActionPill
-                                          action={p.full}
-                                          size="sm"
-                                          compact
-                                        />
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
+                            )}{" "}
+                          actions
+                        </span>
+                      </div>
+                    );
 
-                                {/* Render property set groups normally */}
-                                {bucket.psMap.size > 0 && (
-                                  <Accordion
-                                    type="multiple"
-                                    defaultValue={
-                                      defaultExpanded
-                                        ? Array.from(bucket.psMap.keys()).map(
-                                            (ps) => `ps:${ns}|${ent}|${ps}`
-                                          )
-                                        : undefined
-                                    }
-                                  >
-                                    {Array.from(bucket.psMap.entries())
-                                      .sort(([a], [b]) => a.localeCompare(b))
-                                      .map(([ps, arr]) => (
-                                        <AccordionItem
-                                          key={`${ns}|${ent}|${ps}`}
-                                          value={`ps:${ns}|${ent}|${ps}`}
-                                        >
-                                          <AccordionTrigger
-                                            className={cn(
-                                              "px-2",
-                                              compact && "px-1.5"
-                                            )}
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              {isSelectable &&
-                                                (() => {
-                                                  const leafs =
-                                                    leavesUnderPropertySet(
-                                                      ns,
-                                                      ent,
-                                                      ps
-                                                    );
-                                                  const selectedCount =
-                                                    leafs.reduce(
-                                                      (n, f) =>
-                                                        n +
-                                                        (selectedSet.has(f)
-                                                          ? 1
-                                                          : 0),
-                                                      0
-                                                    );
-                                                  const state =
-                                                    selectedCount === 0
-                                                      ? false
-                                                      : selectedCount ===
-                                                        leafs.length
-                                                      ? true
-                                                      : "indeterminate";
-                                                  return (
-                                                    <Checkbox
-                                                      checked={state as any}
-                                                      onCheckedChange={(v) => {
-                                                        const next = new Set(
-                                                          selectedSet
-                                                        );
-                                                        if (v)
-                                                          leafs.forEach((f) =>
-                                                            next.add(f)
-                                                          );
-                                                        else
-                                                          leafs.forEach((f) =>
-                                                            next.delete(f)
-                                                          );
-                                                        updateSelected(next);
-                                                      }}
-                                                      onClick={(e) =>
-                                                        e.stopPropagation()
-                                                      }
-                                                      aria-label={`Select all in ${ns}/${ent}/${ps}`}
-                                                    />
-                                                  );
-                                                })()}
-                                              <span className="text-sm">
-                                                {ps}
-                                              </span>
-                                              <span className="text-[10px] text-muted-foreground">
-                                                {arr.length} actions
-                                              </span>
-                                            </div>
-                                          </AccordionTrigger>
-                                          <AccordionContent>
-                                            <ul
-                                              className={cn(
-                                                "ml-2",
-                                                compact
-                                                  ? "space-y-0.5"
-                                                  : "space-y-1"
-                                              )}
-                                            >
-                                              {arr.map((p, i) => (
-                                                <li
-                                                  key={`${p.full}-${i}`}
-                                                  className={cn(
-                                                    "flex items-center",
-                                                    compact
-                                                      ? "gap-1.5"
-                                                      : "gap-2"
-                                                  )}
-                                                >
-                                                  {isSelectable && (
-                                                    <Checkbox
-                                                      checked={selectedSet.has(
-                                                        p.full
-                                                      )}
-                                                      onCheckedChange={(v) => {
-                                                        const next = new Set(
-                                                          selectedSet
-                                                        );
-                                                        if (v) next.add(p.full);
-                                                        else
-                                                          next.delete(p.full);
-                                                        updateSelected(next);
-                                                      }}
-                                                      aria-label={`Select ${p.full}`}
-                                                    />
-                                                  )}
-                                                  <ResourceActionPill
-                                                    action={p.full}
-                                                    size="sm"
-                                                    compact
-                                                  />
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </AccordionContent>
-                                        </AccordionItem>
-                                      ))}
-                                  </Accordion>
-                                )}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        ))}
-                    </Accordion>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-          </Accordion>
+                    const children: TreeDataItem[] = [];
+                    // Direct actions (no property set)
+                    for (const p of bucket.noPS) {
+                      children.push({
+                        id: `act:${p.full}`,
+                        name: (
+                          <div
+                            className={cn(
+                              "flex items-center",
+                              compact ? "gap-1.5" : "gap-2"
+                            )}
+                          >
+                            {isSelectable && (
+                              <Checkbox
+                                checked={selectedSet.has(p.full)}
+                                onCheckedChange={(v) => {
+                                  const next = new Set(selectedSet);
+                                  if (v) next.add(p.full);
+                                  else next.delete(p.full);
+                                  updateSelected(next);
+                                }}
+                                aria-label={`Select ${p.full}`}
+                              />
+                            )}
+                            <ResourceActionPill
+                              action={p.full}
+                              isPrivileged={p.isPrivileged}
+                              size="sm"
+                              compact
+                            />
+                          </div>
+                        ),
+                      });
+                    }
+
+                    // Property set groups
+                    for (const [ps, arr] of Array.from(
+                      bucket.psMap.entries()
+                    ).sort(([a], [b]) => a.localeCompare(b))) {
+                      const psLeafs = leavesUnderPropertySet(ns, ent, ps);
+                      const psSelectedCount = psLeafs.reduce(
+                        (n: number, f: string) =>
+                          n + (selectedSet.has(f) ? 1 : 0),
+                        0
+                      );
+                      const psState =
+                        psSelectedCount === 0
+                          ? false
+                          : psSelectedCount === psLeafs.length
+                          ? true
+                          : "indeterminate";
+                      const psHasPrivileged = arr.some((p) => !!p.isPrivileged);
+                      children.push({
+                        id: `ps:${ns}|${ent}|${ps}`,
+                        name: (
+                          <div className="flex items-center gap-2">
+                            {isSelectable && (
+                              <Checkbox
+                                checked={psState as any}
+                                onCheckedChange={(v) => {
+                                  const next = new Set(selectedSet);
+                                  if (v) psLeafs.forEach((f) => next.add(f));
+                                  else psLeafs.forEach((f) => next.delete(f));
+                                  updateSelected(next);
+                                }}
+                                aria-label={`Select all in ${ns}/${ent}/${ps}`}
+                              />
+                            )}
+                            <span className="text-sm">{ps}</span>
+                            {psHasPrivileged && <PrivBadge />}
+                            <span className="text-[10px] text-muted-foreground">
+                              {arr.length} actions
+                            </span>
+                          </div>
+                        ),
+                        children: arr.map((p, i) => ({
+                          id: `act:${p.full}-${i}`,
+                          name: (
+                            <div
+                              className={cn(
+                                "flex items-center",
+                                compact ? "gap-1.5" : "gap-2"
+                              )}
+                            >
+                              {isSelectable && (
+                                <Checkbox
+                                  checked={selectedSet.has(p.full)}
+                                  onCheckedChange={(v) => {
+                                    const next = new Set(selectedSet);
+                                    if (v) next.add(p.full);
+                                    else next.delete(p.full);
+                                    updateSelected(next);
+                                  }}
+                                  aria-label={`Select ${p.full}`}
+                                />
+                              )}
+                              <ResourceActionPill
+                                action={p.full}
+                                isPrivileged={p.isPrivileged}
+                                size="sm"
+                                compact
+                              />
+                            </div>
+                          ),
+                        })),
+                      });
+                    }
+
+                    return {
+                      id: `ent:${ns}|${ent}`,
+                      name: entName,
+                      children,
+                    };
+                  });
+
+                return {
+                  id: `ns:${ns}`,
+                  name: nsName,
+                  children: entityNodes,
+                };
+              })}
+            expandAll={defaultExpanded}
+            className="w-full"
+          />
         )}
       </div>
     </div>
   );
-})
+});
 
 export default ResourceActionList

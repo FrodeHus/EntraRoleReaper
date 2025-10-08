@@ -636,7 +636,10 @@ export function ActivityMappingDialog({
               {/* Use ResourceActionList for hierarchical, selectable actions */}
               <ResourceActionList
                 ref={listRef}
-                actions={orderedActions.map((a) => a.action)}
+                actions={orderedActions.map((a) => ({
+                  action: a.action,
+                  isPrivileged: a.isPrivileged,
+                }))}
                 isSelectable
                 selected={Array.from(selectedActionIds)
                   .map((id) => idToAction.get(String(id)))
