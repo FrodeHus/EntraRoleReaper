@@ -26,15 +26,14 @@ public class RoleEvaluationService(IUserService userService, IRoleService roleSe
             return new RoleEvaluationResult(context.RoleDefinition, -1000, []);
         }
 
-        var roleScoreCards = new List<RoleScoreCard>();
         foreach (var evaluator in evaluators)
         {
             var scoreCard = await evaluator.Evaluate(context);
-            roleScoreCards.Add(scoreCard);
+            context.CompletedEvaluations.Add(scoreCard);
         }
-
-        var score = roleScoreCards.Sum(r => r.Score);
-        return new RoleEvaluationResult(context.RoleDefinition, score, roleScoreCards);
+        
+        var score = context.CompletedEvaluations.Sum(r => r.Score);
+        return new RoleEvaluationResult(context.RoleDefinition, score, context.CompletedEvaluations);
     }
 
     private bool MeetsAllRequirements(RoleEvaluationContext context)

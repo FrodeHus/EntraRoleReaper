@@ -15,6 +15,8 @@ import { Crown } from "lucide-react";
 export type ResourceActionPillProps = {
   /** A resource action formatted as "namespace/entity/propertySet/action" */
   action: string;
+  /** Optional description to display beneath the title */
+  description?: string;
   className?: string;
   size?: "default" | "sm";
   showIcon?: boolean;
@@ -52,6 +54,7 @@ function parseResourceAction(value: string) {
 
 export function ResourceActionPill({
   action,
+  description,
   className,
   size = "sm",
   showIcon = false,
@@ -105,6 +108,13 @@ export function ResourceActionPill({
             </ItemTitle>
             <ItemActions />
           </ItemHeader>
+          {description && (
+            <ItemDescription>
+              <span className="text-xs text-muted-foreground truncate">
+                {description}
+              </span>
+            </ItemDescription>
+          )}
           <ItemFooter>
             <div className="flex w-full items-center justify-between text-[10px] text-muted-foreground">
               <span className="truncate">
@@ -166,9 +176,22 @@ export function ResourceActionPill({
           </ItemTitle>
           <ItemActions />
         </ItemHeader>
-        <ItemDescription>
-          <span className="truncate">{content}</span>
-        </ItemDescription>
+        {description ? (
+          <>
+            <ItemDescription>
+              <span className="text-xs text-muted-foreground truncate">
+                {description}
+              </span>
+            </ItemDescription>
+            <ItemDescription>
+              <span className="truncate">{content}</span>
+            </ItemDescription>
+          </>
+        ) : (
+          <ItemDescription>
+            <span className="truncate">{content}</span>
+          </ItemDescription>
+        )}
         {namespace && (
           <ItemFooter>
             <span className="inline-flex items-center gap-2 text-[11px] text-muted-foreground">
