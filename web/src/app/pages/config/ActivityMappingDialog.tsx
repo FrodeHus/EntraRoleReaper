@@ -638,6 +638,7 @@ export function ActivityMappingDialog({
                 ref={listRef}
                 actions={orderedActions.map((a) => ({
                   action: a.action,
+                  description: a.description,
                   isPrivileged: a.isPrivileged,
                 }))}
                 isSelectable

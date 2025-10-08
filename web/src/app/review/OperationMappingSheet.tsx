@@ -10,6 +10,7 @@ interface MappingAction {
   id: string; // Guid
   action: string;
   isPrivileged: boolean;
+  description?: string;
 }
 interface MappingData {
   operationName: string;
@@ -76,6 +77,12 @@ export function OperationMappingSheet({
           id: String(a.id ?? a.Id ?? a.ID),
           action: String(a.action ?? a.Action),
           isPrivileged: Boolean(a.isPrivileged ?? a.IsPrivileged),
+          description:
+            typeof a.description === "string"
+              ? a.description
+              : typeof a.Description === "string"
+              ? a.Description
+              : undefined,
         }));
         const merged: MappingData = {
           operationName: `${parsed.op}::${parsed.prop}`,
@@ -108,6 +115,12 @@ export function OperationMappingSheet({
           id: String(a.id ?? a.Id ?? a.ID),
           action: String(a.action ?? a.Action),
           isPrivileged: Boolean(a.isPrivileged ?? a.IsPrivileged),
+          description:
+            typeof a.description === "string"
+              ? a.description
+              : typeof a.Description === "string"
+              ? a.Description
+              : undefined,
         }));
         // 'mapped' comes back as an array of action names (strings)
         const mappedNames: string[] = Array.isArray(json.mappedActions)
@@ -165,10 +178,19 @@ export function OperationMappingSheet({
 
   // Build action strings for ResourceActionList based on Mapped-only filter
   const visibleActions = useMemo(() => {
-    if (!data) return [] as string[];
+    if (!data)
+      return [] as Array<{
+        action: string;
+        isPrivileged?: boolean;
+        description?: string;
+      }>;
     let list = data.all.slice();
     if (showMappedOnly) list = list.filter((a) => selected.has(a.id));
-    return list.map((a) => a.action);
+    return list.map((a) => ({
+      action: a.action,
+      isPrivileged: a.isPrivileged,
+      description: a.description,
+    }));
   }, [data, showMappedOnly, selected]);
 
   // Map action strings <-> ids for selection bridging

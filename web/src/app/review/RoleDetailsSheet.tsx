@@ -278,6 +278,14 @@ export function RoleDetailsSheet({
                                         isPrivileged: Boolean(
                                           (p as any).privileged
                                         ),
+                                        description:
+                                          typeof (p as any).description ===
+                                          "string"
+                                            ? (p as any).description
+                                            : typeof (p as any).Description ===
+                                              "string"
+                                            ? (p as any).Description
+                                            : undefined,
                                       }))}
                                       hideControls
                                       compact
