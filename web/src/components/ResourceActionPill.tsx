@@ -10,7 +10,8 @@ import {
   ItemMedia,
 } from "@/components/ui/item"
 import { cn } from "@/lib/utils"
-import { Crown } from "lucide-react";
+import { Crown, Info } from "lucide-react";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 export type ResourceActionPillProps = {
   /** A resource action formatted as "namespace/entity/propertySet/action" */
@@ -104,7 +105,29 @@ export function ResourceActionPill({
         <ItemContent>
           <ItemHeader>
             <ItemTitle>
-              <span className="truncate">{actionName || action}</span>
+              <span className="inline-flex items-center gap-1 truncate">
+                <span className="truncate">{actionName || action}</span>
+                {description && description.trim() && (
+                  <HoverCard>
+                    <HoverCardTrigger asChild>
+                      <button
+                        type="button"
+                        className="ml-0.5 inline-flex p-0.5 rounded hover:bg-muted/50 text-muted-foreground"
+                        aria-label="Show description"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
+                        <Info className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    </HoverCardTrigger>
+                    <HoverCardContent className="text-xs leading-snug max-w-xs">
+                      {description}
+                    </HoverCardContent>
+                  </HoverCard>
+                )}
+              </span>
             </ItemTitle>
             <ItemActions />
           </ItemHeader>
@@ -172,7 +195,29 @@ export function ResourceActionPill({
       <ItemContent>
         <ItemHeader>
           <ItemTitle>
-            <span className="truncate">{entity || action}</span>
+            <span className="inline-flex items-center gap-1 truncate">
+              <span className="truncate">{entity || action}</span>
+              {description && description.trim() && (
+                <HoverCard>
+                  <HoverCardTrigger asChild>
+                    <button
+                      type="button"
+                      className="ml-0.5 inline-flex p-0.5 rounded hover:bg-muted/50 text-muted-foreground"
+                      aria-label="Show description"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                    >
+                      <Info className="h-4 w-4" aria-hidden />
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="text-xs leading-snug max-w-xs">
+                    {description}
+                  </HoverCardContent>
+                </HoverCard>
+              )}
+            </span>
           </ItemTitle>
           <ItemActions />
         </ItemHeader>
