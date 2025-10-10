@@ -11,6 +11,7 @@ using EntraRoleReaper.Api.Review;
 using EntraRoleReaper.Api.Services;
 using EntraRoleReaper.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
@@ -128,6 +129,11 @@ builder.Services.ConfigureServices();
 var app = builder.Build();
 
 await app.ConfigureApplication(corsOrigins);
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
