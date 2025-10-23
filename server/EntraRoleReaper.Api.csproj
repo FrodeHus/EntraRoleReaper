@@ -7,20 +7,20 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.10" />
   <PackageReference Include="Microsoft.Identity.Client" Version="4.77.1" />
-  <PackageReference Include="Microsoft.Identity.Web" Version="3.14.1" />
-  <PackageReference Include="Azure.Identity" Version="1.16.0" />
-    <PackageReference Include="Microsoft.Graph" Version="5.93.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.9" />
+  <PackageReference Include="Microsoft.Identity.Web" Version="4.0.1" />
+  <PackageReference Include="Azure.Identity" Version="1.17.0" />
+    <PackageReference Include="Microsoft.Graph" Version="5.94.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.10" />
     <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.4" />
-    <PackageReference Include="StackExchange.Redis" Version="2.9.25" />
+    <PackageReference Include="StackExchange.Redis" Version="2.9.32" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
-  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
-  <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.9" />
-  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.9" />
- <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
+  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.10" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.10" />
+ <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
     </PackageReference>

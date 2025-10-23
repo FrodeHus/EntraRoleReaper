@@ -12,8 +12,6 @@ public class GetRoleSummary : IEndpoint
         builder.MapGet("/summary", Handle)
             .WithSummary("Gets a summary of the roles")
             .RequireAuthorization();
-
-
     }
 
     private static async Task<Ok<SummaryResponse>> Handle(int? page,
