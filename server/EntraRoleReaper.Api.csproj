@@ -12,7 +12,7 @@
   <PackageReference Include="Microsoft.Identity.Client" Version="4.78.0" />
   <PackageReference Include="Microsoft.Identity.Web" Version="4.0.1" />
   <PackageReference Include="Azure.Identity" Version="1.17.0" />
-    <PackageReference Include="Microsoft.Graph" Version="5.95.0" />
+    <PackageReference Include="Microsoft.Graph" Version="5.97.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.10" />
     <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.4" />
     <PackageReference Include="StackExchange.Redis" Version="2.9.32" />
