@@ -19,8 +19,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
   <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.12" />
   <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.12" />
-  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.10" />
- <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.12">
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.12" />
+ <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
     </PackageReference>
