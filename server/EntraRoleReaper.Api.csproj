@@ -8,12 +8,12 @@
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.12" />
-    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.2" />
   <PackageReference Include="Microsoft.Identity.Client" Version="4.79.2" />
   <PackageReference Include="Microsoft.Identity.Web" Version="4.0.1" />
   <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="Microsoft.Graph" Version="5.95.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.2" />
     <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.4" />
     <PackageReference Include="StackExchange.Redis" Version="2.9.32" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
